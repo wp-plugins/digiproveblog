@@ -1,16 +1,16 @@
 ﻿=== Digiprove Blog ===
 Contributors: Cian Kinsella
 Donate link: http://www.digiprove.com/
-Tags: copyright, protect ip, admin, plugin, link
+Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
-Tested up to: 2.8.4
+Tested up to: 2.8.5
 Stable tag: 0.5
 
 Protect copyright in your Wordpress post prior to publishing.
 
 == Description ==
 
-Submits content to www.digiprove.com to obtain digitally signed certificate of content (for proof of copyright).  Inserts notice of (and link to) Digiprove certificate at end of post.
+Proves your authorship, deters plagiarism, and protects your copyright.  Obtain a digitally signed certificate of content of each wordpress post(for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post.
 
 [Digiprove Blog](http://www.digiprove.com/digiproveblog.aspx) by [Digiprove](http://www.digiprove.com/ "Digiprove")
 
@@ -22,16 +22,17 @@ Submits content to www.digiprove.com to obtain digitally signed certificate of c
 3. Go to Settings page ('Settings', 'Digiprove')
 4. Check the settings are to your preference
 5. Answer the question "Registered Digiprove User?".
-     - if you are already a registered Digiprove user, input your log-in credentials
-     - if you are not yet a Digiprove user, answer "Yes" to the question "Do you want to register now?" and enter your desired credentials
-6. To activate your registration you must click on the activation link that you will receive by email
+     - if you are already a registered Digiprove user, input your log-in credentials.
+     - if you are not yet a Digiprove user, answer "Yes" to the question "Do you want to register now?" and enter your desired credentials (Registration is free).
+6. To activate your registration you must click on the activation link that you will receive by email.
 
 == Frequently Asked Questions ==
 
 = I uploaded the plug-in and nothing seems to happen when I publish a new or edited post? =
 
-Have you registered with Digiprove yet (see installation steps above)?
-Have you activated your Digiprove registration by clicking on the link received by email?
+- Have you registered with Digiprove yet (see installation steps above)?
+- Have you activated your Digiprove registration by clicking on the link received by email?
+
 Note that if the content of your post has not changed since the last Digiprove action, it will not be repeated as it is unnecessary.
 
 
@@ -51,6 +52,16 @@ Digiprove does not make use of these details except to deliver the service.  Ple
 There is no cost for personal use (or use by an educational establishment) of the Digiprove service via this plug-in.  It is also free for commercial use via this beta version of the plug-in.
 
 
+= How does this protect copyright? =
+
+Note that in most countries, you are already the copyright owner of any original work (literary or otherwise) that you have created, as soon as you record or publish it (whether or not you subsequently go through a formal registration process).  By Digiproving your work, you are creating time-stamped evidence that you are the possessor of that content, which is the critical factor in ensuring you can prove your ownership (or someone else's plagiarism).
+
+In some countries, you can go a step further by formally registering your copyright in your work as it is created/published or subsequently.  There is usually a fee for this, and the benefits vary from country to country - in the U.S. for instance this should be done prior to instituting any legal proceedings for breach of copyright.
+
+Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
+Learn more at http://www.digiprove.com/how_international_copyright_works.aspx.
+
+
 = Can I review my history of Digiproving online? =
 
 Yes, you can review your history online (and perform other functions) by visiting https://www.digiprove.com/members/my_digiprove.aspx - you will need to log in using your Digiprove user id and password.
@@ -58,15 +69,20 @@ Yes, you can review your history online (and perform other functions) by visitin
 
 = How do I link directly to Digiprove API?  =
 
-You are free to link to Digiprove's API from other applications (or write a better plug-in).  Details of the (Soap) API are found at www.digiprove.com/resources.aspx.
+Use of the Digiprove API from other applications is free for personal or educational use.  Details of the (Soap) API are found at www.digiprove.com/resources.aspx.
 
 == Screenshots ==
 
-1. Digiprove Settings
-2. A Digiprove notice
+1. Digiprove Settings (Basic)
+2. Digiprove Settings (Advanced)
+3. A Digiprove notice
 
 
 == Changelog ==
+
+= 0.64 =
+* First beta release
+* minor bug-fixes
 
 = 0.63 =
 * Better preserves intended appearance of Digiprove notice
@@ -97,4 +113,3 @@ You are free to link to Digiprove's API from other applications (or write a bett
 = 0.56 =
 * Better error-handling of log-file exceptions
 * Logging (for debug purposes) now turned off
-

@@ -3,7 +3,7 @@
 Plugin Name: Digiprove
 Plugin URI: http://www.digiprove.com/digiproveblog.aspx
 Description: Secure copyright of your blog post by Digiproving it. <a href="options-general.php?page=DigiproveBlog.php">Register and configure here.</a>
-Version: 0.63
+Version: 0.64
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -47,7 +47,7 @@ add_filter('content_save_pre', 'dprv_digiprove_post');
 function dprv_activate()
 {
 	$log = new Logging();  
-	$log->lwrite("VERSION 0.63 ACTIVATED");  
+	$log->lwrite("VERSION 0.64 ACTIVATED");  
 	add_option('dprv_email_address', '');
 	add_option('dprv_first_name', '');
 	add_option('dprv_last_name', '');
@@ -71,7 +71,7 @@ function dprv_activate()
 function dprv_deactivate()
 {
 	$log = new Logging();  
-	$log->lwrite("VERSION 0.63 DEACTIVATED");  
+	$log->lwrite("VERSION 0.64 DEACTIVATED");  
 	delete_option('dprv_last_result');	// keep other options for future install
 }
 
@@ -334,7 +334,7 @@ function dprv_certify($post_id, $title, $content)
 	$postText = "<digiprove_content_request>";
 	$postText .= "<user_id>" . get_option('dprv_user_id') . "</user_id>";
 	$postText .= '<password>' . get_option('dprv_password') . '</password>';
-	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Digiprove plugin 0.63</user_agent>';
+	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Digiprove plugin 0.64</user_agent>';
     $postText .= '<content_type>' . $dprv_content_type . '</content_type>';
     $postText .= '<content_title>' . $title . '</content_title>';
     $postText .= '<content_data>' . $rawContent . '</content_data>';
