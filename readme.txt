@@ -1,4 +1,4 @@
-﻿=== Copyright Proof by Digiprove ===
+﻿=== Copyright Proof ===
 Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
