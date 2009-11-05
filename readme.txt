@@ -1,5 +1,5 @@
-﻿=== Digiprove Blog ===
-Contributors: Cian Kinsella
+﻿=== Copyright Proof by Digiprove ===
+Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
@@ -10,7 +10,7 @@ Protect copyright in your Wordpress post prior to publishing.
 
 == Description ==
 
-Proves your authorship, deters plagiarism, and protects your copyright.  Obtain a digitally signed certificate of content of each wordpress post(for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post.
+Prove authorship, deter plagiarism, and protect copyright.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post.
 
 [Digiprove Blog](http://www.digiprove.com/digiproveblog.aspx) by [Digiprove](http://www.digiprove.com/ "Digiprove")
 
@@ -38,7 +38,7 @@ Note that if the content of your post has not changed since the last Digiprove a
 
 = What is the plugin page?  =
 
-[Digiprove Blog](http://www.digiprove.com/digiproveblog.aspx) by [Digiprove](http://www.digiprove.com/ "Digiprove")
+[Copyright Proof](http://www.digiprove.com/digiproveblog.aspx) by [Digiprove](http://www.digiprove.com/ "Digiprove")
 
 
 = What's with the registration process?  =
@@ -59,7 +59,7 @@ Note that in most countries, you are already the copyright owner of any original
 In some countries, you can go a step further by formally registering your copyright in your work as it is created/published or subsequently.  There is usually a fee for this, and the benefits vary from country to country - in the U.S. for instance this should be done prior to instituting any legal proceedings for breach of copyright.
 
 Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
-Learn more at http://www.digiprove.com/how_international_copyright_works.aspx.
+Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
 
 = Can I review my history of Digiproving online? =
@@ -67,22 +67,27 @@ Learn more at http://www.digiprove.com/how_international_copyright_works.aspx.
 Yes, you can review your history online (and perform other functions) by visiting https://www.digiprove.com/members/my_digiprove.aspx - you will need to log in using your Digiprove user id and password.
 
 
-= How do I link directly to Digiprove API?  =
+= I'm a developer - how do I link directly to Digiprove API?  =
 
 Use of the Digiprove API from other applications is free for personal or educational use.  Details of the (Soap) API are found at www.digiprove.com/resources.aspx.
 
 == Screenshots ==
 
-1. Digiprove Settings (Basic)
-2. Digiprove Settings (Advanced)
+1. Settings (Basic)
+2. Settings (Advanced)
 3. A Digiprove notice
 
 
 == Changelog ==
 
+= 0.65
+* Minor bug-fixes
+* Fixed broken link in readme
+* Title change to Copyright Proof (bit more meaningful than Digiprove Blog)
+
 = 0.64 =
 * First beta release
-* minor bug-fixes
+* Minor bug-fixes
 
 = 0.63 =
 * Better preserves intended appearance of Digiprove notice
