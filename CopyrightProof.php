@@ -29,9 +29,9 @@ License: GPL
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
 $dprv_log_is_on = false;				// Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "digiprove1.dyndns.ws";	// -> normally set to "www.digiprove.com"
-$dprv_port = 591;						// -> normally set to 443 (usually 80 for http, 443 for https)
-$dprv_ssl = "No";						// -> normally set to "Yes"
+$dprv_host = "www.digiprove.com";		// -> normally set to "www.digiprove.com"
+$dprv_port = 443;						// -> normally set to 443 (usually 80 for http, 443 for https)
+$dprv_ssl = "Yes";						// -> normally set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
