@@ -19,7 +19,7 @@ Prove authorship, deter plagiarism, and protect copyright.  Obtain a digitally s
 
 1. Upload DigiproveBlog directory to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Go to Settings page ('Settings', 'Digiprove')
+3. Go to Settings page ('Settings', 'Copyright Proof')
 4. Check the settings are to your preference
 5. Answer the question "Registered Digiprove User?".
      - if you are already a registered Digiprove user, input your log-in credentials.
