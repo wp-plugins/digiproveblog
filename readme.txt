@@ -80,7 +80,7 @@ Use of the Digiprove API from other applications is free for personal or educati
 
 == Changelog ==
 
-= 0.65
+= 0.65 =
 * Minor bug-fixes
 * Fixed broken link in readme
 * Title change to Copyright Proof (bit more meaningful than Digiprove Blog)
