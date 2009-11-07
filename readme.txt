@@ -32,8 +32,7 @@ Prove authorship, deter plagiarism, and protect copyright.  Obtain a digitally s
 
 - Have you registered with Digiprove yet (see installation steps above)?
 - Have you activated your Digiprove registration by clicking on the link received by email?
-
-Note that if the content of your post has not changed since the last Digiprove action, it will not be repeated as it is unnecessary.
+- If you have not received the activation mail, check your junk mail folder or contact us at support@digiprove.com
 
 
 = What is the plugin page?  =
@@ -60,6 +59,11 @@ In some countries, you can go a step further by formally registering your copyri
 
 Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
 Learn more at http://www.digiprove.com/creative-and-copyright.aspx
+
+
+= I think I've found a bug, what can I do? =
+
+This is a beta version of the plug-in, and we actively seek information about problems or criticisms you may have, please let us know at support@digiprove.com - we will address the problem as soon as possible.  
 
 
 = Can I review my history of Digiproving online? =
