@@ -31,10 +31,10 @@ License: GPL
 
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
-$dprv_log_is_on = false;				// Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "www.digiprove.com";		// -> normally set to "www.digiprove.com"
-$dprv_port = 443;						// -> normally set to 443 (usually 80 for http, 443 for https)
-$dprv_ssl = "Yes";						// -> normally set to "Yes"
+$dprv_log_is_on = false;             // Set this to true to generate local log-file (needs write permissions)
+$dprv_host = "www.digiprove.com";    // -> normally set to "www.digiprove.com"
+$dprv_port = 443;                    // -> normally set to 443 (usually 80 for http, 443 for https)
+$dprv_ssl = "Yes";                   // -> normally set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
@@ -1109,10 +1109,10 @@ $dprv_obscure_selected = ' selected="selected"';
 																	<th align="left">Border</th>
 																</tr>
 																<tr>
-																	<td width="120" align="left"><input class="color {hash:true,pickerPosition:\'left\'}" style="width:70px;" value="' . $dprv_notice_color . '" id="dprv_notice_color" name="dprv_notice_color" onchange="Preview()" /></td>
-																	<td width="120" align="left"><input class="color {hash:true,pickerPosition:\'left\'}" style="width:70px;" value="' . $dprv_hover_color . '" id="dprv_hover_color" name="dprv_hover_color" onchange="Preview()" /></td>
-																	<td width="120" align="left"><input class="color {hash:true,adjust:false,pickerPosition:\'left\'}" style="width:70px;"  value="' . $dprv_notice_background . '" id="dprv_notice_background" name="dprv_notice_background" onchange="setCheckboxes();Preview()" /></td>
-																	<td width="120" align="left"><input class="color {hash:true,adjust:false,pickerPosition:\'left\'}" style="width:70px;background-color:' . $dprv_notice_border . '"  value="' . $dprv_notice_border . '" id="dprv_notice_border" name="dprv_notice_border" onchange="setCheckboxes();Preview()" /></td>
+																	<td width="120" align="left"><input style="width:70px;" value="' . $dprv_notice_color . '" id="dprv_notice_color" name="dprv_notice_color" onchange="Preview()" /></td>
+																	<td width="120" align="left"><input style="width:70px;" value="' . $dprv_hover_color . '" id="dprv_hover_color" name="dprv_hover_color" onchange="Preview()" /></td>
+																	<td width="120" align="left"><input style="width:70px;"  value="' . $dprv_notice_background . '" id="dprv_notice_background" name="dprv_notice_background" onchange="setCheckboxes();Preview()" /></td>
+																	<td width="120" align="left"><input style="width:70px;background-color:' . $dprv_notice_border . '"  value="' . $dprv_notice_border . '" id="dprv_notice_border" name="dprv_notice_border" onchange="setCheckboxes();Preview()" /></td>
 																</tr>
 																<tr>
 																	<td colspan="2"></td>
@@ -1248,7 +1248,15 @@ $dprv_obscure_selected = ' selected="selected"';
 			}
 			// End of Stuff
 
-			
+			var myPickerText = new jscolor.color(document.getElementById("dprv_notice_color"), {hash:true,pickerPosition:\'left\'})
+			myPickerText.fromString("' . $dprv_notice_color . '")  // now you can access API via myPicker variable
+			var myPickerHover = new jscolor.color(document.getElementById("dprv_hover_color"), {hash:true,pickerPosition:\'left\'})
+			myPickerHover.fromString("' . $dprv_hover_color . '")
+			var myPickerBackground = new jscolor.color(document.getElementById("dprv_notice_background"), {hash:true,adjust:false,pickerPosition:\'left\'})
+			myPickerBackground.fromString("' . $dprv_notice_background . '")
+			var myPickerBorder = new jscolor.color(document.getElementById("dprv_notice_border"), {hash:true,adjust:false,pickerPosition:\'left\'})
+			myPickerBorder.fromString("' . $dprv_notice_border . '")
+	
 			Preview();
 			var lastBackgroundColor="";
 			var lastBackgroundTextColor="";			
