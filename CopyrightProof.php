@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/digiproveblog.aspx
 Description: Secure copyright of your blog post by Digiproving it. <a href="options-general.php?page=CopyrightProof.php">Register and configure here.</a>
-Version: 0.65
+Version: 0.66
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -23,13 +23,16 @@ License: GPL
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-// Acknowledgements to BTE, Akismet, and After the Deadline, some of whose
-// code was used in the development of this plug-in 
+// Acknowledgement to Honza Odvarko, whose jscolor color-picker is used in this plug-in 
+//  under the GNU Lesser General Public License (LGPL): www.gnu.org/copyleft/lesser.html
+
+// Acknowledgements to BTE, Akismet, and After the Deadline, some of whose code was used
+// in the development of this plug-in 
 
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
 $dprv_log_is_on = false;				// Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "www.digiprove.com";	// -> normally set to "www.digiprove.com"
+$dprv_host = "www.digiprove.com";		// -> normally set to "www.digiprove.com"
 $dprv_port = 443;						// -> normally set to 443 (usually 80 for http, 443 for https)
 $dprv_ssl = "Yes";						// -> normally set to "Yes"
 $start_Digiprove = false;
@@ -40,13 +43,14 @@ $dprv_soap_count=0;
 register_activation_hook(__FILE__, 'dprv_activate');
 register_deactivation_hook(__FILE__, 'dprv_deactivate');
 add_action('admin_menu', 'dprv_settings_menu');
+add_action('admin_head', 'dprv_admin_head');
 add_action('admin_footer', 'dprv_admin_footer');
 add_filter('content_save_pre', 'dprv_digiprove_post');
 
 function dprv_activate()
 {
 	$log = new Logging();  
-	$log->lwrite("VERSION 0.65 ACTIVATED");  
+	$log->lwrite("VERSION 0.66 ACTIVATED");  
 	add_option('dprv_email_address', '');
 	add_option('dprv_first_name', '');
 	add_option('dprv_last_name', '');
@@ -54,6 +58,9 @@ function dprv_activate()
 	add_option('dprv_notice', '');
 	add_option('dprv_c_notice', '');
 	add_option('dprv_notice_border', '');
+	add_option('dprv_notice_background', '');
+	add_option('dprv_notice_color', '');
+	add_option('dprv_hover_color', '');
 	add_option('dprv_obscure_url','Obscure');
 	add_option('dprv_linkback','Linkback');
 	add_option('dprv_body_or_footer', 'Body');
@@ -70,7 +77,7 @@ function dprv_activate()
 function dprv_deactivate()
 {
 	$log = new Logging();  
-	$log->lwrite("VERSION 0.65 DEACTIVATED");  
+	$log->lwrite("VERSION 0.66 DEACTIVATED");  
 	delete_option('dprv_last_result');	// keep other options for future install
 }
 
@@ -78,6 +85,17 @@ function dprv_settings_menu()	// Runs after the basic admin panel menu structure
 {	
 	$log = new Logging();  
 	$pagename = add_options_page('DigiproveBlog', 'Copyright Proof', 10, basename(__FILE__), 'dprv_settings');
+}
+
+function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - include css gile
+{
+	$log = new Logging();  
+	$log->lwrite("dprv_admin_head starts");  
+	$home = get_settings('siteurl');
+	$base="DigiproveBlog";
+	$stylesheet = $home.'/wp-content/plugins/' . $base . '/jscolor/jscolor.js';
+	echo('<script type="text/javascript" src="' . $stylesheet . '"></script>');
+
 }
 
 
@@ -214,39 +232,48 @@ function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
 			}
 			else
 			{
-				$DigiproveNotice = '<br /><span style="vertical-align:8px; float:left; padding:2px;';
+				$dprv_notice_background = get_option('dprv_notice_background');
+				$backgroundStyle = "";
+				if ($dprv_notice_background != "None")
+				{
+					$backgroundStyle = 'background-color:' . $dprv_notice_background . ';';
+				}
+				$dprv_notice_color = get_option('dprv_notice_color');
+				if ($dprv_notice_color == false || $dprv_notice_color == "")
+				{
+					$dprv_notice_color = "#636363";
+				}
+				$dprv_hover_color = get_option('dprv_hover_color');
+				if ($dprv_hover_color == false || $dprv_hover_color == "")
+				{
+					$dprv_hover_color = "#A35353";
+				}
+				$DigiproveNotice = '<br /><span style="vertical-align:8px; float:left; padding:3px; line-height:normal;';
 				$dprv_notice_border = get_option('dprv_notice_border');
-				if ($dprv_notice_border == false || $dprv_notice_border == "Gray")
-				{
-					$DigiproveNotice .= 'border:1px solid #BBBBBB"';
-				}
-				if ($dprv_notice_border == "Red")
-				{
-					$DigiproveNotice .= 'border:1px solid red"';
-				}
-				if ($dprv_notice_border == "Black")
-				{
-					$DigiproveNotice .= 'border:1px solid #000000"';
-				}
-				if ($dprv_notice_border == "Blue")
-				{
-					$DigiproveNotice .= 'border:1px solid blue"';
-				}
-				if ($dprv_notice_border == "Green")
-				{
-					$DigiproveNotice .= 'border:1px solid darkgreen"';
-				}
 				if ($dprv_notice_border == "None")
 				{
-					$DigiproveNotice .= 'border:0px"';
+					$DigiproveNotice .= 'border:0px;';
 				}
-				$DigiproveNotice .= ' title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
+				else
+				{
+					if ($dprv_notice_border == false || $dprv_notice_border == "Gray")
+					{
+						$DigiproveNotice .= 'border:1px solid #BBBBBB;';
+					}
+					else
+					{
+						$DigiproveNotice .= 'border:1px solid ' . strtolower($dprv_notice_border) . ';';
+					}
+				}
+
+				$DigiproveNotice .= $backgroundStyle . '" '; 
+				$DigiproveNotice .= 'title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
 				$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" ';
-				$DigiproveNotice .= 'style="border:0px; background-color:#FFFFFF; text-decoration: none;" >';
-				$DigiproveNotice .= '<img src="http://www.digiprove.com/images/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px" border="0">';
-				$DigiproveNotice .= ' <span  style="font-family: Tahoma, MS Sans Serif; font-size:11px; color:#636363; letter-spacing:normal" ';
-				$DigiproveNotice .= 'onmouseover="this.style.color=\'#A35353\';" onmouseout="this.style.color=\'#636363\';">';
-				$DigiproveNotice .= $dprv_notice;
+				$DigiproveNotice .= 'style="border:0px;text-decoration: none;' . backgroundStyle . '">';
+				$DigiproveNotice .= '<img src="http://www.digiprove.com/images/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px" border="0" />';
+				$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-size:11px; color:' . $dprv_notice_color . ';letter-spacing:normal" ';
+				$DigiproveNotice .= 'onmouseover="this.style.color=\'' . $dprv_hover_color . '\';" onmouseout="this.style.color=\'' . $dprv_notice_color . '\';">';
+				$DigiproveNotice .= '&nbsp;&nbsp;' . $dprv_notice;
 				if (get_option('dprv_c_notice') != "NoDisplay")
 				{
 					$DigiproveNotice .= '&nbsp;&copy; ' . Date('Y');
@@ -324,7 +351,7 @@ function dprv_certify($post_id, $title, $content)
 	$postText = "<digiprove_content_request>";
 	$postText .= "<user_id>" . get_option('dprv_user_id') . "</user_id>";
 	$postText .= '<password>' . get_option('dprv_password') . '</password>';
-	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Digiprove plugin 0.65</user_agent>';
+	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Digiprove plugin 0.66</user_agent>';
     $postText .= '<content_type>' . $dprv_content_type . '</content_type>';
     $postText .= '<content_title>' . $title . '</content_title>';
     $postText .= '<content_data>' . $rawContent . '</content_data>';
@@ -664,10 +691,29 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		}
 		$dprv_notice_border = get_option('dprv_notice_border');
 
-		if ($dprv_notice_border == false)
+		if ($dprv_notice_border == false || $dprv_notice_border == "Gray")
 		{
-			$dprv_notice_border = 'Gray';
+			$dprv_notice_border = '#BBBBBB';
 		}
+		$dprv_notice_background = get_option('dprv_notice_background');
+
+		if ($dprv_notice_background == false)
+		{
+			$dprv_notice_background = '#FFFFFF';
+		}
+		$dprv_notice_color = get_option('dprv_notice_color');
+
+		if ($dprv_notice_color == false)
+		{
+			$dprv_notice_color = '#636363';
+		}
+		$dprv_hover_color = get_option('dprv_hover_color');
+
+		if ($dprv_hover_color == false)
+		{
+			$dprv_hover_color = '#A35353';
+		}
+
 		$dprv_obscure_url = get_option('dprv_obscure_url');
 		if ($dprv_obscure_url == false)
 		{
@@ -715,6 +761,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_notice = $_POST['dprv_notice'];
 		$dprv_c_notice = $_POST['dprv_c_notice'];
 		$dprv_notice_border = $_POST['dprv_notice_border'];
+		$dprv_notice_background = $_POST['dprv_notice_background'];
+		$dprv_notice_color = $_POST['dprv_notice_color'];
+		$dprv_hover_color = $_POST['dprv_hover_color'];
 		$dprv_obscure_url = $_POST['dprv_obscure_url'];
 		$dprv_linkback = $_POST['dprv_linkback'];
 		$dprv_body_or_footer = $_POST['dprv_body_or_footer'];
@@ -755,7 +804,19 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			}
 			if (isset($_POST['dprv_notice_border']))
 			{
-				update_option('dprv_notice_border',$_POST['dprv_notice_border']);
+				update_option('dprv_notice_border', $_POST['dprv_notice_border']);
+			}
+			if (isset($_POST['dprv_notice_background']))
+			{
+				update_option('dprv_notice_background', $_POST['dprv_notice_background']);
+			}
+			if (isset($_POST['dprv_notice_color']))
+			{
+				update_option('dprv_notice_color', $_POST['dprv_notice_color']);
+			}
+			if (isset($_POST['dprv_hover_color']))
+			{
+				update_option('dprv_hover_color', $_POST['dprv_hover_color']);
 			}
 			if (isset($_POST['dprv_obscure_url']))
 			{
@@ -866,43 +927,19 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_no_c_selected = ' selected="selected"';
 	}
 
-	$dprv_no_border_selected = '';
-	$dprv_gray_border_selected = ' selected="selected"';
-	$dprv_red_border_selected = '';
-	$dprv_black_border_selected = '';
-	$dprv_blue_border_selected = '';
-	$dprv_green_border_selected = '';
-	if ($dprv_notice_border == 'None')
+	$no_background_checktext = '';
+	if ($dprv_notice_background == "None")
 	{
-		$dprv_no_border_selected = ' selected="selected"';
-		$dprv_gray_border_selected = '';
-	}
-	if ($dprv_notice_border == 'Red')
-	{
-		$dprv_red_border_selected = ' selected="selected"';
-		$dprv_gray_border_selected = '';
-	}
-	if ($dprv_notice_border == 'Black')
-	{
-		$dprv_black_border_selected = ' selected="selected"';
-		$dprv_gray_border_selected = '';
-	}
-	if ($dprv_notice_border == 'Blue')
-	{
-		$dprv_blue_border_selected = ' selected="selected"';
-		$dprv_gray_border_selected = '';
-	}
-	if ($dprv_notice_border == 'Green')
-	{
-		$dprv_green_border_selected = ' selected="selected"';
-		$dprv_gray_border_selected = '';
-	}
-	if ($dprv_notice_border == 'Gray')
-	{
-		$dprv_gray_border_selected = ' selected="selected"';
+		$no_background_checktext = 'checked="checked"';
 	}
 
-	$dprv_obscure_selected = ' selected="selected"';
+	$no_border_checktext = '';
+	if ($dprv_notice_border == "None")
+	{
+		$no_border_checktext = 'checked="checked"';
+	}
+
+$dprv_obscure_selected = ' selected="selected"';
 	$dprv_clear_selected = '';
 	if ($dprv_obscure_url != 'Obscure')
 	{
@@ -933,7 +970,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	{
 		$dprv_not_enrolled_selected = '';
 		$dprv_enrolled_selected = ' selected="selected"';
-		$dprv_display_register_row = 'style=" display:none"';
+		$dprv_display_register_row = 'style="display:none"';
 	}
 
 	$dprv_register_now_checked = ' checked="checked"';
@@ -971,17 +1008,17 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td><b>' . __('Your details', 'dprv_blg').'</b></td></tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
-														<td style="width:300px"><label for="dprv_email_address">'.__('Email address', 'dprv_blg').'</label></td>
+														<td style="width:300px">' . __('Email address', 'dprv_blg') . '</td>
 														<td><input name="dprv_email_address" type="text" value="'.htmlspecialchars(stripslashes($dprv_email_address)).'" style="width:290px"/></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
-														<td><label for="dprv_first_name">'.__('First name: ', 'dprv_blg').'</label></td>
+														<td>' . __('First name: ', 'dprv_blg') . '</td>
 														<td><input name="dprv_first_name" type="text" value="'.htmlspecialchars(stripslashes($dprv_first_name)).'" style="width:290px"/></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
-														<td><label for="dprv_last_name">'.__('Last name: ', 'dprv_blg').'</label></td>
+														<td>' . __('Last name: ', 'dprv_blg') . '</td>
 														<td><input name="dprv_last_name" type="text" value="'.htmlspecialchars(stripslashes($dprv_last_name)).'" style="width:290px"/></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
@@ -997,7 +1034,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													</tr>
 													<tr><td style="height:12px"></td></tr>
 													<tr>
-														<td><label for="dprv_enrolled">'.__('Registered Digiprove user?: ', 'dprv_blg').'</label></td>
+														<td>' . __('Registered Digiprove user?: ', 'dprv_blg') . '</td>
 														<td><select name="dprv_enrolled" id="dprv_enrolled" onchange="toggleCredentialsLabels()" style="width:290px">
 																<option value="Yes" ' . $dprv_enrolled_selected . '>I am already registered with Digiprove</option>
 																<option value="No" ' . $dprv_not_enrolled_selected . '>I have not yet registered with Digiprove</option>
@@ -1005,15 +1042,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														</td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
-													<tr id="dprv_register_row"' . $dprv_display_register_row . ';">
-														<td><label for="dprv_register">'.__('Do you want to register now?: ', 'dprv_blg').'</label></td>
+													<tr id="dprv_register_row" ' . $dprv_display_register_row . '>
+														<td>' . __('Do you want to register now?: ', 'dprv_blg') . '</td>
 														<td><input type="radio" name="dprv_register" value="Yes" ' . $dprv_register_now_checked . '/>Yes, register me now&nbsp;&nbsp;&nbsp;&nbsp;
 															<input type="radio" name="dprv_register" value="No" ' . $dprv_register_later_checked . '/>No, do it later&nbsp;&nbsp;&nbsp;<span class="description" ><a href="javascript:ShowRegistrationText()">' .__('What&#39;s this about?', 'dprv_blg') . '</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://www.digiprove.com/termsofuse_page.aspx" target="_blank">' .__('Terms of use.', 'dprv_blg') . '</a></span></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td style="vertical-align:top"><label for="dprv_user_id" id="dprv_user_id_labelA">'.__('Digiprove User Id: ', 'dprv_blg').'</label><label for="dprv_user_id" id="dprv_user_id_labelB" style="display:none">'.__('Desired Digiprove User Id: ', 'dprv_blg').'</label></td>
-														<td><input name="dprv_user_id" type="text" value="'.htmlspecialchars(stripslashes($dprv_user_id)).'" onblur="javascript:ScheduleRestorePassword()" style="width:290px"/>
+														<td><input name="dprv_user_id" id="dprv_user_id" type="text" value="'.htmlspecialchars(stripslashes($dprv_user_id)).'" onblur="javascript:ScheduleRestorePassword()" style="width:290px"/>
 														<br />
 														<span class="description">'.__('Note: user id is shown in the Digiprove certificate; change to something else to keep your email address private.', 'dprv_blg').'</span></td>
 													</tr>
@@ -1022,7 +1059,6 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														<td><label for="dprv_password" id="dprv_password_labelA">'.__('Digiprove Password: ', 'dprv_blg').'</label>
 															<label for="dprv_password" id="dprv_password_labelB" style="display:none">'.__('Registered Digiprove Password: ', 'dprv_blg').'</label></td>
 														<td><input name="dprv_password" id="dprv_password" type="password" value="'.htmlspecialchars(stripslashes($dprv_password)).'" onchange="javascript:SavePassword()" style="width:290px" /></td>
-													</tr>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
@@ -1038,10 +1074,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 											<td colspan="2">
 												<table cellpadding="0" cellspacing="0" border="0" style="padding-left:10px; padding-top:7px; padding-right:5px; background-color:#EEEEFF; border:1px solid #666666; border-top:0px; border-bottom:0px; width:100%">
 													<tr><td style="height:6px; width:300px"></td></tr>
-													<tr><td colspan="2"><b>' . __('The Digiprove notice (at foot of each post)', 'dprv_blg').'</b></td></tr>
+													<tr><td colspan="2"><b>' . __('The Digiprove notice (at foot of each post)', 'dprv_blg').'</b></td>
+														<td style="font-weight:bold">' .__('Preview: ', 'dprv_blg') . '</td>
+													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
-														<td><label for="dprv_notice">'.__('Digiprove Notice Text: ', 'dprv_blg').'</label></td>
+														<td>' . __('Digiprove Notice Text: ', 'dprv_blg') . '</td>
 														<td><select name="dprv_notice" id="dprv_notice" onchange="Preview()" style="width:290px">
 																<option value="This content has been Digiproved"' . $dprv_notice_content_selected . '>This content has been Digiproved</option>
 																<option value="This article has been Digiproved"' . $dprv_notice_article_selected . '>This article has been Digiproved</option>
@@ -1049,10 +1087,11 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 																<option value="Copyright protected by Digiprove"' . $dprv_notice_protected_selected . '>Copyright protected by Digiprove</option>
 																<option value="Copyright secured by Digiprove"' . $dprv_notice_secured_selected . '>Copyright secured by Digiprove</option>
 															</select></td>
+															<td id="dprv_notice_preview"></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
-														<td><label for="dprv_c_notice">'.__('Display copyright symbol &amp; year: ', 'dprv_blg').'</label></td>
+														<td>' . __('Display copyright symbol &amp; year: ', 'dprv_blg') . '</td>
 														<td><select name="dprv_c_notice" id="dprv_c_notice" onchange="Preview()" style="width:290px">
 																<option value="Display"' . $dprv_c_selected . '>Display (in addition to Digiprove notice)</option>
 																<option value="NoDisplay"' . $dprv_no_c_selected . '>Do not display</option>
@@ -1060,24 +1099,33 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
-														<td><label for="dprv_notice_border">'.__('Select border style: ', 'dprv_blg').'</label></td>
-														<td><select name="dprv_notice_border" id="dprv_notice_border" onchange="Preview()" style="width:290px">
-																<option value="None"' . $dprv_no_border_selected . '>No border</option>
-																<option value="Gray" style="color:gray"' . $dprv_gray_border_selected . '>Gray</option>
-																<option value="Red" style="color:red"' . $dprv_red_border_selected . '>Red</option>
-																<option value="Black" style="color:black"' . $dprv_black_border_selected . '>Black</option>
-																<option value="Blue" style="color:blue"' . $dprv_blue_border_selected . '>Blue</option>
-																<option value="Green" style="color:darkgreen"' . $dprv_green_border_selected . '>Green</option>
-															</select></td>
+														<td>'.__('Select colors: ', 'dprv_blg').'</td>
+														<td colspan="2">
+															<table cellpadding="0" cellspacing="0" border="0">
+																<tr>
+																	<th align="left">Text</th>
+																	<th align="left">Mouse-over</th>
+																	<th align="left">Background</th>
+																	<th align="left">Border</th>
+																</tr>
+																<tr>
+																	<td width="120" align="left"><input class="color {hash:true,pickerPosition:\'left\'}" style="width:70px;" value="' . $dprv_notice_color . '" id="dprv_notice_color" name="dprv_notice_color" onchange="Preview()" /></td>
+																	<td width="120" align="left"><input class="color {hash:true,pickerPosition:\'left\'}" style="width:70px;" value="' . $dprv_hover_color . '" id="dprv_hover_color" name="dprv_hover_color" onchange="Preview()" /></td>
+																	<td width="120" align="left"><input class="color {hash:true,adjust:false,pickerPosition:\'left\'}" style="width:70px;"  value="' . $dprv_notice_background . '" id="dprv_notice_background" name="dprv_notice_background" onchange="setCheckboxes();Preview()" /></td>
+																	<td width="120" align="left"><input class="color {hash:true,adjust:false,pickerPosition:\'left\'}" style="width:70px;background-color:' . $dprv_notice_border . '"  value="' . $dprv_notice_border . '" id="dprv_notice_border" name="dprv_notice_border" onchange="setCheckboxes();Preview()" /></td>
+																</tr>
+																<tr>
+																	<td colspan="2"></td>
+																	<td  align="left" style="font-size:11px"><input type="checkbox" id="dprv_no_background" name="dprv_no_background" ' . $no_background_checktext . ' onchange="noBackgroundChanged(this);" />Transparent</td>
+																	<td  align="left" style="font-size:11px"><input type="checkbox" id="dprv_no_border" name="dprv_no_border" ' . $no_border_checktext . ' onchange="noBorderChanged(this);" />No Border</td>
+																</tr>
+															</table>
+														</td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
-													<tr>
-														<td><label for="dprv_notice_preview">'.__('Preview: ', 'dprv_blg').'</label></td>
-														<td id="dprv_notice_preview"></td>
-													</tr>
 													<tr style="display:none"><td style="height:6px"></td></tr>
 													<tr style="display:none">
-														<td><label for="dprv_body_or_footer">'.__('Place Digiprove notice in body or footer:&nbsp;&nbsp;', 'dprv_blg').'</label></td>
+														<td>' . __('Place Digiprove notice in body or footer:&nbsp;&nbsp;', 'dprv_blg') . '</td>
 														<td><select name="dprv_body_or_footer" style="width:290px">
 																<option value="Body"' . $dprv_body_selected . '>Insert at end of blog post</option>
 																<option value="Footer"' . $dprv_footer_selected . '>Display in footer*</option>
@@ -1095,12 +1143,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px"></td></tr>
 									
 													<tr>
-														<td><label for="dprv_content_type">'.__('How do you want your content described?: ', 'dprv_blg').'</label></td>
-														<td><input name="dprv_content_type" type="text" value="'.htmlspecialchars(stripslashes($dprv_content_type)).'"  style="width:290px"/><span class="description">e.g. &quot;Blog post&quot;, &quot;News article&quot;, &quot;Opinion&quot;</span></td>
+														<td>' . __('How do you want your content described?: ', 'dprv_blg') . '</td>
+														<td><input name="dprv_content_type" type="text" value="'.htmlspecialchars(stripslashes($dprv_content_type)).'" style="width:290px"/><span class="description">e.g. &quot;Blog post&quot;, &quot;News article&quot;, &quot;Opinion&quot;</span></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
-														<td><label for="dprv_obscure_url">'.__('Obscure Digiprove certificate link: ', 'dprv_blg').'</label></td>
+														<td>' . __('Obscure Digiprove certificate link: ', 'dprv_blg') . '</td>
 														<td><select name="dprv_obscure_url" style="width:440px">
 																<option value="Obscure"' . $dprv_obscure_selected . '>Obscure the link (for privacy)</option>
 																<option value="Clear"' . $dprv_clear_selected . '>Do not obscure the link (for search engine optimisation)</option>
@@ -1108,7 +1156,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
-														<td><label for="dprv_linkback">'.__('Certificate web-page to link back to post?: ', 'dprv_blg').'</label></td>
+														<td>' . __('Certificate web-page to link back to post?: ', 'dprv_blg') . '</td>
 														<td><select name="dprv_linkback" style="width:440px">
 																<option value="Linkback"' . $dprv_linkback_selected . '>Digiprove certificate web-page should have a link to relevant blog post</option>
 																<option value="Nolink"' . $dprv_no_linkback_selected . '>Do not link back to my blog posts</option>
@@ -1126,7 +1174,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 												<table cellpadding="0" cellspacing="0" border="0" style="padding-left:10px; background-color:#DDDDE4; border:1px solid #666666; border-top:0px; width:100%">
 													<tr><td style="height:6px;width:300px"></td></tr>
 													<tr>
-														<td><label for="dprv_last_result">'.__('Result of last Digiprove action:&nbsp;&nbsp;', 'dprv_blg').'</label></td>
+														<td>' . __('Result of last Digiprove action:&nbsp;&nbsp;', 'dprv_blg') . '</td>
 														<td>' . $dprv_last_result . '</td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
@@ -1200,40 +1248,98 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			}
 			// End of Stuff
 
+			
 			Preview();
+			var lastBackgroundColor="";
+			var lastBackgroundTextColor="";			
+			var lastBorderColor="";
+			var lastBorderTextColor="";
+
+			function noBackgroundChanged(element)
+			{
+				if(element.checked==true)
+				{
+					lastBackgroundColor=document.getElementById(\'dprv_notice_background\').value;
+					lastBackgroundTextColor=document.getElementById(\'dprv_notice_background\').style.color;
+					document.getElementById(\'dprv_notice_background\').value=\'None\';
+					document.getElementById(\'dprv_notice_background\').style.backgroundColor=\'\';
+					document.getElementById(\'dprv_notice_background\').style.color=\'\';
+				}
+				else
+				{
+					if (lastBackgroundColor == "")
+					{
+						lastBackgroundColor = "#FFFFFF";
+						lastBackgroundTextColor = "#000000";
+					}
+					document.getElementById(\'dprv_notice_background\').value=lastBackgroundColor;
+					document.getElementById(\'dprv_notice_background\').style.backgroundColor=lastBackgroundColor;
+					document.getElementById(\'dprv_notice_background\').style.color=lastBackgroundTextColor;
+				}
+				Preview();
+			}
+
+			function noBorderChanged(element)
+			{
+				if(element.checked==true)
+				{
+					lastBorderColor=document.getElementById(\'dprv_notice_border\').value;
+					lastBorderTextColor=document.getElementById(\'dprv_notice_border\').style.color;
+					document.getElementById(\'dprv_notice_border\').value=\'None\';
+					document.getElementById(\'dprv_notice_border\').style.backgroundColor=\'\';
+					document.getElementById(\'dprv_notice_border\').style.color=\'\';
+				}
+				else
+				{
+					if (lastBorderColor == "")
+					{
+						lastBorderColor = "#BBBBBB";
+						lastBorderTextColor = "#000000";
+					}
+					document.getElementById(\'dprv_notice_border\').value=lastBorderColor;
+					document.getElementById(\'dprv_notice_border\').style.backgroundColor=lastBorderColor;
+					document.getElementById(\'dprv_notice_border\').style.color=lastBorderTextColor;
+				}
+				Preview();
+			}
+
+
+			function setCheckboxes()
+			{
+				if (document.getElementById("dprv_notice_background").value != "None")
+				{
+					document.getElementById(\'dprv_no_background\').checked = false;
+				}
+				if (document.getElementById("dprv_notice_border").value != "None")
+				{
+					document.getElementById(\'dprv_no_border\').checked = false;
+				}
+			}
+
 			function Preview()
 			{
-				var notice_border = document.getElementById("dprv_notice_border").value;
 				var notice_text = document.getElementById("dprv_notice").value;
 				var c_notice = document.getElementById("dprv_c_notice").value;
+				var notice_color = document.getElementById("dprv_notice_color").value;
+				var hover_color = document.getElementById("dprv_hover_color").value;
+				var background_color = document.getElementById("dprv_notice_background").value;
+				var border_color = document.getElementById("dprv_notice_border").value;
 				var now = new Date();
-				var DigiproveNotice = "<span style=\"float:left; padding:2px;background-color:#FFFFFF;";
-				if (notice_border == "" || notice_border == "Gray")
+				var DigiproveNotice = "<span style=\"vertical-align:8px; float:left; padding:3px; line-height:normal;";
+				if (background_color != "None")
 				{
-					DigiproveNotice += "border:1px solid #BBBBBB\"";
+					DigiproveNotice += "background-color:" + background_color + ";";
 				}
-				if (notice_border == "Red")
-				{
-					DigiproveNotice += "border:1px solid red\"";
-				}
-				if (notice_border == "Black")
-				{
-					DigiproveNotice += "border:1px solid #000000\"";
-				}
-				if (notice_border == "Blue")
-				{
-					DigiproveNotice += "border:1px solid blue\"";
-				}
-				if (notice_border == "Green")
-				{
-					DigiproveNotice += "border:1px solid darkgreen\"";
-				}
-				if (notice_border == "None")
+				if (border_color == "None")
 				{
 					DigiproveNotice += "border:0px\"";
 				}
+				else
+				{
+					DigiproveNotice += "border:1px solid " + border_color + "\"";
+				}
 				DigiproveNotice += "><img src=\"http://www.digiprove.com/images/dp_seal_trans_16x16.png\" style=\"vertical-align:middle; display:inline; border:0px\" border=\"0\">";
-				DigiproveNotice += " <span  style=\"font-family: Tahoma, MS Sans Serif; font-size:11px; color:#636363; text-decoration: none; letter-spacing:normal\">" + notice_text;
+				DigiproveNotice += "<span  style=\"font-family: Tahoma, MS Sans Serif; font-size:11px;color:" + notice_color + ";text-decoration: none; letter-spacing:normal\" onmouseover=\"this.style.color=\'" + hover_color + "\'\" onmouseout=\"this.style.color=\'" + notice_color + "\'\" >&nbsp;&nbsp;" + notice_text;
 				if (c_notice != "NoDisplay")
 				{
 					var year = now.getFullYear();
@@ -1271,7 +1377,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 			//-->
 			</script>
-			');
+		</div>
+		');
 }
 
 function dprv_ValidSettings()
@@ -1319,8 +1426,8 @@ function dprv_register_user($dprv_user_id, $dprv_password, $dprv_email_address, 
 	$postText .= "<user_id>" . $dprv_user_id . "</user_id>";
 	$postText .= '<password>' . $dprv_password . '</password>';
 	$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
-	$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary is using SOAP
-	$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary is using SOAP
+	$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary if using SOAP
+	$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary if using SOAP
     $postText .= '<subscription_plan>' . 'Basic' . '</subscription_plan>';
 	$postText .= '</digiprove_register_user>';
 	$log->lwrite("xml string = " . $postText);

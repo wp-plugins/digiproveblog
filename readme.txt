@@ -30,9 +30,9 @@ Prove authorship, deter plagiarism, and protect copyright.  Obtain a digitally s
 
 = I uploaded the plug-in and nothing seems to happen when I publish a new or edited post? =
 
-- Have you registered with Digiprove yet (see installation steps above)?
+- Have you registered with Digiprove yet (see Installation)?
 - Have you activated your Digiprove registration by clicking on the link received by email?
-- If you have not received the activation mail, check your junk mail folder or contact us at support@digiprove.com
+- If you have not received the activation mail, check your junk mail folder, then contact us at support@digiprove.com
 
 
 = What is the plugin page?  =
@@ -63,7 +63,7 @@ Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
 = I think I've found a bug, what can I do? =
 
-This is a beta version of the plug-in, and we actively seek information about problems or criticisms you may have, please let us know at support@digiprove.com - we will address the problem as soon as possible.  
+This is a beta version of the plug-in, and we actively seek information about problems or criticisms you may have.  So please let us know at support@digiprove.com - we will address the problem as soon as possible. 
 
 
 = Can I review my history of Digiproving online? =
@@ -73,7 +73,7 @@ Yes, you can review your history online (and perform other functions) by visitin
 
 = I'm a developer - how do I link directly to Digiprove API?  =
 
-Use of the Digiprove API from other applications is free for personal or educational use.  Details of the (Soap) API are found at www.digiprove.com/resources.aspx.
+Use of the Digiprove API from other applications is free for personal or educational use.  Details of the (Soap) API are found at www.digiprove.com/resources.aspx
 
 == Screenshots ==
 
@@ -84,41 +84,15 @@ Use of the Digiprove API from other applications is free for personal or educati
 
 == Changelog ==
 
+= 0.66 =
+* User has more control over Digiprove notice appearance
+* Better W3 XHTML standards-compliance
+
 = 0.65 =
 * Minor bug-fixes
 * Fixed broken link in readme
 * Title change to Copyright Proof (bit more meaningful than Digiprove Blog)
 
 = 0.64 =
-* First beta release
+* First public beta release
 * Minor bug-fixes
-
-= 0.63 =
-* Better preserves intended appearance of Digiprove notice
-* Handles special characters in names and post titles
-
-= 0.62 =
-* Handles incorrect SSL closure by IIS
-
-= 0.61 =
-* Uses http post instead of Soap (to deal with soapclient not installed)
-* Minor cosmetic improvements
-* Minor bug-fixes
-
-= 0.6 =
-* Settings page split into Basic/Advanced tabs
-
-= 0.59 =
-* Supplies user agent string to Digiprove API
-
-= 0.58 =
-* Does not Digiprove draft posts (doh!)
-* Minor bug corrections
-
-= 0.57 =
-* User-selected Digiprove notice (with preview)
-* Minor bug corrections
-
-= 0.56 =
-* Better error-handling of log-file exceptions
-* Logging (for debug purposes) now turned off
