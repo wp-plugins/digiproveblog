@@ -92,7 +92,7 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 	$log = new Logging();  
 	$log->lwrite("dprv_admin_head starts");  
 	$home = get_settings('siteurl');
-	$base="DigiproveBlog";
+	$base="digiproveblog";
 	$stylesheet = $home.'/wp-content/plugins/' . $base . '/jscolor/jscolor.js';
 	echo('<script type="text/javascript" src="' . $stylesheet . '"></script>');
 
