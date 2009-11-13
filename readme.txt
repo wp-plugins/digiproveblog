@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
 Tested up to: 2.8.5
-Stable tag: 0.5
+Stable tag: 0.67
 
 Protect copyright in your Wordpress post prior to publishing.
 
@@ -17,7 +17,7 @@ Prove authorship, deter plagiarism, and protect copyright.  Obtain a digitally s
 
 == Installation ==
 
-1. Upload DigiproveBlog directory to the `/wp-content/plugins/` directory
+1. Upload digiproveblog directory to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Go to Settings page ('Settings', 'Copyright Proof')
 4. Check the settings are to your preference
@@ -25,6 +25,8 @@ Prove authorship, deter plagiarism, and protect copyright.  Obtain a digitally s
      - if you are already a registered Digiprove user, input your log-in credentials.
      - if you are not yet a Digiprove user, answer "Yes" to the question "Do you want to register now?" and enter your desired credentials (Registration is free).
 6. To activate your registration you must click on the activation link that you will receive by email.
+
+Note: You need to be using PHP version 5 or later (we are working on supporting PHP 4)
 
 == Frequently Asked Questions ==
 
@@ -83,6 +85,9 @@ Use of the Digiprove API from other applications is free for personal or educati
 
 
 == Changelog ==
+
+= 0.67 =
+* Digiprove notice preview bug fixed
 
 = 0.66 =
 * User has more control over Digiprove notice appearance

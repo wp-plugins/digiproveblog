@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/digiproveblog.aspx
 Description: Secure copyright of your blog post by Digiproving it. <a href="options-general.php?page=CopyrightProof.php">Register and configure here.</a>
-Version: 0.66
+Version: 0.67
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -31,10 +31,10 @@ License: GPL
 
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
-$dprv_log_is_on = false;             // Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "www.digiprove.com";    // -> normally set to "www.digiprove.com"
-$dprv_port = 443;                    // -> normally set to 443 (usually 80 for http, 443 for https)
-$dprv_ssl = "Yes";                   // -> normally set to "Yes"
+$dprv_log_is_on = false;            // Set this to true to generate local log-file (needs write permissions)
+$dprv_host = "www.digiprove.com";   // -> normally set to "www.digiprove.com"
+$dprv_port = 443;                   // -> normally set to 443 (usually 80 for http, 443 for https)
+$dprv_ssl = "Yes";	                // -> normally set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
@@ -50,7 +50,7 @@ add_filter('content_save_pre', 'dprv_digiprove_post');
 function dprv_activate()
 {
 	$log = new Logging();  
-	$log->lwrite("VERSION 0.66 ACTIVATED");  
+	$log->lwrite("VERSION 0.67 ACTIVATED");  
 	add_option('dprv_email_address', '');
 	add_option('dprv_first_name', '');
 	add_option('dprv_last_name', '');
@@ -77,11 +77,11 @@ function dprv_activate()
 function dprv_deactivate()
 {
 	$log = new Logging();  
-	$log->lwrite("VERSION 0.66 DEACTIVATED");  
+	$log->lwrite("VERSION 0.67 DEACTIVATED");  
 	delete_option('dprv_last_result');	// keep other options for future install
 }
 
-function dprv_settings_menu()	// Runs after the basic admin panel menu structure is in place - add Digiprove Settings option.
+function dprv_settings_menu()	// Runs after the basic admin panel menu structure is in place - add Copyright Proof Settings option.
 {	
 	$log = new Logging();  
 	$pagename = add_options_page('DigiproveBlog', 'Copyright Proof', 10, basename(__FILE__), 'dprv_settings');
@@ -351,7 +351,7 @@ function dprv_certify($post_id, $title, $content)
 	$postText = "<digiprove_content_request>";
 	$postText .= "<user_id>" . get_option('dprv_user_id') . "</user_id>";
 	$postText .= '<password>' . get_option('dprv_password') . '</password>';
-	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Digiprove plugin 0.66</user_agent>';
+	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Digiprove plugin 0.67</user_agent>';
     $postText .= '<content_type>' . $dprv_content_type . '</content_type>';
     $postText .= '<content_title>' . $title . '</content_title>';
     $postText .= '<content_data>' . $rawContent . '</content_data>';
