@@ -10,7 +10,7 @@ Protect copyright in your Wordpress post prior to publishing.
 
 == Description ==
 
-Prove authorship, deter plagiarism, and protect copyright.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post.
+A copyright notice with teeth!  Prove authorship, deter plagiarism, and protect your copyright. Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post.
 
 [Copyright Proof](http://www.digiprove.com/digiproveblog.aspx) by [Digiprove](http://www.digiprove.com/ "Digiprove")
 
