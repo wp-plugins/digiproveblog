@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
 Tested up to: 2.8.6
-Stable tag: 0.67
+Stable tag: 0.68
 
 Protect copyright in your Wordpress post prior to publishing.
 
@@ -12,16 +12,15 @@ Protect copyright in your Wordpress post prior to publishing.
 
 A copyright notice with teeth!  Prove authorship, deter plagiarism, and protect your copyright.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post.
 
-[Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx) by [Digiprove](http://www.digiprove.com/ "Digiprove")
-
+[Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
 
 == Installation ==
 
-1. Upload digiproveblog directory to the `/wp-content/plugins/` directory
+1. Upload digiproveblog directory to the '/wp-content/plugins/' directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Go to Settings page ('Settings', 'Copyright Proof')
 4. Check the settings are to your preference
-5. Answer the question "Registered Digiprove User?".
+5. Answer the question 'Registered Digiprove User?'.
      - if you are already a registered Digiprove user, input your log-in credentials.
      - if you are not yet a Digiprove user, answer "Yes" to the question "Do you want to register now?" and enter your desired credentials (Registration is free).
 6. To activate your registration you must click on the activation link that you will receive by email.
@@ -44,7 +43,9 @@ Note: You need to be using PHP version 5 or later (we are working on supporting 
 
 = What's with the registration process?  =
 
-The Digiprove service needs to have the name of the person claiming copyright, and valid email address to which Digiprove content certificates will be sent.  There is an "activation" step whereby you click on the link in an email we send you before your registration becomes active.
+Copyright Proof uses the Digiprove service, which needs to have the name of the person claiming copyright, and a valid email address to which Digiprove content certificates will be sent.
+Without this, there is no proof of ownership, so you might as well just have a simple copyright notice, there are a few plugins that will do this for you.
+To give effect to this, there is an "activation" step whereby you click on the link in an email we send you before your registration (and the plugin) become active.
 
 Digiprove does not make use of these details except to deliver the service.  Please read the terms of use (including privacy policy) at http://www.digiprove.com/termsofuse_page.aspx
 
@@ -68,6 +69,11 @@ Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 This is a beta version of the plug-in, and we actively seek information about problems or criticisms you may have.  So please let us know at support@digiprove.com - we will address the problem as soon as possible. 
 
 
+= I like your plugin, but it would be much better if ... =
+
+We actively seek your suggestions at suggestions@digiprove.com.  We will respond to every suggestion and if we like it we'll act on it.
+
+
 = Can I review my history of Digiproving online? =
 
 Yes, you can review your history online (and perform other functions) by visiting https://www.digiprove.com/members/my_digiprove.aspx - you will need to log in using your Digiprove user id and password.
@@ -85,6 +91,15 @@ Use of the Digiprove API from other applications is free for personal or educati
 
 
 == Changelog ==
+
+= 0.68 =
+* Digiprove notice size can be adjusted
+* Digiprove notice format more resistant to css inheritance
+* Digiprove notice format more consistent across browsers
+* User agent string in user registration
+* Better handling of title-only posts
+* Tested with Wordpress 2.8.6
+* increased timeout to 40 seconds for slow connections
 
 = 0.67 =
 * Digiprove notice preview bug fixed
