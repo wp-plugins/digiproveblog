@@ -3,10 +3,10 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
-Tested up to: 2.8.6
-Stable tag: 0.68
+Tested up to: 2.9
+Stable tag: 0.69
 
-Protect copyright in your Wordpress post prior to publishing.
+Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
 == Description ==
 
@@ -91,6 +91,17 @@ Use of the Digiprove API from other applications is free for personal or educati
 
 
 == Changelog ==
+
+= 0.69 =
+* Tested with Wordpress 2.9
+* Now supports posts submitted by Windows Live Writer
+* (Other xml-rpc clients may work - not tested - please let us know)
+* Changed default user id to firstname . lastname
+* Added proper explanatory/help text about registering with Digiprove
+* Fixed minor validation bug in registration
+* Digiprove notice format more resistant to css inheritance
+* More flexibility in composing Digiprove notice text
+* Copyright notice may now include name
 
 = 0.68 =
 * Digiprove notice size can be adjusted
