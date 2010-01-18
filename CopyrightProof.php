@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.69
+Version: 0.70
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -50,7 +50,7 @@ add_filter('content_save_pre', 'dprv_digiprove_post');
 function dprv_activate()
 {
 	$log = new Logging();  
-	$log->lwrite("VERSION 0.69 ACTIVATED");  
+	$log->lwrite("VERSION 0.70 ACTIVATED");  
 	add_option('dprv_email_address', '');
 	add_option('dprv_first_name', '');
 	add_option('dprv_last_name', '');
@@ -82,7 +82,7 @@ function dprv_activate()
 function dprv_deactivate()
 {
 	$log = new Logging();  
-	$log->lwrite("VERSION 0.69 DEACTIVATED");  
+	$log->lwrite("VERSION 0.70 DEACTIVATED");  
 	delete_option('dprv_last_result');	// keep other options for future install
 }
 
@@ -98,7 +98,7 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 	$log->lwrite("dprv_admin_head starts");  
 	$home = get_settings('siteurl');
 	$base="digiproveblog";
-	$jsfile = $home.'/wp-content/plugins/' . $base . '/jscolor/jscolor.js';
+	$jsfile = $home.'/wp-content/plugins/' . $base . '/jscolor.js';
 	echo('<script type="text/javascript" src="' . $jsfile . '"></script>');
 }
 
@@ -138,7 +138,7 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 	if ($script_name == "plugins")
 	{
 		$dprv_last_result = get_option('dprv_last_result');
-		if ($dprv_last_result != "")
+		if ($dprv_last_result != "" && strpos($dprv_last_result, "Configure") != false)
 		{
 			$log->lwrite("writing javascript to display reminder to set up");
 			echo('<script type="text/javascript">
@@ -186,28 +186,56 @@ function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
 		return ($content);
 	}
 	update_option('dprv_last_result', '');
-	if ( !isset( $HTTP_RAW_POST_DATA ) )
-	{
-		$HTTP_RAW_POST_DATA = file_get_contents( 'php://input' );
-	}
-	$log->lwrite($HTTP_RAW_POST_DATA);
 	if ($GLOBALS["GLOBALS"]["_POST"]["post_status"] != "publish" && $script_name == "post")
 	{
 		$log->lwrite("dprv_digiprove_post not starting because status is " . $GLOBALS["GLOBALS"]["_POST"]["post_status"] . ", not published");
 		return ($content);
 	}
-	if ($script_name == "xmlrpc" && strpos($HTTP_RAW_POST_DATA, "<boolean>1</boolean>") == false)
+	if ($script_name == "xmlrpc")
 	{
-		$log->lwrite("dprv_digiprove_post not starting because xmlrpc request does not specify boolean-publish");
-		return ($content);
+		if (!isset( $HTTP_RAW_POST_DATA ) )
+		{
+			$HTTP_RAW_POST_DATA = file_get_contents('php://input');
+		}
+		$log->lwrite($HTTP_RAW_POST_DATA);
+		$postVariables = dprv_parseXMLRPC($HTTP_RAW_POST_DATA);
+		$log->lwrite("postvariables: [method] = " . $postVariables["method"]);
+		$log->lwrite("postvariables: [title] = " . $postVariables["title"]);
+		$log->lwrite("postvariables: [id] = " . $postVariables["id"]);
+		if ($postVariables["publish"] == true)
+		{		
+			$log->lwrite("postvariables: [publish] = true");
+		}
+		if ($postVariables["publish"] == false)
+		{		
+			$log->lwrite("postvariables: [publish] == false");
+		}
+
+		if ($postVariables["method"] != "metaWeblog.editPost" && $postVariables["method"] != "metaWeblog.newPost")
+		{
+			$log->lwrite("dprv_digiprove_post not starting because xmlrpc request is not newPost or editPost");
+			return ($content);
+		}
+		if ($postVariables["publish"] == false)
+		{
+			$log->lwrite("dprv_digiprove_post not starting because xmlrpc request does not specify boolean-publish");
+			return ($content);
+		}
+		$dprv_title = $postVariables["title"];
+		$dprv_post_id = $postVariables["id"];
+		if ($postVariables["id"] == 1 && $postVariables["method"] != "metaWeblog.newPost")	// If it is a new post, the id
+		{
+			$dprv_post_id = -1;
+		}
+	}
+	else
+	{
+		$dprv_title = $GLOBALS["GLOBALS"]["_POST"]["post_title"];
+		$dprv_post_id = $GLOBALS["GLOBALS"]["_POST"]["post_ID"];
 	}
 	$log->lwrite("dprv_digiprove_post STARTS");  
 	
 	//echo dprv_http_post($postText, $dprv_host, "/secure/service.asmx/", "HelloWorld");
-
-	$dprv_title = $GLOBALS["GLOBALS"]["_POST"]["post_title"];
-	$dprv_post_id = $GLOBALS["GLOBALS"]["_POST"]["post_ID"];
-
 	$newContent = stripslashes($content);
 	$certifyResponse = dprv_certify($dprv_post_id, $dprv_title, $newContent);
 	if (strpos($certifyResponse, "Hashes are identical") === false)
@@ -386,7 +414,11 @@ function dprv_certify($post_id, $title, $content)
 		return " Raw content is empty";
 	}
 	$rawContent = htmlspecialchars($rawContent, ENT_QUOTES, 'UTF-8');
-	$title = htmlspecialchars(stripslashes($title), ENT_QUOTES, 'UTF-8');		// Note this may not be necessary if using SOAP
+
+	// Prepare title for XML transmission
+	$title = html_entity_decode($title, ENT_QUOTES, 'UTF-8');   // first go back to basic string (have seen WLW-sourced titles with html-encoding embedded)
+	$title = htmlspecialchars(stripslashes($title), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
+
 	$dprv_content_type = get_option('dprv_content_type');
 	if (trim($dprv_content_type) == "")
 	{
@@ -395,13 +427,18 @@ function dprv_certify($post_id, $title, $content)
 	$postText = "<digiprove_content_request>";
 	$postText .= "<user_id>" . get_option('dprv_user_id') . "</user_id>";
 	$postText .= '<password>' . get_option('dprv_password') . '</password>';
-	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Copyright Proof 0.69</user_agent>';
+	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Copyright Proof 0.70</user_agent>';
     $postText .= '<content_type>' . $dprv_content_type . '</content_type>';
     $postText .= '<content_title>' . $title . '</content_title>';
     $postText .= '<content_data>' . $rawContent . '</content_data>';
     if (get_option('dprv_linkback') == "Linkback")
 	{
-		$postText .= '<content_url>' . get_bloginfo('url') ."/?p=" . $post_id . '</content_url>';
+		$postText .= '<content_url>' . get_bloginfo('url');
+		if ($post_id != -1)									// will be set to -1 if the value is unknown
+		{
+			$postText .= "/?p=" . $post_id;
+		}
+		$postText .= '</content_url>';
 	}
 	if (get_option('dprv_obscure_url') == "Clear")
 	{
@@ -424,6 +461,31 @@ function dprv_certify($post_id, $title, $content)
 	}
 	return $data;
 }
+
+function dprv_parseXMLRPC($RAW_POST)	// In case of XML-RPC post, have to examine input string to get certain things like Title
+{
+	$log = new Logging();  
+	$log->lwrite("entered parseXMLRPC");
+	$RAW_POST = dprv_Normalise_XML($RAW_POST);
+	$dprv_XML_variables = array("method" => "Unknown", "id" => -1, "title" => "", "publish" => true);	// set up default values
+	$dprv_XML_variables["method"] = dprv_getTag($RAW_POST, "methodName");
+	$pos = strpos($RAW_POST, "<string>");
+	$posB = strpos($RAW_POST, "</string>");
+	if ($dprv_XML_variables["method"] != "metaWeblog.newPost" && $pos != false && $posB != false && $posB > $pos)
+	{
+		$dprv_XML_variables["id"] = substr($RAW_POST, $pos + 8, $posB - $pos -8);
+	}
+	// TODO - find a way to determine the post id for new posts via XML-RPC
+	//$dprv_XML_variables["title"] = dprv_getNamedInnerTag($RAW_POST, "title");
+	$dprv_XML_variables["title"] = str_replace("&amp;", "&", dprv_getNamedInnerTag($RAW_POST, "title"));
+	$dprv_XML_variables["title"] = html_entity_decode($dprv_XML_variables["title"], ENT_QUOTES, 'UTF-8');
+	if (strpos($RAW_POST, "<boolean>1</boolean>") == false)
+	{
+		$dprv_XML_variables["publish"] = false;
+	}
+	return $dprv_XML_variables;
+}
+
 
 function dprv_soap_post($request, $method) 
 {
@@ -565,6 +627,36 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 	}
 }
 
+function dprv_Normalise_XML($xmlString)
+{
+	if ($xmlString == "")
+	{
+		return "";
+	}
+	$outXml = "";
+	$xmlString = trim($xmlString);
+	while ($xmlString != "")
+	{
+		$pos =  strpos($xmlString, "<");
+		if ($pos === false)
+		{
+			return $outXML . trim($xmlString);
+		}
+		if ($pos > 0)
+		{
+			$outXML .= trim(substr($xmlString, 0, $pos));	// writes values (not within tags) after trimming whitespace
+			$xmlString = substr($xmlString, $pos);
+		}
+		$pos = strpos($xmlString, ">");
+		if ($pos == false)
+		{
+			return $outXML . trim($xmlString);
+		}
+		$outXML .= substr($xmlString, 0, $pos + 1);	 //writes current <tagvalue> without trimming
+		$xmlString = trim(substr($xmlString, $pos + 1));
+	}
+	return $outXML;
+}
 
 function dprv_getTag($xmlString, $tagName)
 {
@@ -576,6 +668,53 @@ function dprv_getTag($xmlString, $tagName)
 	}
 	return substr($xmlString, $start_contents, $end_tag - $start_contents);
 }
+
+function dprv_getNamedInnerTag($xmlString, $tagName)
+{
+	$log = new Logging();  
+	$log->lwrite("getNamedInnerTag starts, looking for " . $tagName);  
+	$pos = strpos($xmlString, "<member><name>" . $tagName . "</name>");
+	if ($pos === false)
+	{
+		return false;
+	}
+	$xmlString = substr($xmlString, $pos);
+	$pos = strpos($xmlString, "<value>");
+	if ($pos === false)
+	{
+		return false;
+	}
+	$xmlString = substr($xmlString, $pos + 7);
+	$pos = strpos($xmlString, "<");
+	$posB = strpos($xmlString, ">");
+	if ($pos === false || $posB === false || $pos > $posB)
+	{
+		return false;
+	}
+	$tagOpener = substr($xmlString, $pos, $posB-$pos + 1);
+	$tagCloser = "</" . substr($xmlString, $pos + 1, $posB-$pos -1);
+	$xmlString = substr($xmlString, $posB + 1);
+	$pos = strpos($xmlString, $tagCloser);
+	$tagValue = substr($xmlString, 0, $pos);
+	if ($tagOpener == "<string>")
+	{
+		$log->lwrite("returning from getNamedInnerTag, (string) result = " . $tagValue);  
+		return $tagValue;
+	}
+	if ($tagOpener == "<int>")
+	{
+		$log->lwrite("returning from getNamedInnerTag, (integer) result = " . $tagValue);  
+		return 0 + $tagValue;
+	}
+	if ($tagOpener == "<boolean>")
+	{
+		$log->lwrite("returning from getNamedInnerTag, (boolean) result = " . $tagValue);  
+		return $tagValue;
+	}
+	$log->lwrite("returning from getNamedInnerTag, result = " . $tagValue);  
+	return $tagValue;
+}
+
 
 function dprv_getRawContent($contentString)		// Extract raw content to be Digiproved, ignoring previous Digiprove embedded certs and rationalise to ignore effects of Wordpress formatting
 {
@@ -610,7 +749,7 @@ function dprv_getRawContent($contentString)		// Extract raw content to be Digipr
 	}
 	$raw_content = trim($raw_content);
 	$raw_content = htmlspecialchars_decode($raw_content, ENT_QUOTES);  		// decode any encoded XML-incompatible characters now to ensure match with post-xml decoded string on server
-	// Below is code inserted (at 0.69) after discovery that extra <p> and </p> tags are inserted when post is coming from WLW - maybe this is generated by wp.getPage or within WLW itself
+	// Below is code inserted (at 0.70) after discovery that extra <p> and </p> tags are inserted when post is coming from WLW - maybe this is generated by wp.getPage or within WLW itself
 	// Not strictly necessary, but improves chances of detecting unchanged content (which ideally should not be Digiproved)
 	// TODO: improve normalisation to get around all this dickying with html that wp seems to do
 	$pos = strlen($raw_content) -7;
@@ -623,7 +762,7 @@ function dprv_getRawContent($contentString)		// Extract raw content to be Digipr
 	{
 		$raw_content = trim(substr($raw_content, 3, $pos-7));
 	}
-	// end of 0.69 inserted code
+	// end of 0.70 inserted code
 	try		
 	{
 		$raw_content_hash = strtoupper(hash("sha256", $raw_content));
@@ -797,7 +936,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_user_id = get_option('dprv_user_id');
 		if ($dprv_user_id == false)
 		{
-			$dprv_user_id = $user_info->first_name . $user_info->last_name;
+			$dprv_user_id = $dprv_email_address;	//$user_info->first_name . $user_info->last_name;
 		}
 		$dprv_password = get_option('dprv_password');
 		$dprv_pw_confirm = get_option('dprv_password');
@@ -1061,7 +1200,7 @@ $dprv_obscure_selected = ' selected="selected"';
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td>' . __('Email address', 'dprv_cp') . '</td>
-														<td style="width:300px"><input name="dprv_email_address" id="dprv_email_address" type="text" value="'.htmlspecialchars(stripslashes($dprv_email_address)).'" onchange="javascript:EmailWarningCheck()" style="width:290px"/></td>
+														<td style="width:300px"><input name="dprv_email_address" id="dprv_email_address" type="text" value="'.htmlspecialchars(stripslashes($dprv_email_address)).'" style="width:290px"/></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
@@ -1097,14 +1236,14 @@ $dprv_obscure_selected = ' selected="selected"';
 													<tr><td style="height:6px"></td></tr>
 													<tr id="dprv_register_row" ' . $dprv_display_register_row . '>
 														<td>' . __('Do you want to register now?: ', 'dprv_cp') . '</td>
-														<td><input type="radio" name="dprv_register" value="Yes" ' . $dprv_register_now_checked . '/>&nbsp;Yes, register me now&nbsp;&nbsp;&nbsp;
+														<td><input type="radio" name="dprv_register" id="dprv_register_yes" value="Yes" ' . $dprv_register_now_checked . '/>&nbsp;Yes, register me now&nbsp;&nbsp;&nbsp;
 															<input type="radio" name="dprv_register" value="No" ' . $dprv_register_later_checked . '/>&nbsp;No, do it later</td>
 															<td style="padding-left:10px" class="description" ><a href="javascript:ShowRegistrationText()">' .__('What&#39;s this about?', 'dprv_cp') . '</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:ShowTermsOfUseText()">' .__('Terms of use.', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td style="vertical-align:top"><label for="dprv_user_id" id="dprv_user_id_labelA">'.__('Digiprove User Id: ', 'dprv_cp').'</label><label for="dprv_user_id" id="dprv_user_id_labelB" style="display:none">'.__('Desired Digiprove User Id: ', 'dprv_cp').'</label></td>
-														<td><input name="dprv_user_id" id="dprv_user_id" type="text" value="'.htmlspecialchars(stripslashes($dprv_user_id)).'" onblur="javascript:ScheduleRestorePassword()" onchange="javascript:EmailWarningCheck()" style="width:290px"/></td>
+														<td><input name="dprv_user_id" id="dprv_user_id" type="text" value="'.htmlspecialchars(stripslashes($dprv_user_id)).'" onblur="javascript:ScheduleRestorePassword()" onchange="javascript:UserIdChanged();" style="width:290px"/></td>
 														<td class="description" id="dprv_email_warning"></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
@@ -1291,16 +1430,25 @@ $dprv_obscure_selected = ' selected="selected"';
 				document.getElementById("AdvancedPart1").style.display="";
 				document.getElementById("AdvancedPart2").style.display="";
 			}
-			function EmailWarningCheck()
+			var lastUserId = document.getElementById("dprv_user_id").value;
+			function UserIdChanged()
 			{
-				if (document.getElementById("dprv_email_address").value == document.getElementById("dprv_user_id").value)
+				if (document.getElementById("dprv_enrolled").value == "Yes")
 				{
-					document.getElementById("dprv_email_warning").innerHTML = "' . __('User Id is shown in Digiprove certificates; for<br />privacy, use a value other than email address', 'dprv_cp') . '";
+					if(confirm("You have changed your Digiprove user id. This function is not directly supported. You can however register this id as a new user; press OK to do this."))
+					{
+						document.getElementById("dprv_enrolled").value = "No";
+						document.getElementById("dprv_register_yes").checked = true;
+						document.getElementById("dprv_register_row").style.display="";
+						document.getElementById("dprv_user_id_labelA").style.display="none";
+						document.getElementById("dprv_user_id_labelB").style.display="";
+					}
+					else
+					{
+						document.getElementById("dprv_user_id").value = lastUserId;
+					}
 				}
-				else
-				{
-					document.getElementById("dprv_email_warning").innerHTML = "";
-				}
+				lastUserId = document.getElementById("dprv_user_id").value;
 			}
 
 			// Stuff required to deal with annoying FF3.5 bug
@@ -1323,8 +1471,6 @@ $dprv_obscure_selected = ' selected="selected"';
 				}
 			}
 			// End of Stuff
-
-			EmailWarningCheck();
 
 			var myPickerText = new jscolor.color(document.getElementById("dprv_notice_color"), {hash:true,pickerPosition:\'left\'})
 			myPickerText.fromString("' . $dprv_notice_color . '")  // now you can access API via myPicker variable
@@ -1593,7 +1739,7 @@ function dprv_register_user($dprv_user_id, $dprv_password, $dprv_email_address, 
 	if ($dprv_first_name == "" && $dprv_last_name == "") return __('You need to complete either first or last name', 'dprv_cp');
 
 	$postText = "<digiprove_register_user>";
-	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Copyright Proof 0.69</user_agent>';
+	$postText .= '<user_agent>Wordpress ' . $wp_version . ' / Copyright Proof 0.70</user_agent>';
 	$postText .= "<user_id>" . $dprv_user_id . "</user_id>";
 	$postText .= '<password>' . $dprv_password . '</password>';
 	$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
