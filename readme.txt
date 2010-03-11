@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
-Tested up to: 2.9.1
-Stable tag: 0.70
+Tested up to: 2.9.2
+Stable tag: 0.71
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -51,7 +51,7 @@ Digiprove does not make use of these details except to deliver the service.  Ple
 
 = Your web-site appears to be commercial.  Is this going to cost me anything?  =
 
-There is no cost for personal use (or use by an educational establishment) of the Digiprove service via this plug-in.  It is also free for commercial use via this beta version of the plug-in.
+This is a Beta version of the Copyright Proof plug-in - it is free for all to use.  For the future our intention is that there will be no cost for personal use (or use by an educational establishment or a registered charity) of the Digiprove service via this plug-in.
 
 
 = How does this protect copyright? =
@@ -79,9 +79,15 @@ We actively seek your suggestions at suggestions@digiprove.com.  We will respond
 Yes, you can review your history online (and perform other functions) by visiting https://www.digiprove.com/members/my_digiprove.aspx - you will need to log in using your Digiprove user id and password.
 
 
+= You say you are migrating to API Keys for better security - as an existing user what do I have to do?
+
+From release 0.71 onwards as part of our preparation to exit Beta mode, we will no longer store user Digiprove passwords in Settings, using an api key instead.  Existing users do not need to do anything,
+the plug-in will automatically request and install a new api key for you. For new users registering via the plug-in, issuance of an api key is also done automatically.
+
+
 = I'm a developer - how do I link directly to Digiprove API?  =
 
-Use of the Digiprove API from other applications is free for personal or educational use.  Details of the (Soap) API are found at www.digiprove.com/resources.aspx
+Use of the Digiprove API from other applications is free for personal (non-commercial) or use by registered educational establishments or charities.  Details of the (Soap) API are found at www.digiprove.com/resources.aspx
 
 == Screenshots ==
 
@@ -92,6 +98,17 @@ Use of the Digiprove API from other applications is free for personal or educati
 
 == Changelog ==
 
+= 0.71 =
+* Migrating to API keys for improved security (no user action required)
+* Digiprove server synchronised with amended profile data
+* Display of user name on certificate page is now optional
+* Tested with Wordpress 2.9.2
+* Minor code improvements
+* Improved and more help text
+* Fixed XML non-compliance bug
+* Better tracking of inter-server communication
+* (acknowledgements to Alexander Gieg and other users for some great suggestions)
+
 = 0.70 =
 * Tested with Wordpress 2.9.1
 * Improved help text
@@ -100,7 +117,6 @@ Use of the Digiprove API from other applications is free for personal or educati
 * User id now defaults to email address (again)
 * Moved jscolor files into main directory for ease of updating
 * Fixed bug where title was not picked up on XML-RPC posts
-* Fixed other minor bugs
 
 = 0.69 =
 * Tested with Wordpress 2.9
