@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.71
+Version: 0.72
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -23,22 +23,31 @@ License: GPL
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+// NOTE THIS IS THE PHP4-FRIENDLY VARIANT OF COPYRIGHT PROOF
 // Acknowledgement to Honza Odvarko, whose jscolor color-picker is used in this plug-in 
 //  under the GNU Lesser General Public License (LGPL): www.gnu.org/copyleft/lesser.html
 
 // Acknowledgements to BTE, Akismet, and After the Deadline, some of whose code was used
-// in the development of this plug-in 
+// in the development of this plug-in
 
+if (intval(substr(PHP_VERSION,0,1)) > 4)
+{
+	@include_once('copyright_proof_http_functions.php');
+}
+else
+{
+	die("Your version of PHP (" . PHP_VERSION . ") does not support this plug-in. Ask your provider to upgrade your website to PHP 5.0 or later");
+}
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
-$dprv_log_is_on = false;             // Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "www.digiprove.com";    // -> normally set to "www.digiprove.com"
-$dprv_port = 443;                    // -> normally set to 443 (usually 80 for http, 443 for https)
-$dprv_ssl = "Yes";                   // -> normally set to "Yes"
+$dprv_log_is_on = false;                // Set this to true to generate local log-file (needs write permissions)
+$dprv_host = "www.digiprove.com";       // -> should be set to "www.digiprove.com"
+$dprv_port = 443;                       // -> should be set to 443 (standard settings 80 for http, 443 for https)
+$dprv_ssl = "Yes";                      // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.71");
+define("DPRV_VERSION", "0.72");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -52,6 +61,7 @@ function dprv_activate()
 {
 	$log = new Logging();  
 	$log->lwrite("VERSION " . DPRV_VERSION . " ACTIVATED");  
+	$log->lwrite("PHP Version = " . PHP_VERSION);  
 	add_option('dprv_email_address', '');
 	add_option('dprv_first_name', '');
 	add_option('dprv_last_name', '');
@@ -69,16 +79,24 @@ function dprv_activate()
 	add_option('dprv_body_or_footer', 'Body');
 	add_option('dprv_enrolled', 'No');
 	add_option('dprv_user_id', '');
-	//add_option('dprv_password', '');
 	add_option('dprv_api_key', '');
 	add_option('dprv_last_result', '');
-	if (get_option('dprv_enrolled') == "No")
+	// TODO : Remove unnecessary code here and in Settings about PHP4
+	if (intval(substr(PHP_VERSION,0,1)) < 5)
 	{
-		update_option('dprv_last_result', '<a href=\'options-general.php?page=CopyrightProof.php\'><b>Configure Copyright Proof</b></a> to get it working now, or Select \'Settings\' - \'Copyright Proof\' later');
+		update_option('dprv_last_result', '<font color=\'orangered\'>Your website uses PHP Version ' . PHP_VERSION . '. Copyright Proof needs a later version - ask your provider to upgrade you to PHP 5.0.0 or later</font>');
+		$log->lwrite("PHP Version problem");  
 	}
 	else
 	{
-		update_option('dprv_last_result', '');
+		if (get_option('dprv_enrolled') == "No")
+		{
+			update_option('dprv_last_result', '<a href=\'options-general.php?page=CopyrightProof.php\'><b>Configure Copyright Proof</b></a> to get it working now, or Select \'Settings\' - \'Copyright Proof\' later');
+		}
+		else
+		{
+			update_option('dprv_last_result', '');
+		}
 	}
 }
 
@@ -91,7 +109,6 @@ function dprv_deactivate()
 
 function dprv_settings_menu()	// Runs after the basic admin panel menu structure is in place - add Copyright Proof Settings option.
 {	
-	$log = new Logging();  
 	$pagename = add_options_page('DigiproveBlog', 'Copyright Proof', 10, basename(__FILE__), 'dprv_settings');
 }
 
@@ -109,7 +126,14 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 {
 	$log = new Logging();  
 	$log->lwrite("dprv_admin_footer starts");
-	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_FILENAME);
+	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+	$posDot = strrpos($script_name,'.');
+	if ($posDot != false)
+	{
+		$script_name = substr($script_name, 0, $posDot);
+	}
+	$log->lwrite("script_name=" . $script_name);
+
 	$dprv_last_result = "";
 	if ($script_name == "post")
 	{
@@ -141,9 +165,9 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 	if ($script_name == "plugins")
 	{
 		$dprv_last_result = get_option('dprv_last_result');
-		if ($dprv_last_result != "" && strpos($dprv_last_result, "Configure") != false)
+		if ($dprv_last_result != "" && (strpos($dprv_last_result, "Configure") != false || strpos($dprv_last_result, "PHP Version") != false))
 		{
-			$log->lwrite("writing javascript to display reminder to set up");
+			$log->lwrite("writing javascript to display " . $dprv_last_result);
 			echo('<script type="text/javascript">
 			if (document.getElementById("message") && document.getElementById("message") != null)
 				{
@@ -172,7 +196,14 @@ function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
 		$log->lwrite("dprv_digiprove_post not starting because dprv_soap_count=" . $dprv_soap_count);
 		return ($content);
 	}
-	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_FILENAME);  
+
+	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+	$posDot = strrpos($script_name,'.');
+	if ($posDot != false)
+	{
+		$script_name = substr($script_name, 0, $posDot);
+	}
+	$log->lwrite("script_name=" . $script_name);
 	if ($script_name != "post" && $script_name != "xmlrpc")
 	{
 		$log->lwrite("dprv_digiprove_post not starting because this hook not triggered by post or xmlrpc");
@@ -188,12 +219,20 @@ function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
 		$log->lwrite("dprv_digiprove_post not starting because content is empty");
 		return ($content);
 	}
-	update_option('dprv_last_result', '');
-	if ($GLOBALS["GLOBALS"]["_POST"]["post_status"] != "publish" && $script_name == "post")
+	//if ($GLOBALS["GLOBALS"]["_POST"]["post_status"] != "publish" && $script_name == "post")	// this is empty in PHP4
+	if ($GLOBALS["_POST"]["post_status"] != "publish" && $script_name == "post")
 	{
-		$log->lwrite("dprv_digiprove_post not starting because status is " . $GLOBALS["GLOBALS"]["_POST"]["post_status"] . ", not published");
+		//$log->lwrite("dprv_digiprove_post not starting because status is " . $GLOBALS["GLOBALS"]["_POST"]["post_status"] . ", not published");
+		$log->lwrite("dprv_digiprove_post not starting because status is " . $GLOBALS["_POST"]["post_status"] . ", not published");
 		return ($content);
 	}
+	if (intval(substr(PHP_VERSION,0,1)) < 5)
+	{
+		$log->lwrite("dprv_digiprove_post not starting because php version is " . PHP_VERSION);
+		update_option('dprv_last_result', __('Copyright Proof did not work because your version of PHP is too old', 'dprv_cp'));
+		return ($content);
+	}	
+	update_option('dprv_last_result', '');
 	if ($script_name == "xmlrpc")
 	{
 		if (!isset( $HTTP_RAW_POST_DATA ) )
@@ -233,12 +272,12 @@ function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
 	}
 	else
 	{
-		$dprv_title = $GLOBALS["GLOBALS"]["_POST"]["post_title"];
-		$dprv_post_id = $GLOBALS["GLOBALS"]["_POST"]["post_ID"];
+		$dprv_post_id = $GLOBALS["_POST"]["post_ID"];
+		$dprv_title = $GLOBALS["_POST"]["post_title"];
+		$log->lwrite("title=" . $dprv_title . ", id=" . $dprv_post_id);  
 	}
 	$log->lwrite("dprv_digiprove_post STARTS");  
 	
-	//echo dprv_http_post($postText, $dprv_host, "/secure/service.asmx/", "HelloWorld");
 	$newContent = stripslashes($content);
 	$certifyResponse = dprv_certify($dprv_post_id, $dprv_title, $newContent);
 	if (strpos($certifyResponse, "Hashes are identical") === false)
@@ -435,7 +474,10 @@ function dprv_certify($post_id, $title, $content)
 	$rawContent = htmlspecialchars($rawContent, ENT_QUOTES, 'UTF-8');
 
 	// Prepare title for XML transmission
-	$title = html_entity_decode($title, ENT_QUOTES, 'UTF-8');   // first go back to basic string (have seen WLW-sourced titles with html-encoding embedded)
+	if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
+	{
+		$title = html_entity_decode($title, ENT_QUOTES, 'UTF-8');   // first go back to basic string (have seen WLW-sourced titles with html-encoding embedded)
+	}
 	$title = htmlspecialchars(stripslashes($title), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
 
 	$dprv_content_type = get_option('dprv_content_type');
@@ -519,152 +561,6 @@ function dprv_parseXMLRPC($RAW_POST)	// In case of XML-RPC post, have to examine
 	return $dprv_XML_variables;
 }
 
-
-function dprv_soap_post($request, $method) 
-{
-	global $dprv_host, $dprv_port, $dprv_ssl;
-	$log = new Logging();  
-	try								// Does not work in PHP4 - use different approach
-	{
-		$log->lwrite("dprv_soap_post starts, method=" . $method);
-		$dprv_WSDL_url = "";
-		if ($dprv_ssl == "Yes")
-		{
-			$dprv_WSDL_url = "https://" . $dprv_host;
-			if ($dprv_port != 443)
-			{
-				$dprv_WSDL_url .= ":" . $dprv_port;
-			}
-		}
-		else
-		{
-			$dprv_WSDL_url = "http://" . $dprv_host;
-			if ($dprv_port != 80)
-			{
-				$dprv_WSDL_url .= ":" . $dprv_port;
-			}
-		}
-		$dprv_WSDL_url .= "/secure/Service.asmx?WSDL";
-		//$client = new SoapClient("https://www.digiprove.com/secure/Service.asmx?WSDL",  
-		$client = new SoapClient($dprv_WSDL_url,  
-			array(	'soap_version' => SOAP_1_2,
-					'trace' => true,
-					'encoding'=>'utf-8'));
-		$dprv_result = $client->$method(array('xml_string' => $request));
-		$result_vars    = get_object_vars($dprv_result);
-		return $result_vars[$method . "Result"];
-	}
-	catch(SoapFault $ex)
-	{
-		$dprv_error = $ex->getMessage();
-		$log->lwrite("Soap error in dprv_soap_post: " . $dprv_error);
-		$return_value = $dprv_error;
-		$pos = strpos($dprv_error, "\n");
-		if ($pos != false && $pos > 0)
-		{
-			$return_value = substr($dprv_error, 0, $pos);
-		}
-		return "Error: " . $return_value;
-	}
-}
-
-/* this function based on that from akismet.php by Matt Mullenweg.  */
-function dprv_http_post($request, $host, $path, $service, $ip=null) 
-{
-	global $dprv_port, $dprv_ssl;
-	$log = new Logging();  
-	$request = "xml_string=" . urlencode($request);
-	$http_request  = "POST " . $path . $service . " HTTP/1.1\r\n";
-	$http_request .= "Host: $host\r\n";
-	$http_request .= "Content-Type: application/x-www-form-urlencoded; charset=" . get_option('blog_charset') . "\r\n";
-	$http_request .= "Content-Length: " . strlen($request) . "\r\n";
-	$http_request .= "Connection: close\r\n\r\n";
-	$http_request .= $request;  
-
-	// use a specific IP if provided
-	if ( $ip && long2ip(ip2long($ip)) )
-	{
-		$http_host = $ip;
-	}
-	else
-	{
-		//$http_host = akismet_get_host($host);  //TODO: implement this akismet resilience code
-		$http_host = $host;
-	}
-	$log->lwrite("http_post of " . $http_request);
-
-	$response = '';                 
-	if ($dprv_ssl == "Yes")
-	{
-		$http_host = "ssl://" . $http_host;
-	}
-	
-	try
-	{
-		if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr, 10) ) ) 
-		{                 
-			$log->lwrite("socket open, errno = " . $errno);
-			if ($errno == 0)
-			{
-				fwrite($fs, $http_request);
-				$log->lwrite("fwrite done, now get response when it comes");
-				stream_set_timeout($fs, 40);
-				$get_count = 0;
-				while ( !feof($fs) )
-				{
-					error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);	// Suppress Warning errors just for this due to intermittent bug (in IIS?)
-					$temp = fgets($fs);
-					error_reporting(E_ALL & ~E_NOTICE);					// Reset error reporting back to default
-					$info = stream_get_meta_data($fs);
-					if ($info['timed_out'])
-					{
-						$log->lwrite("timed out waiting for response");
-						return "Error: connection timed out, server may be offline";
-					}
-					else
-					{
-						$log->lwrite("got this: " . $temp);
-						$response .= $temp;
-						$log->lwrite("get " . $get_count . " done, response length = " . strlen($response));
-						$get_count = $get_count + 1;
-					}
-				}
-				$log->lwrite("finished getting, about to close socket");
-				fclose($fs);
-				//TODO: check that response is complete (ends with </string>)
-				$response = htmlspecialchars_decode($response, ENT_QUOTES);
-				$log->lwrite("response=$response, length=" . strlen($response));
-				if (strlen($response) == 0)
-				{
-					$log->lwrite("Empty response from server");
-					return "Error: " . $http_host . " returned empty response, server may be offline";
-				}
-			}
-			else
-			{
-				$log->lwrite("Socket may be open, but error code = " . $errno);
-				return "Error: Could not open socket to " . $http_host . ".  Error code = " . $errno;
-			}
-		}
-		else
-		{
-			if ($errno ==0)
-			{
-				$log->lwrite("Could not initialise socket");
-				return "Error: Could not initialise socket to " . $http_host . ", server may be offline";
-			}
-			$log->lwrite("Could not open socket, error = " . $errno);
-			return "Error: Could not open socket to " . $http_host . ", server may be offline.  Error code = " . $errno;
-		}
-		$log->lwrite("Got response ok: " . $response);
-		return $response;
-	}
-	catch (Exception $e)
-	{
-		$log->lwrite("Exception : " . $e->getMessage());
-		return 'Error: ' . $e->getMessage();
-	}
-}
 
 function dprv_Normalise_XML($xmlString)
 {
@@ -765,15 +661,14 @@ function dprv_getRawContent($contentString)		// Extract raw content to be Digipr
 	if ($start_Digiprove === false)
 	{
 		$log->lwrite("no Digiprove Start marker");
-		$raw_content = htmlspecialchars_decode($contentString, ENT_QUOTES);  		// decode any encoded XML-incompatible characters now to ensure match with post-xml decoded string on server
-		return trim($raw_content);
+		return dprv_normaliseContent($contentString);
 	}
 	$end_Digiprove = strpos($contentString, "<!--Digiprove_End-->");
 	if ($start_Digiprove === false || $end_Digiprove === false || $end_Digiprove <= $start_Digiprove)
 	{
 		$log->lwrite("no Digiprove_End marker or not greater than start");  
-		$raw_content = htmlspecialchars_decode($contentString, ENT_QUOTES);  		// decode any encoded XML-incompatible characters now to ensure match with post-xml decoded string on server
-		return trim($raw_content);
+		return dprv_normaliseContent($contentString);
+
 	}
 	$log->lwrite("Previous Digiprove notice exists");
 	$existing_notices = "";
@@ -787,32 +682,20 @@ function dprv_getRawContent($contentString)		// Extract raw content to be Digipr
 		$raw_content = substr($contentString, $end_Digiprove + 20);
 	}
 	$raw_content = trim($raw_content);
-	$raw_content = htmlspecialchars_decode($raw_content, ENT_QUOTES);  		// decode any encoded XML-incompatible characters now to ensure match with post-xml decoded string on server
-	// Below is code inserted (at .70) after discovery that extra <p> and </p> tags are inserted when post is coming from WLW - maybe this is generated by wp.getPage or within WLW itself
-	// Not strictly necessary, but improves chances of detecting unchanged content (which ideally should not be Digiproved)
-	// TODO: improve normalisation to get around all this dickying with html that wp seems to do
-	$pos = strlen($raw_content) -7;
-	if ($pos > 0 && substr($raw_content, $pos) == "<p></p>")
-	{
-		$raw_content = trim(substr($raw_content, 0, $pos));
-	}
-	$pos = strlen($raw_content);
-	if ($pos > 7 && substr($raw_content, 0, 3) == "<p>" && substr($raw_content, $pos -4) == "</p>")
-	{
-		$raw_content = trim(substr($raw_content, 3, $pos-7));
-	}
-	// end of 0.70 inserted code
-	try		
-	{
-		$raw_content_hash = strtoupper(hash("sha256", $raw_content));
+
+	$raw_content = dprv_normaliseContent($raw_content);
+
+	//try																// try/catch blocks not supported in PHP 4
+	//{
+		$raw_content_hash = strtoupper(hash("sha256", $raw_content));	// hash function does not exist in PHP 4 - gives fatal error
 		$log->lwrite("Content fingerprinted = " . $raw_content);  
 		$log->lwrite("Digital fingerprint = " . $raw_content_hash);  
-	}
-	catch (Exception $e)
-	{
-		$log->lwrite("Exception " . $e.getMessage() . " in getRawContent");  
-		return $raw_content;	// if error, probably older version of PHP, what to do?
-	}
+	//}
+	//catch (Exception $e)
+	//{
+	//	$log->lwrite("Exception " . $e.getMessage() . " in getRawContent");  
+	//	return $raw_content;	// if error, probably older version of PHP, what to do?
+	//}
 
 	if (strpos($existing_notices, $raw_content_hash) != false)		// if SHA256 hash of raw content already exists in notices, the content is unchanged since last Digiprove, so we will abandon from here
 	{
@@ -829,14 +712,38 @@ function dprv_getRawContent($contentString)		// Extract raw content to be Digipr
 	return $raw_content;
 }
 
+function dprv_normaliseContent($contentString)
+{
+	$log = new Logging();  
+	$contentString = htmlspecialchars_decode($contentString, ENT_QUOTES);  		// decode any encoded XML-incompatible characters now to ensure match with post-xml decoded string on server
+
+	// Below is code inserted (at .70) after discovery that extra <p> and </p> tags are inserted when post is coming from WLW - maybe this is generated by wp.getPage or within WLW itself
+	// Not strictly necessary, but improves chances of detecting unchanged content (which ideally should not be Digiproved)
+	// TODO: improve normalisation to get around all this dickying with html that wp seems to do
+
+	$pos = strlen($contentString) -7;
+	if ($pos > 0 && substr($contentString, $pos) == "<p></p>")
+	{
+		$contentString = trim(substr($contentString, 0, $pos));
+	}
+	$pos = strlen($contentString);
+
+	if ($pos > 7 && substr($contentString, 0, 3) == "<p>" && substr($contentString, $pos -4) == "</p>")
+	{
+		$contentString = trim(substr($contentString, 3, $pos-7));
+	}
+	// end of 0.70 inserted code
+	return trim($contentString);
+}
 
 class Logging
 {
 	// define file pointer  
-	private $fp = null; 
+	//private $fp = null;   // causes problem in php 4
 
 	// write message to the log file  
-	public function lwrite($message)
+	//public function lwrite($message)		// causes problem in php 4
+	function lwrite($message)
 	{  
 		global $dprv_log_is_on;
 		if ($dprv_log_is_on == true)
@@ -844,14 +751,23 @@ class Logging
 			// if file pointer doesn't exist, then open log file  
 			if (!$this->fp) $this->lopen(); 
 			if (!$this->fp) return;														// if cannot open/create logfile, just return
-			$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_FILENAME); 
+
+			$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+			$posDot = strrpos($script_name,'.');
+			if ($posDot != false)
+			{
+				$script_name = substr($script_name, 0, $posDot);
+			}
+
 			$time = date('H:i:s');  
 			// write current time, script name and message to the log file  
 			@fwrite($this->fp, "$time ($script_name) $message\n") or $this->logwarning('(note - could not write to log-file)');
 		}
 	}  
+
 	// open log file  
-	private function lopen()
+	//private function lopen()	// causes problem in php 4
+	function lopen()
 	{  
 		// define log file path and name  
 		$lfile='';
@@ -867,7 +783,9 @@ class Logging
 		// if the file does not exist, attempt to create it  
 		$this->fp = @fopen($lfile, 'a') or  $this->logwarning('(note - could not open or create log-file ' . $lfile . ')');  
 	}  
-	private function logwarning($dprv_warning)
+
+	//private function logwarning($dprv_warning)	// causes problem in php 4
+	function logwarning($dprv_warning)
 	{  
 		$dprv_temp = get_option('dprv_last_result');
 		$pos = strpos($dprv_temp, $dprv_warning);
@@ -1295,11 +1213,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	{
 		$dprv_password_on_record = "Yes";
 	}
-
+	$php_upgrade_message="";
+	if (intval(substr(PHP_VERSION,0,1)) < 5)
+	{
+		$php_upgrade_message=__("Sorry - this plug-in will not work until you upgrade your website to PHP 5 or later - contact your hosting provider",'dprv_cp');
+	}
 	print('
 			<div class="wrap" style="padding-top:4px">
-				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="http://www.digiprove.com/images/digiprove_logo_278x69.png" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'DigiproveBlog').'</span></h2> 
-				<form id="dprv_cp" name="dprv_DigiproveBlog" action="'.get_bloginfo('wpurl').'/wp-admin/options-general.php?page=CopyrightProof.php" method="post" onsubmit="return SubmitSelected();">
+				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="http://www.digiprove.com/images/digiprove_logo_278x69.png" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2><font color="orangered">' . $php_upgrade_message . '</font>  
+				<form id="dprv_cp" name="dprv_AnyOldThing" action="'.get_bloginfo('wpurl').'/wp-admin/options-general.php?page=CopyrightProof.php" method="post" onsubmit="return SubmitSelected();">
 					<input type="hidden" name="dprv_cp_action" value="dprv_cp_update_settings" />
 						<fieldset class="options">
 							<div class="option">
