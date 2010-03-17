@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
 Tested up to: 2.9.2
-Stable tag: 0.71
+Stable tag: 0.72
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -25,7 +25,7 @@ A copyright notice with teeth!  Prove authorship, deter plagiarism, and protect 
      - if you are not yet a Digiprove user, answer "Yes" to the question "Do you want to register now?" and enter your desired credentials (Registration is free).
 6. To activate your registration you must click on the activation link that you will receive by email.
 
-Note: You need to be using PHP version 5 or later (we are working on supporting PHP 4)
+Note: You need to be using PHP version 5 or later (we do not plan on supporting earlier versions)
 
 == Frequently Asked Questions ==
 
@@ -63,6 +63,10 @@ In some countries, you can go a step further by formally registering your copyri
 Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
 Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
+= I cannot activate the plugin - I get a message about PHP versions =
+
+This message appears if you are running PHP 4.n or older. PHP 4 is no longer supported, as PHP 5 has been around since 2004. In testing with PHP 4, we tried to work around the many issues that arose, and eventually
+concluded that our efforts would be better spent on improving the plugin itself. Please ask your hosting provider to upgrade your site to PHP 5.
 
 = I think I've found a bug, what can I do? =
 
@@ -81,7 +85,7 @@ Yes, you can review your history online (and perform other functions) by visitin
 
 = You say you are migrating to API Keys for better security - as an existing user what do I have to do?
 
-From release 0.71 onwards as part of our preparation to exit Beta mode, we will no longer store user Digiprove passwords in Settings, using an api key instead.  Existing users do not need to do anything,
+From release 0.71 onwards as part of our preparation to exit Beta mode, we no longer store user Digiprove passwords in Settings, using an api key instead.  Existing users do not need to do anything,
 the plug-in will automatically request and install a new api key for you. For new users registering via the plug-in, issuance of an api key is also done automatically.
 
 
@@ -97,6 +101,11 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+
+= 0.72 =
+* Fixed fatal error for older PHP versions (pre 5.2)
+* More graceful handling of PHP 4 attempted activations
+* Fixed minor bugs in parsing of content from xml-rpc
 
 = 0.71 =
 * Migrating to API keys for improved security (no user action required)
