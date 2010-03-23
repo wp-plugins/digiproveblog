@@ -1,5 +1,7 @@
 <?php
 
+// THIS VERSION USES TRY/CATCH BLOCKS AND NEEDS PHP5 OR LATER
+
 /*  This is not used at present - re-introduce later
 function dprv_soap_post($request, $method) 
 {
@@ -50,8 +52,6 @@ function dprv_soap_post($request, $method)
 }
 
 */
-
-//	if (intval(substr(PHP_VERSION,0,1)) > 4)
 
 /* this function based on that from akismet.php by Matt Mullenweg.  */
 function dprv_http_post($request, $host, $path, $service, $ip=null) 

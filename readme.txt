@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
 Tested up to: 2.9.2
-Stable tag: 0.72
+Stable tag: 0.73
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -25,7 +25,6 @@ A copyright notice with teeth!  Prove authorship, deter plagiarism, and protect 
      - if you are not yet a Digiprove user, answer "Yes" to the question "Do you want to register now?" and enter your desired credentials (Registration is free).
 6. To activate your registration you must click on the activation link that you will receive by email.
 
-Note: You need to be using PHP version 5 or later (we do not plan on supporting earlier versions)
 
 == Frequently Asked Questions ==
 
@@ -39,6 +38,16 @@ Note: You need to be using PHP version 5 or later (we do not plan on supporting 
 = What is the plugin page?  =
 
 [Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
+
+= When I try to upgrade the plugin, it fails (often with the message "Could not remove the old plugin") - what to do? =
+
+This is a frustrating thing that doesn't happen to everybody. It can happen with any plugin. Basically your host server operating system is preventing Wordpress from
+deleting the old plugin files or the directory in which they are contained.  The short-term solution is to access your site via FTP and delete the plugin folder/directory.
+In the case of Copyright Proof the folder is (within your wordpress root directory) "/wp-content/plugins/digiproveblog". Then install the Copyright Proof plugin afresh -
+your existing settings will all be retained.
+
+The long term solution is to find the source of the problem - usually some permission settings somewhere on the server, maybe with the aid of your hosting company. Unfortunately
+because of the wide variety of environments that Wordpress can find itself in, there is no "one-size-fits-all" solution.
 
 
 = What's with the registration process?  =
@@ -62,11 +71,6 @@ In some countries, you can go a step further by formally registering your copyri
 
 Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
 Learn more at http://www.digiprove.com/creative-and-copyright.aspx
-
-= I cannot activate the plugin - I get a message about PHP versions =
-
-This message appears if you are running PHP 4.n or older. PHP 4 is no longer supported, as PHP 5 has been around since 2004. In testing with PHP 4, we tried to work around the many issues that arose, and eventually
-concluded that our efforts would be better spent on improving the plugin itself. Please ask your hosting provider to upgrade your site to PHP 5.
 
 = I think I've found a bug, what can I do? =
 
@@ -101,6 +105,11 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+
+= 0.73 =
+* Fixed fatal error for older PHP versions (pre 5.1.2)
+* Now working on PHP4
+* Minor code tidy-up
 
 = 0.72 =
 * Fixed fatal error for older PHP versions (pre 5.2)
