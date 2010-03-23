@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.72
+Version: 0.73
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -32,22 +32,23 @@ License: GPL
 
 if (intval(substr(PHP_VERSION,0,1)) > 4)
 {
-	@include_once('copyright_proof_http_functions.php');
+	include_once('copyright_proof_http_functions.php');
 }
 else
 {
-	die("Your version of PHP (" . PHP_VERSION . ") does not support this plug-in. Ask your provider to upgrade your website to PHP 5.0 or later");
+	//die("Your version of PHP (" . PHP_VERSION . ") does not support this plug-in. Ask your provider to upgrade your website to PHP 5.0 or later");
+	include_once('copyright_proof_http_functions_basic.php');
 }
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
-$dprv_log_is_on = false;                // Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "www.digiprove.com";       // -> should be set to "www.digiprove.com"
-$dprv_port = 443;                       // -> should be set to 443 (standard settings 80 for http, 443 for https)
-$dprv_ssl = "Yes";                      // -> should be set to "Yes"
+$dprv_log_is_on = false;              // Set this to true to generate local log-file (needs write permissions)
+$dprv_host = "www.digiprove.com";     // -> should be set to "www.digiprove.com"
+$dprv_port = 443;                     // -> should be set to 443 (standard settings 80 for http, 443 for https)
+$dprv_ssl = "Yes";                    // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.72");
+define("DPRV_VERSION", "0.73");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -81,22 +82,13 @@ function dprv_activate()
 	add_option('dprv_user_id', '');
 	add_option('dprv_api_key', '');
 	add_option('dprv_last_result', '');
-	// TODO : Remove unnecessary code here and in Settings about PHP4
-	if (intval(substr(PHP_VERSION,0,1)) < 5)
+	if (get_option('dprv_enrolled') == "No")
 	{
-		update_option('dprv_last_result', '<font color=\'orangered\'>Your website uses PHP Version ' . PHP_VERSION . '. Copyright Proof needs a later version - ask your provider to upgrade you to PHP 5.0.0 or later</font>');
-		$log->lwrite("PHP Version problem");  
+		update_option('dprv_last_result', '<a href=\'options-general.php?page=CopyrightProof.php\'><b>Configure Copyright Proof</b></a> to get it working now, or Select \'Settings\' - \'Copyright Proof\' later');
 	}
 	else
 	{
-		if (get_option('dprv_enrolled') == "No")
-		{
-			update_option('dprv_last_result', '<a href=\'options-general.php?page=CopyrightProof.php\'><b>Configure Copyright Proof</b></a> to get it working now, or Select \'Settings\' - \'Copyright Proof\' later');
-		}
-		else
-		{
-			update_option('dprv_last_result', '');
-		}
+		update_option('dprv_last_result', '');
 	}
 }
 
@@ -165,7 +157,7 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 	if ($script_name == "plugins")
 	{
 		$dprv_last_result = get_option('dprv_last_result');
-		if ($dprv_last_result != "" && (strpos($dprv_last_result, "Configure") != false || strpos($dprv_last_result, "PHP Version") != false))
+		if ($dprv_last_result != "" && strpos($dprv_last_result, "Configure") != false)
 		{
 			$log->lwrite("writing javascript to display " . $dprv_last_result);
 			echo('<script type="text/javascript">
@@ -226,12 +218,7 @@ function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
 		$log->lwrite("dprv_digiprove_post not starting because status is " . $GLOBALS["_POST"]["post_status"] . ", not published");
 		return ($content);
 	}
-	if (intval(substr(PHP_VERSION,0,1)) < 5)
-	{
-		$log->lwrite("dprv_digiprove_post not starting because php version is " . PHP_VERSION);
-		update_option('dprv_last_result', __('Copyright Proof did not work because your version of PHP is too old', 'dprv_cp'));
-		return ($content);
-	}	
+
 	update_option('dprv_last_result', '');
 	if ($script_name == "xmlrpc")
 	{
@@ -485,6 +472,7 @@ function dprv_certify($post_id, $title, $content)
 	{
 		$dprv_content_type = "Blog post";
 	}
+	$log->lwrite("siteurl=" . get_option('siteurl'));
 	$dprv_site_url = parse_url(get_option('siteurl'));
 	$dprv_site_host = $dprv_site_url[host];
 	$postText = "<digiprove_content_request>";
@@ -685,28 +673,23 @@ function dprv_getRawContent($contentString)		// Extract raw content to be Digipr
 
 	$raw_content = dprv_normaliseContent($raw_content);
 
-	//try																// try/catch blocks not supported in PHP 4
-	//{
-		$raw_content_hash = strtoupper(hash("sha256", $raw_content));	// hash function does not exist in PHP 4 - gives fatal error
-		$log->lwrite("Content fingerprinted = " . $raw_content);  
-		$log->lwrite("Digital fingerprint = " . $raw_content_hash);  
-	//}
-	//catch (Exception $e)
-	//{
-	//	$log->lwrite("Exception " . $e.getMessage() . " in getRawContent");  
-	//	return $raw_content;	// if error, probably older version of PHP, what to do?
-	//}
-
-	if (strpos($existing_notices, $raw_content_hash) != false)		// if SHA256 hash of raw content already exists in notices, the content is unchanged since last Digiprove, so we will abandon from here
+	if (function_exists("hash"))					// Before 5.1.2, the hash() function did not exist, calling it gives a fatal error
 	{
-		if (strpos($existing_notices, '<a ') > 0 && strpos($existing_notices, '</a>') > 0)	// basic check that Digiprove certificate details are intact 
+		$raw_content_hash = strtoupper(hash("sha256", $raw_content));
+		$log->lwrite("Content fingerprinted = " . $raw_content);
+		$log->lwrite("Digital fingerprint = " . $raw_content_hash);
+
+		if (strpos($existing_notices, $raw_content_hash) != false)		// if SHA256 hash of raw content already exists in notices, the content is unchanged since last Digiprove, so we will abandon from here
 		{
-			$log->lwrite("Content fingerprint same as before and notice is intact, no need to Digiprove");  
-			return false;
-		}
-		else
-		{
-			$log->lwrite("notice not intact, " . strpos($existing_notices, '<a href=') . ", " . strpos($existing_notices, '</a>'));
+			if (strpos($existing_notices, '<a ') > 0 && strpos($existing_notices, '</a>') > 0)	// basic check that Digiprove certificate details are intact 
+			{
+				$log->lwrite("Content fingerprint same as before and notice is intact, no need to Digiprove");  
+				return false;
+			}
+			else
+			{
+				$log->lwrite("notice not intact, " . strpos($existing_notices, '<a href=') . ", " . strpos($existing_notices, '</a>'));
+			}
 		}
 	}
 	return $raw_content;
@@ -1213,14 +1196,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	{
 		$dprv_password_on_record = "Yes";
 	}
-	$php_upgrade_message="";
-	if (intval(substr(PHP_VERSION,0,1)) < 5)
-	{
-		$php_upgrade_message=__("Sorry - this plug-in will not work until you upgrade your website to PHP 5 or later - contact your hosting provider",'dprv_cp');
-	}
 	print('
 			<div class="wrap" style="padding-top:4px">
-				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="http://www.digiprove.com/images/digiprove_logo_278x69.png" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2><font color="orangered">' . $php_upgrade_message . '</font>  
+				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="http://www.digiprove.com/images/digiprove_logo_278x69.png" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2>  
 				<form id="dprv_cp" name="dprv_AnyOldThing" action="'.get_bloginfo('wpurl').'/wp-admin/options-general.php?page=CopyrightProof.php" method="post" onsubmit="return SubmitSelected();">
 					<input type="hidden" name="dprv_cp_action" value="dprv_cp_update_settings" />
 						<fieldset class="options">

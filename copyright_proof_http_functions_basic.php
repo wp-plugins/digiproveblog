@@ -1,58 +1,6 @@
 <?php
 
-// THIS VERSION USES TRY/CATCH BLOCKS AND NEEDS PHP5 OR LATER
-
-/*  This is not used at present - re-introduce later
-function dprv_soap_post($request, $method) 
-{
-	global $dprv_host, $dprv_port, $dprv_ssl;
-	$log = new Logging();
-	try								// Does not work in PHP4 - use different approach
-	{
-		$log->lwrite("dprv_soap_post starts, method=" . $method);
-		$dprv_WSDL_url = "";
-		if ($dprv_ssl == "Yes")
-		{
-			$dprv_WSDL_url = "https://" . $dprv_host;
-			if ($dprv_port != 443)
-			{
-				$dprv_WSDL_url .= ":" . $dprv_port;
-			}
-		}
-		else
-		{
-			$dprv_WSDL_url = "http://" . $dprv_host;
-			if ($dprv_port != 80)
-			{
-				$dprv_WSDL_url .= ":" . $dprv_port;
-			}
-		}
-		$dprv_WSDL_url .= "/secure/Service.asmx?WSDL";
-		//$client = new SoapClient("https://www.digiprove.com/secure/Service.asmx?WSDL",  
-		$client = new SoapClient($dprv_WSDL_url,  
-			array(	'soap_version' => SOAP_1_2,
-					'trace' => true,
-					'encoding'=>'utf-8'));
-		$dprv_result = $client->$method(array('xml_string' => $request));
-		$result_vars    = get_object_vars($dprv_result);
-		return $result_vars[$method . "Result"];
-	}
-	catch(SoapFault $ex)
-	{
-		$dprv_error = $ex->getMessage();
-		$log->lwrite("Soap error in dprv_soap_post: " . $dprv_error);
-		$return_value = $dprv_error;
-		$pos = strpos($dprv_error, "\n");
-		if ($pos != false && $pos > 0)
-		{
-			$return_value = substr($dprv_error, 0, $pos);
-		}
-		return "Error: " . $return_value;
-	}
-}
-
-*/
-
+// THIS VERSION DOES NOT USE TRY/CATCH BLOCKS AND CAN RUN IN PHP4
 /* this function based on that from akismet.php by Matt Mullenweg.  */
 function dprv_http_post($request, $host, $path, $service, $ip=null) 
 {
@@ -84,8 +32,8 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 		$http_host = "ssl://" . $http_host;
 	}
 	
-	try																	// try/catch block not supported in php4
-	{
+//	try																	// try/catch block not supported in php4
+//	{
 		if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr, 10) ) ) 
 		{                 
 			$log->lwrite("socket open, errno = " . $errno);
@@ -143,11 +91,11 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 		}
 		$log->lwrite("Got response ok: " . $response);
 		return $response;
-	}
-	catch (Exception $e)
-	{
-		$log->lwrite("Exception : " . $e->getMessage());
-		return 'Error: ' . $e->getMessage();
-	}
+//	}
+//	catch (Exception $e)
+//	{
+//		$log->lwrite("Exception : " . $e->getMessage());
+//		return 'Error: ' . $e->getMessage();
+//	}
 }
 ?>
