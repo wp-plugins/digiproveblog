@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
-Tested up to: 2.9.2
-Stable tag: 0.73
+Tested up to: 3.0 RC1
+Stable tag: 0.74
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -87,10 +87,17 @@ We actively seek your suggestions at suggestions@digiprove.com.  We will respond
 Yes, you can review your history online (and perform other functions) by visiting https://www.digiprove.com/members/my_digiprove.aspx - you will need to log in using your Digiprove user id and password.
 
 
-= You say you are migrating to API Keys for better security - as an existing user what do I have to do?
+= You say you are migrating to API Keys for better security - as an existing user what do I have to do? =
 
 From release 0.71 onwards as part of our preparation to exit Beta mode, we no longer store user Digiprove passwords in Settings, using an api key instead.  Existing users do not need to do anything,
 the plug-in will automatically request and install a new api key for you. For new users registering via the plug-in, issuance of an api key is also done automatically.
+
+= I get an error message: "invalid user id, domain, or api key" =
+
+Check your user id first; if that is correct, there is a problem with the API key and/or domain. Each API key is associated with a domain (e.g. myinterestingblog.com, or www.myinterestingblog.com).
+Copyright Proof will automatically assign one to you using the domain name recorded in the Wordpress "General" settings of your blog. If you change this domain name, or you want to set up the
+plugin to run in another blog, you can request a new api key for the new domain. Do this by logging into Digiprove at https://www.digiprove.com/secure/login.aspx, then choosing "Preferences" and 
+"Issue/Renew API Keys".  This will allow you to obtain multiple API keys corresponding to the domains you wish to work with, which can then be input in the Copyright Proof Settings page in Wordpress.
 
 
 = I'm a developer - how do I link directly to Digiprove API?  =
@@ -105,6 +112,10 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+
+= 0.74 =
+* Now works with Postie plugin (and hopefully all other sources of published posts)
+* Tested with Wordpress 3.0 RC1
 
 = 0.73 =
 * Fixed fatal error for older PHP versions (pre 5.1.2)

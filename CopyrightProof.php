@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.73
+Version: 0.74
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -41,14 +41,14 @@ else
 }
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
-$dprv_log_is_on = false;              // Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "www.digiprove.com";     // -> should be set to "www.digiprove.com"
-$dprv_port = 443;                     // -> should be set to 443 (standard settings 80 for http, 443 for https)
-$dprv_ssl = "Yes";                    // -> should be set to "Yes"
+$dprv_log_is_on = false;                 // Set this to true to generate local log-file (needs write permissions)
+$dprv_host = "www.digiprove.com";        // -> should be set to "www.digiprove.com"
+$dprv_port = 443;                        // -> should be set to 443 (standard settings 80 for http, 443 for https)
+$dprv_ssl = "Yes";                       // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.73");
+define("DPRV_VERSION", "0.74");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -56,7 +56,9 @@ register_deactivation_hook(__FILE__, 'dprv_deactivate');
 add_action('admin_menu', 'dprv_settings_menu');
 add_action('admin_head', 'dprv_admin_head');
 add_action('admin_footer', 'dprv_admin_footer');
-add_filter('content_save_pre', 'dprv_digiprove_post');
+// Following change made at release 0.74:
+//add_filter('content_save_pre', 'dprv_digiprove_post');
+add_filter('wp_insert_post_data', 'dprv_digiprove_post_new', 99, 2);
 
 function dprv_activate()
 {
@@ -124,7 +126,6 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 	{
 		$script_name = substr($script_name, 0, $posDot);
 	}
-	$log->lwrite("script_name=" . $script_name);
 
 	$dprv_last_result = "";
 	if ($script_name == "post")
@@ -178,17 +179,65 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 	$log->lwrite("exiting drp_admin_footer");
 }
 
-function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
+
+function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post function
 {
 	$log = new Logging();  
-	global $dprv_soap_count, $dprv_host;
-	$dprv_soap_count = $dprv_soap_count + 1;
-	if ($dprv_soap_count > 1)
-	{
-		$log->lwrite("dprv_digiprove_post not starting because dprv_soap_count=" . $dprv_soap_count);
-		return ($content);
-	}
+	$log->lwrite("dprv_digiprove_post_new starts");
 
+/*
+
+RESULTS OF TESTING OF VARIABLES WITHIN wp_insert_post_data Filter Hook:
+
+TRANSACTION:         XMLRPC NEW POST <--- XMLRPC EDITED POST --->  <-----------------    WP-NEW-POST    --------------> <---------   WP-EDIT-POST    ----------->       
+                     _____________   ___________                                _________                               _________                   
+script-name:         xmlrpc-post     xmlrpc-post    xmlrpc-post    admin-ajax   post       post           admin-ajax    post        post            admin-ajax
+$data:
+  ['post_title']     title           title                         title        title      title          title         title       old title       title
+  ['post_status']    publish         publish        inherit        draft        publish    inherit        inherit       publish     inherit         inherit
+  ['post_type']      post            post           revision       post         post       revision       revision      post        revision        revision
+  ['post_content']   the content     the content    old content    blank        content    blank          content       content     old content     content
+  ['post_name']      word-word       word-word      9999-revision  blank        word-word  9999-revision  9999-autosave word-word   9999-revision-n 9999-autosave
+$raw_data:
+  ['post_ID']        blank           blank          blank          -1276029753  9999(ok)   blank          blank         9999        blank           blank
+  ['ID']             0               id (correct)   0              0            9999(ok)   0              0             9999        0               9999
+  ['post_title']                                                   title        title      title          title         title       old title       title
+  ['filter']         db              db             db             db           db         db             db            db          db              db
+  [_wp_http_referer] blank           blank          blank          blank    ./post-new.p.  blank          blank   ./post.php?act.   blank           blank
+  ['action']         blank           blank          blank          autosave     editpost   blank          blank         editpost    blank           blank
+  [original_action]  blank           blank          blank          blank        blank      blank          blank         blank       blank           blank
+*/
+/*
+TRANSACTION:         WP-EMAIL POST  <-------  PENDING POST PUBLISHED  -------> PUT IN TRASH   <---------  POSTIE NEW POST  --------->
+                                     _________                                                          _________
+script-name:         wp-mail         post         post           admin-ajax     edit          get_mail  get_mail        get_mail
+$data:
+  ['post_title']     title           title        title          title          title         tmptitle  title           tmptitle
+  ['post_status']    pending         publish      inherit        inherit        trash         draft     publish         inherit
+  ['post_type']      post            post         revision       revision       post          post      post            revision
+  ['post_content']   the content     the content  the content    content        content       tmpPost   content(padded) tmpPost
+  ['post_name']      blank           word-word    9999-revision  9999-autosave  word-word     blank     word-word       9999-revision
+$raw_data: 
+  ['post_ID']        blank           9999         blank          blank          blank         blank     blank           blank
+  ['ID']             0               9999         0              9999           9999          0         9999            0
+  ['post_title']     title           title        title          title          title         tmptitle  title           tmptitle
+  ['filter']         db              db           db             db             db            db        db              db
+  [_wp_http_referer] blank       ./post.php?act.. blank          blank          blank         blank     blank           blank
+  ['action']         blank           editpost     blank          blank          blank         blank     blank           blank
+  [original_action]  blank           blank        blank          blank          blank         blank     blank           blank
+*/
+
+	if ($data['post_status'] != "publish")
+	{
+		$log->lwrite("dprv_digiprove_post not starting because status (" . $data['post_status'] . ") is not publish");
+		return $data;
+	}
+	if ($data['post_type'] != "post")
+	{
+		$log->lwrite("dprv_digiprove_post not starting because type (" . $data['post_type'] . ") is not post");  // Does this ever occur?
+		return $data;
+	}
+	/*
 	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
 	$posDot = strrpos($script_name,'.');
 	if ($posDot != false)
@@ -199,70 +248,38 @@ function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
 	if ($script_name != "post" && $script_name != "xmlrpc")
 	{
 		$log->lwrite("dprv_digiprove_post not starting because this hook not triggered by post or xmlrpc");
-		return ($content);
+		return ($data);
 	}
+	*/
 	if (get_option('dprv_enrolled') != "Yes")
 	{
 		$log->lwrite("dprv_digiprove_post not starting because user not registered yet");
-		return ($content);
+		return $data;
 	}
+	$content = trim($data['post_content']);
 	if (strlen(trim($content)) == 0)
 	{
 		$log->lwrite("dprv_digiprove_post not starting because content is empty");
-		return ($content);
+		return $data;
 	}
+	/*
 	//if ($GLOBALS["GLOBALS"]["_POST"]["post_status"] != "publish" && $script_name == "post")	// this is empty in PHP4
 	if ($GLOBALS["_POST"]["post_status"] != "publish" && $script_name == "post")
 	{
 		//$log->lwrite("dprv_digiprove_post not starting because status is " . $GLOBALS["GLOBALS"]["_POST"]["post_status"] . ", not published");
 		$log->lwrite("dprv_digiprove_post not starting because status is " . $GLOBALS["_POST"]["post_status"] . ", not published");
-		return ($content);
+		return ($data);
 	}
+	*/
 
 	update_option('dprv_last_result', '');
-	if ($script_name == "xmlrpc")
+	$dprv_post_id = $raw_data['ID'];
+	if (intval($dprv_post_id) == 0)
 	{
-		if (!isset( $HTTP_RAW_POST_DATA ) )
-		{
-			$HTTP_RAW_POST_DATA = file_get_contents('php://input');
-		}
-		$log->lwrite($HTTP_RAW_POST_DATA);
-		$postVariables = dprv_parseXMLRPC($HTTP_RAW_POST_DATA);
-		$log->lwrite("postvariables: [method] = " . $postVariables["method"]);
-		$log->lwrite("postvariables: [title] = " . $postVariables["title"]);
-		$log->lwrite("postvariables: [id] = " . $postVariables["id"]);
-		if ($postVariables["publish"] == true)
-		{		
-			$log->lwrite("postvariables: [publish] = true");
-		}
-		if ($postVariables["publish"] == false)
-		{		
-			$log->lwrite("postvariables: [publish] == false");
-		}
-
-		if ($postVariables["method"] != "metaWeblog.editPost" && $postVariables["method"] != "metaWeblog.newPost")
-		{
-			$log->lwrite("dprv_digiprove_post not starting because xmlrpc request is not newPost or editPost");
-			return ($content);
-		}
-		if ($postVariables["publish"] == false)
-		{
-			$log->lwrite("dprv_digiprove_post not starting because xmlrpc request does not specify boolean-publish");
-			return ($content);
-		}
-		$dprv_title = $postVariables["title"];
-		$dprv_post_id = $postVariables["id"];
-		if ($postVariables["id"] == 1 && $postVariables["method"] != "metaWeblog.newPost")	// If it is a new post, the id
-		{
-			$dprv_post_id = -1;
-		}
+		$dprv_post_id = -1;
 	}
-	else
-	{
-		$dprv_post_id = $GLOBALS["_POST"]["post_ID"];
-		$dprv_title = $GLOBALS["_POST"]["post_title"];
-		$log->lwrite("title=" . $dprv_title . ", id=" . $dprv_post_id);  
-	}
+	$dprv_title = $data['post_title'];
+	$log->lwrite("title=" . $dprv_title . ", id=" . $dprv_post_id);  
 	$log->lwrite("dprv_digiprove_post STARTS");  
 	
 	$newContent = stripslashes($content);
@@ -305,112 +322,121 @@ function dprv_digiprove_post ($content)	// Core Digiprove-this-post function
 						delete_option('dprv_password');
 					}
 				}
-				$dprv_certificate_id = dprv_getTag($certifyResponse, "certificate_id");
-				$dprv_certificate_url = dprv_getTag($certifyResponse, "certificate_url");
-				$dprv_utc_date_and_time = dprv_getTag($certifyResponse, "utc_date_and_time");
-				$dprv_digital_fingerprint = dprv_getTag($certifyResponse, "digital_fingerprint");
-				$dprv_full_name = trim(get_option('dprv_first_name') . " " . get_option('dprv_last_name'));
-				$dprv_notice = get_option('dprv_notice');
-				if (trim($dprv_notice) == "")
-				{
-					$dprv_notice = __('This content has been Digiproved', 'dprv_cp');
-				}
-				if ($dprv_certificate_id === false || $dprv_certificate_url === false)
-				{
-					$DigiproveNotice = "\r\n&copy; " . Date("Y") . ' ' . __('and certified by Digiprove', 'dprv_cp');
-				}
-				else
-				{
-					$dprv_notice_background = get_option('dprv_notice_background');
-					$backgroundStyle = "";
-					if ($dprv_notice_background != "None")
-					{
-						$backgroundStyle = 'background-color:' . $dprv_notice_background . ';';
-					}
-					$dprv_notice_color = get_option('dprv_notice_color');
-					if ($dprv_notice_color == false || $dprv_notice_color == "")
-					{
-						$dprv_notice_color = "#636363";
-					}
-					$dprv_hover_color = get_option('dprv_hover_color');
-					if ($dprv_hover_color == false || $dprv_hover_color == "")
-					{
-						$dprv_hover_color = "#A35353";
-					}
-					$DigiproveNotice = '<span style="vertical-align:middle; display:inline-table; padding:3px; line-height:normal;';
-					$dprv_notice_border = get_option('dprv_notice_border');
-					if ($dprv_notice_border == "None")
-					{
-						$DigiproveNotice .= 'border:0px;';
-					}
-					else
-					{
-						if ($dprv_notice_border == false || $dprv_notice_border == "Gray")
-						{
-							$DigiproveNotice .= 'border:1px solid #BBBBBB;';
-						}
-						else
-						{
-							$DigiproveNotice .= 'border:1px solid ' . strtolower($dprv_notice_border) . ';';
-						}
-					}
-					$dprv_font_size="11px";
-					$dprv_image_scale = "";
-					$notice_size = get_option('dprv_notice_size');
-					if ($notice_size == "Small")
-					{
-						$dprv_font_size="10px";
 
-					}
-					if ($notice_size == "Smaller")
-					{
-						$dprv_font_size="9px";
-						$dprv_image_scale = ' width="12px" height="12px"';
-					}
-					$DigiproveNotice .= $backgroundStyle . '" '; 
-					$DigiproveNotice .= 'title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
-					$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" style="text-decoration:none" target="_blank" ';
-					$DigiproveNotice .= 'style="border:0px; float:none; display:inline; text-decoration: none;' . $backgroundStyle . '">';
-					$DigiproveNotice .= '<img src="http://www.digiprove.com/images/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px; margin:0px; float:none; background-color:transparent" border="0"' . $dprv_image_scale . '/>';
-					$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_font_size . '; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal" ';
-					$DigiproveNotice .= 'onmouseover="this.style.color=\'' . $dprv_hover_color . '\';" onmouseout="this.style.color=\'' . $dprv_notice_color . '\';">';
-					$DigiproveNotice .= '&nbsp;&nbsp;' . $dprv_notice;
-					$dprv_c_notice = get_option('dprv_c_notice');
-					if ($dprv_c_notice != "NoDisplay")
-					{
-						$DigiproveNotice .= '&nbsp;&copy; ' . Date('Y');
-						if ($dprv_c_notice == "DisplayAll" && $dprv_full_name != "")
-						{
-							$DigiproveNotice .= ' ' . $dprv_full_name;
-						}
-					}
-					$DigiproveNotice .= '</span></a>';
-					$DigiproveNotice .= '<!--' . $dprv_digital_fingerprint . '-->';
-					$DigiproveNotice .= '</span>';
-				}
-				$newContent = dprv_insertNotice($newContent, $DigiproveNotice);
+				$DigiproveNotice = dprv_composeNotice($certifyResponse);
+				//$newContent = dprv_insertNotice($newContent, $DigiproveNotice);
+				$data['post_content'] = dprv_insertNotice($newContent, $DigiproveNotice);
 				if (get_option('dprv_enrolled') != "Yes")
 				{
 					update_option('dprv_enrolled', 'Yes');
 				}
 				$log->lwrite("Digiproving completed successfully");
-				update_option('dprv_last_result', __('Digiprove certificate id:', 'dprv_cp') . ' ' . $dprv_certificate_id);
+				update_option('dprv_last_result', __('Digiprove certificate id:', 'dprv_cp') . ' ' . dprv_getTag($certifyResponse, "certificate_id"));
 			}
 		}
 		else
 		{
 			// The only real content was the last Digiprove certificate; remove it
 			update_option('dprv_last_result', __('Content is empty', 'dprv_cp'));
-			return "";		
+			$data['post_content'] = "";
+			return $data;		
 		}
 	}
 	else
 	{
 		update_option('dprv_last_result', __('Content unchanged since last edit', 'dprv_cp'));
 	}
-	return $newContent;
+	//put newContent into data?
+	return $data;
 }
 
+function dprv_composeNotice($certifyResponse)
+{
+	$DigiproveNotice = "";
+	$dprv_certificate_id = dprv_getTag($certifyResponse, "certificate_id");
+	$dprv_certificate_url = dprv_getTag($certifyResponse, "certificate_url");
+	$dprv_utc_date_and_time = dprv_getTag($certifyResponse, "utc_date_and_time");
+	$dprv_digital_fingerprint = dprv_getTag($certifyResponse, "digital_fingerprint");
+	$dprv_full_name = trim(get_option('dprv_first_name') . " " . get_option('dprv_last_name'));
+	$dprv_notice = get_option('dprv_notice');
+	if (trim($dprv_notice) == "")
+	{
+		$dprv_notice = __('This content has been Digiproved', 'dprv_cp');
+	}
+	if ($dprv_certificate_id === false || $dprv_certificate_url === false)
+	{
+		$DigiproveNotice = "\r\n&copy; " . Date("Y") . ' ' . __('and certified by Digiprove', 'dprv_cp');
+	}
+	else
+	{
+		$dprv_notice_background = get_option('dprv_notice_background');
+		$backgroundStyle = "";
+		if ($dprv_notice_background != "None")
+		{
+			$backgroundStyle = 'background-color:' . $dprv_notice_background . ';';
+		}
+		$dprv_notice_color = get_option('dprv_notice_color');
+		if ($dprv_notice_color == false || $dprv_notice_color == "")
+		{
+			$dprv_notice_color = "#636363";
+		}
+		$dprv_hover_color = get_option('dprv_hover_color');
+		if ($dprv_hover_color == false || $dprv_hover_color == "")
+		{
+			$dprv_hover_color = "#A35353";
+		}
+		$DigiproveNotice = '<span style="vertical-align:middle; display:inline-table; padding:3px; line-height:normal;';
+		$dprv_notice_border = get_option('dprv_notice_border');
+		if ($dprv_notice_border == "None")
+		{
+			$DigiproveNotice .= 'border:0px;';
+		}
+		else
+		{
+			if ($dprv_notice_border == false || $dprv_notice_border == "Gray")
+			{
+				$DigiproveNotice .= 'border:1px solid #BBBBBB;';
+			}
+			else
+			{
+				$DigiproveNotice .= 'border:1px solid ' . strtolower($dprv_notice_border) . ';';
+			}
+		}
+		$dprv_font_size="11px";
+		$dprv_image_scale = "";
+		$notice_size = get_option('dprv_notice_size');
+		if ($notice_size == "Small")
+		{
+			$dprv_font_size="10px";
+		}
+		if ($notice_size == "Smaller")
+		{
+			$dprv_font_size="9px";
+			$dprv_image_scale = ' width="12px" height="12px"';
+		}
+		$DigiproveNotice .= $backgroundStyle . '" '; 
+		$DigiproveNotice .= 'title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
+		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" style="text-decoration:none" target="_blank" ';
+		$DigiproveNotice .= 'style="border:0px; float:none; display:inline; text-decoration: none;' . $backgroundStyle . '">';
+		$DigiproveNotice .= '<img src="http://www.digiprove.com/images/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px; margin:0px; float:none; background-color:transparent" border="0"' . $dprv_image_scale . '/>';
+		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_font_size . '; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal" ';
+		$DigiproveNotice .= 'onmouseover="this.style.color=\'' . $dprv_hover_color . '\';" onmouseout="this.style.color=\'' . $dprv_notice_color . '\';">';
+		$DigiproveNotice .= '&nbsp;&nbsp;' . $dprv_notice;
+		$dprv_c_notice = get_option('dprv_c_notice');
+		if ($dprv_c_notice != "NoDisplay")
+		{
+			$DigiproveNotice .= '&nbsp;&copy; ' . Date('Y');
+			if ($dprv_c_notice == "DisplayAll" && $dprv_full_name != "")
+			{
+				$DigiproveNotice .= ' ' . $dprv_full_name;
+			}
+		}
+		$DigiproveNotice .= '</span></a>';
+		$DigiproveNotice .= '<!--' . $dprv_digital_fingerprint . '-->';
+		$DigiproveNotice .= '</span>';
+	}
+	return $DigiproveNotice;
+}
 
 function dprv_insertNotice($content, $DigiproveNotice)
 {
@@ -472,7 +498,6 @@ function dprv_certify($post_id, $title, $content)
 	{
 		$dprv_content_type = "Blog post";
 	}
-	$log->lwrite("siteurl=" . get_option('siteurl'));
 	$dprv_site_url = parse_url(get_option('siteurl'));
 	$dprv_site_host = $dprv_site_url[host];
 	$postText = "<digiprove_content_request>";
