@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.0 RC1
-Stable tag: 0.74
+Tested up to: 3.0
+Stable tag: 0.75
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -99,6 +99,10 @@ Copyright Proof will automatically assign one to you using the domain name recor
 plugin to run in another blog, you can request a new api key for the new domain. Do this by logging into Digiprove at https://www.digiprove.com/secure/login.aspx, then choosing "Preferences" and 
 "Issue/Renew API Keys".  This will allow you to obtain multiple API keys corresponding to the domains you wish to work with, which can then be input in the Copyright Proof Settings page in Wordpress.
 
+= I get an error message: "daily limit of API requests exceeded - please upgrade Digiprove account" =
+
+If you are getting this message, it means that you are attempting to do more than 50 Digiprove transactions in any given day, which is a maximum we have introduced for free users. Some users are going
+into the thousands.  This limit does not apply to subscription accounts.
 
 = I'm a developer - how do I link directly to Digiprove API?  =
 
@@ -108,10 +112,17 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 1. Settings (Basic)
 2. Settings (Advanced)
-3. A Digiprove notice
+3. Settings (Copy Protect)
+4. A Digiprove notice
 
 
 == Changelog ==
+
+= 0.75 =
+* New Copy-Protect feature to prevent right-clicking and text selection
+* Tested with 3.0
+* Fixed bug to do with vertical tab character (0x0B) in XML
+* Fixed bug to do with unescaped ampersand in content type description
 
 = 0.74 =
 * Now works with Postie plugin (and hopefully all other sources of published posts)
