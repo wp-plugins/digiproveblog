@@ -10,7 +10,7 @@ Digitally certify your blog posts - proving authorship, deterring plagiarists, a
 
 == Description ==
 
-A copyright notice with teeth!  Prove authorship, deter plagiarism, and protect your copyright.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post.
+A copyright notice with teeth!  Prove authorship, deter plagiarism, and protect your copyright.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post. Optional anti-theft feature to copy protect your content.
 
 [Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
 
