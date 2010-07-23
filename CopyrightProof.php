@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.74
+Version: 0.75
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -48,7 +48,7 @@ $dprv_ssl = "Yes";                       // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.74");
+define("DPRV_VERSION", "0.75");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -56,8 +56,6 @@ register_deactivation_hook(__FILE__, 'dprv_deactivate');
 add_action('admin_menu', 'dprv_settings_menu');
 add_action('admin_head', 'dprv_admin_head');
 add_action('admin_footer', 'dprv_admin_footer');
-// Following change made at release 0.74:
-//add_filter('content_save_pre', 'dprv_digiprove_post');
 add_filter('wp_insert_post_data', 'dprv_digiprove_post_new', 99, 2);
 
 function dprv_activate()
@@ -72,6 +70,9 @@ function dprv_activate()
 	add_option('dprv_notice', '');
 	add_option('dprv_c_notice', 'DisplayAll');
 	add_option('dprv_notice_size', '');
+	add_option('dprv_frustrate_copy', '');
+	add_option('dprv_right_click_message', '');
+	add_option('dprv_record_IP', '');
 	add_option('dprv_notice_border', '');
 	add_option('dprv_notice_background', '');
 	add_option('dprv_notice_color', '');
@@ -326,6 +327,9 @@ $raw_data:
 				$DigiproveNotice = dprv_composeNotice($certifyResponse);
 				//$newContent = dprv_insertNotice($newContent, $DigiproveNotice);
 				$data['post_content'] = dprv_insertNotice($newContent, $DigiproveNotice);
+				$log->lwrite("data[post_content] = ");
+				$log->lwrite($data['post_content']);
+
 				if (get_option('dprv_enrolled') != "Yes")
 				{
 					update_option('dprv_enrolled', 'Yes');
@@ -352,6 +356,7 @@ $raw_data:
 
 function dprv_composeNotice($certifyResponse)
 {
+	$log = new Logging();  
 	$DigiproveNotice = "";
 	$dprv_certificate_id = dprv_getTag($certifyResponse, "certificate_id");
 	$dprv_certificate_url = dprv_getTag($certifyResponse, "certificate_url");
@@ -385,7 +390,26 @@ function dprv_composeNotice($certifyResponse)
 		{
 			$dprv_hover_color = "#A35353";
 		}
-		$DigiproveNotice = '<span style="vertical-align:middle; display:inline-table; padding:3px; line-height:normal;';
+
+		$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
+		$dprv_right_click_message = get_option('dprv_right_click_message');
+		$dprv_record_IP = get_option('dprv_record_IP');
+
+		if ($dprv_record_IP == "Yes")
+		{
+			$DigiproveNotice .= "<script src='record_IP.js' type='text/javascript'></script>";
+			$dprv_site_url = parse_url(get_option('siteurl'));
+			$dprv_site_host = $dprv_site_url[host];
+			$log->lwrite("dprv_site_host = " . $dprv_site_host);  
+			$DigiproveNotice .= "<form action='http://" . $dprv_site_host . "/copyright_proof_handler.php' method='post' id='IPAddress'><input type='hidden' value='" . @$REMOTE_ADDR . "' /></form>";
+		}
+
+		if ($dprv_frustrate_copy == "Yes")
+		{
+			$home = get_settings('siteurl');
+			$DigiproveNotice .= "<style type='text/css'>body{-moz-user-select: none;}</style><script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js'></script>";
+		}
+		$DigiproveNotice .= '<span style="vertical-align:middle; display:inline-table; padding:3px; line-height:normal;';
 		$dprv_notice_border = get_option('dprv_notice_border');
 		if ($dprv_notice_border == "None")
 		{
@@ -416,9 +440,9 @@ function dprv_composeNotice($certifyResponse)
 		}
 		$DigiproveNotice .= $backgroundStyle . '" '; 
 		$DigiproveNotice .= 'title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
-		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" style="text-decoration:none" target="_blank" ';
+		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" ';
 		$DigiproveNotice .= 'style="border:0px; float:none; display:inline; text-decoration: none;' . $backgroundStyle . '">';
-		$DigiproveNotice .= '<img src="http://www.digiprove.com/images/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px; margin:0px; float:none; background-color:transparent" border="0"' . $dprv_image_scale . '/>';
+		$DigiproveNotice .= '<img src="http://www.digiprove.com/images/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px; margin:0px; float:none; background-color:transparent" border="0"' . $dprv_image_scale . ' alt=""/>';
 		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_font_size . '; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal" ';
 		$DigiproveNotice .= 'onmouseover="this.style.color=\'' . $dprv_hover_color . '\';" onmouseout="this.style.color=\'' . $dprv_notice_color . '\';">';
 		$DigiproveNotice .= '&nbsp;&nbsp;' . $dprv_notice;
@@ -485,6 +509,9 @@ function dprv_certify($post_id, $title, $content)
 		return " Raw content is empty";
 	}
 	$rawContent = htmlspecialchars($rawContent, ENT_QUOTES, 'UTF-8');
+	// Statement below inserted at 0.75 as vertical tabs not converted and cause a problem in XML .net server process
+	// TODO: there are probably other characters that will trip it up - review whole XML-encoding to create more systemic solution
+	$rawContent = str_replace("\v", " ", $rawContent);
 
 	// Prepare title for XML transmission
 	if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
@@ -494,6 +521,8 @@ function dprv_certify($post_id, $title, $content)
 	$title = htmlspecialchars(stripslashes($title), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
 
 	$dprv_content_type = get_option('dprv_content_type');
+	// following instruction inserted at 0.75 to prevent problems with unescaped character '&' causing server-side XML parsing error
+	$dprv_content_type = htmlspecialchars(stripslashes($dprv_content_type), ENT_QUOTES, 'UTF-8');
 	if (trim($dprv_content_type) == "")
 	{
 		$dprv_content_type = "Blog post";
@@ -549,31 +578,6 @@ function dprv_certify($post_id, $title, $content)
 	}
 	return $data;
 }
-
-function dprv_parseXMLRPC($RAW_POST)	// In case of XML-RPC post, have to examine input string to get certain things like Title
-{
-	$log = new Logging();  
-	$log->lwrite("entered parseXMLRPC");
-	$RAW_POST = dprv_Normalise_XML($RAW_POST);
-	$dprv_XML_variables = array("method" => "Unknown", "id" => -1, "title" => "", "publish" => true);	// set up default values
-	$dprv_XML_variables["method"] = dprv_getTag($RAW_POST, "methodName");
-	$pos = strpos($RAW_POST, "<string>");
-	$posB = strpos($RAW_POST, "</string>");
-	if ($dprv_XML_variables["method"] != "metaWeblog.newPost" && $pos != false && $posB != false && $posB > $pos)
-	{
-		$dprv_XML_variables["id"] = substr($RAW_POST, $pos + 8, $posB - $pos -8);
-	}
-	// TODO - find a way to determine the post id for new posts via XML-RPC
-	//$dprv_XML_variables["title"] = dprv_getNamedInnerTag($RAW_POST, "title");
-	$dprv_XML_variables["title"] = str_replace("&amp;", "&", dprv_getNamedInnerTag($RAW_POST, "title"));
-	$dprv_XML_variables["title"] = html_entity_decode($dprv_XML_variables["title"], ENT_QUOTES, 'UTF-8');
-	if (strpos($RAW_POST, "<boolean>1</boolean>") == false)
-	{
-		$dprv_XML_variables["publish"] = false;
-	}
-	return $dprv_XML_variables;
-}
-
 
 function dprv_Normalise_XML($xmlString)
 {
@@ -860,6 +864,23 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		{
 			$dprv_notice_size = 'Medium';
 		}
+		$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
+		if ($dprv_frustrate_copy == false)
+		{
+			$dprv_frustrate_copy = 'No';
+		}
+
+		$dprv_right_click_message = get_option('dprv_right_click_message');
+		if ($dprv_right_click_message == false)
+		{
+			$dprv_right_click_message = '';
+		}
+		
+		$dprv_record_IP = get_option('dprv_record_IP');
+		if ($dprv_record_IP == false)
+		{
+			$dprv_record_IP = 'No';
+		}
 		$dprv_notice_border = get_option('dprv_notice_border');
 
 		if ($dprv_notice_border == false || $dprv_notice_border == "Gray")
@@ -937,6 +958,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_notice = $_POST['dprv_notice'];
 		$dprv_c_notice = $_POST['dprv_c_notice'];
 		$dprv_notice_size = $_POST['dprv_notice_size'];
+		$dprv_frustrate_copy = $_POST['dprv_frustrate_copy'];
+		$dprv_right_click_message = htmlspecialchars(stripslashes($_POST['dprv_right_click_message']), ENT_QUOTES);
+		$dprv_record_IP = $_POST['dprv_record_IP'];
 		$dprv_notice_border = $_POST['dprv_notice_border'];
 		$dprv_notice_background = $_POST['dprv_notice_background'];
 		$dprv_notice_color = $_POST['dprv_notice_color'];
@@ -991,6 +1015,19 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			if (isset($_POST['dprv_notice_size']))
 			{
 				update_option('dprv_notice_size',$_POST['dprv_notice_size']);
+			}
+			if (isset($_POST['dprv_frustrate_copy']))
+			{
+				update_option('dprv_frustrate_copy',$_POST['dprv_frustrate_copy']);
+			}
+			if (isset($_POST['dprv_right_click_message']))
+			{
+				update_option('dprv_right_click_message',htmlspecialchars(stripslashes($_POST['dprv_right_click_message']), ENT_QUOTES));
+			}
+			
+			if (isset($_POST['dprv_record_IP']))
+			{
+				update_option('dprv_record_IP',$_POST['dprv_record_IP']);
 			}
 			if (isset($_POST['dprv_notice_border']))
 			{
@@ -1150,6 +1187,29 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_notice_smaller_checked = ' checked="checked"';
 	}
 
+	$dprv_frustrate_yes_checked = '';
+	$dprv_frustrate_no_checked = ' checked="checked"';
+	if ($dprv_frustrate_copy == 'Yes')
+	{
+		$dprv_frustrate_no_checked = '';
+		$dprv_frustrate_yes_checked = ' checked="checked"';
+	}
+	$right_click_message_styletext = ' style="width:400px;"';
+	$right_click_checktext = ' checked="checked"';
+	if ($dprv_right_click_message == '')
+	{
+		$right_click_checktext = '';
+		$right_click_message_styletext = ' disabled="disabled" style="width:400px; background-color:#CCCCCC"';
+	}
+
+	$dprv_record_IP_yes_checked = '';
+	$dprv_record_IP_no_checked = ' checked="checked"';
+	if ($dprv_record_IP == 'Yes')
+	{
+		$dprv_record_IP_no_checked = '';
+		$dprv_record_IP_yes_checked = ' checked="checked"';
+	}
+
 	$no_background_checktext = '';
 	if ($dprv_notice_background == "None")
 	{
@@ -1236,6 +1296,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr>
 														<td id="BasicTab" style="height:30px; width:90px; border:1px solid #666666; -moz-border-radius-topleft: 5px; -webkit-border-top-left-radius: 5px; -moz-border-radius-topright: 5px; -webkit-border-top-right-radius: 5px; border-bottom:0px; background-color:#EEFFEE; cursor:pointer" align="center" onclick="DisplayBasic()"><em>Basic</em></td>
 														<td id="AdvancedTab" style="height:30px; width:90px; border:1px solid #666666; -moz-border-radius-topleft: 5px; -webkit-border-top-left-radius: 5px; -moz-border-radius-topright: 5px; -webkit-border-top-right-radius: 5px; background-color:#EEEEFF; cursor:pointer" align="center" onclick="DisplayAdvanced()"><em>Advanced</em></td>
+														<td id="CopyProtectTab" style="height:30px; width:90px; border:1px solid #666666; -moz-border-radius-topleft: 5px; -webkit-border-top-left-radius: 5px; -moz-border-radius-topright: 5px; -webkit-border-top-right-radius: 5px; background-color:#FFEEEE; cursor:pointer" align="center" onclick="DisplayCopyProtect()"><em>Copy Protect</em></td>
 														<td style="border:1px solid #666666; border-top:0px; border-left:0px; border-right:0px"></td>
 													</tr>
 												</table>
@@ -1348,7 +1409,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 																							"This blog post has been Digiproved",
 																							"Copyright protected by Digiprove",
 																							"Copyright secured by Digiprove"),
-																							"This " . strtolower($dprv_content_type) . " has been Digiproved", $dprv_notice) .
+																							"This " . strtolower(htmlentities(stripslashes($dprv_content_type))) . " has been Digiproved", $dprv_notice) .
 													'</select></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
@@ -1403,6 +1464,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 																<option value="Footer"' . $dprv_footer_selected . '>Display in footer*</option>
 															</select></td>
 													</tr>
+													<tr><td style="height:6px"></td></tr>
 												</table>
 											</td>
 										</tr>
@@ -1436,7 +1498,42 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px"></td></tr>
 												</table>
 											</td>
-										</tr>');
+										</tr>
+										
+										
+										<tr id="CopyProtect" style="display:none">
+											<td colspan="2">
+												<table cellpadding="0" cellspacing="0" border="0" style="padding-left:10px; padding-top:7px; padding-right:5px; background-color:#FFEEEE; border:1px solid #666666; border-top:0px; width:100%">
+													<tr><td style="height:6px; width:300px"></td></tr>
+													<tr>
+														<td>' . __('Frustrate content copying attempts:&nbsp;&nbsp;', 'dprv_cp') . '</td>
+														<td>
+															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_yes" value="Yes" ' . $dprv_frustrate_yes_checked . ' onchange="toggle_r_c_checkbox()" />Prevent right-click &amp;select&nbsp;&nbsp;&nbsp;
+															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_no" value="No" ' . $dprv_frustrate_no_checked . ' onchange="toggle_r_c_checkbox()" />Allow right-click &amp; select&nbsp;&nbsp;&nbsp;&nbsp;
+														</td>
+														<td style="padding-left:10px" class="description" ><a href="javascript:ShowFrustrateCopyText()">' .__('Note on content protection', 'dprv_cp') . '</a></td>
+													</tr>
+													<tr><td style="height:6px"></td></tr>
+													<tr>
+														<td>' . __('Display warning note on right-click? :&nbsp;&nbsp;', 'dprv_cp') . '</td>
+														<td colspan="2">
+															<input type="checkbox" ' . $right_click_checktext . ' id="dprv_right_click_box" onchange="toggle_r_c_text(this);" />
+															&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+															<input type="text" id="dprv_right_click_message" name="dprv_right_click_message" ' . $right_click_message_styletext . ' value="' . $dprv_right_click_message . '"/>
+														</td>
+													</tr>
+													<tr><td style="height:6px"></td></tr>
+													<tr style="display:none">
+														<td>' . __('Record IP Address of right-clickers:&nbsp;&nbsp;', 'dprv_cp') . '</td>
+														<td>
+															<input type="radio" name="dprv_record_IP" id="dprv_record_IP_yes" value="Yes" ' . $dprv_record_IP_yes_checked . ' />Record IP Address&nbsp;&nbsp;&nbsp;
+															<input type="radio" name="dprv_record_IP" id="dprv_record_IP_no" value="No" ' . $dprv_record_IP_no_checked . ' />Don\'t bother&nbsp;&nbsp;&nbsp;&nbsp;
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+										');
 	if ($dprv_last_result != '' && strpos($dprv_last_result, "Configure Copyright Proof") === false)
 	{
 		print ('
@@ -1473,6 +1570,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			{
 				document.getElementById("BasicTab").style.borderBottom="0px";
 				document.getElementById("AdvancedTab").style.borderBottom="1px solid #666666";
+				document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
 				document.getElementById("BasicPart1").style.display="";
 				document.getElementById("BasicPart2").style.display="";
 				if (document.getElementById("BasicPart3") != null)
@@ -1481,11 +1579,13 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				}
 				document.getElementById("AdvancedPart1").style.display="none";
 				document.getElementById("AdvancedPart2").style.display="none";
+				document.getElementById("CopyProtect").style.display="none";
 			}
 			function DisplayAdvanced()
 			{
 				document.getElementById("BasicTab").style.borderBottom="1px solid #666666";
 				document.getElementById("AdvancedTab").style.borderBottom="0px";
+				document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
 				document.getElementById("BasicPart1").style.display="none";
 				document.getElementById("BasicPart2").style.display="none";
 				if (document.getElementById("BasicPart3") != null)
@@ -1494,6 +1594,23 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				}	
 				document.getElementById("AdvancedPart1").style.display="";
 				document.getElementById("AdvancedPart2").style.display="";
+				document.getElementById("CopyProtect").style.display="none";
+			}
+
+			function DisplayCopyProtect()
+			{
+				document.getElementById("BasicTab").style.borderBottom="1px solid #666666";
+				document.getElementById("AdvancedTab").style.borderBottom="1px solid #666666";
+				document.getElementById("CopyProtectTab").style.borderBottom="0px";
+				document.getElementById("BasicPart1").style.display="none";
+				document.getElementById("BasicPart2").style.display="none";
+				if (document.getElementById("BasicPart3") != null)
+				{
+					document.getElementById("BasicPart3").style.display="none";
+				}	
+				document.getElementById("AdvancedPart1").style.display="none";
+				document.getElementById("AdvancedPart2").style.display="none";
+				document.getElementById("CopyProtect").style.display="";
 			}
 
 			// Stuff required to deal with annoying FF3.5 bug
@@ -1643,7 +1760,51 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				DigiproveNotice += "</span></span>";
 				document.getElementById("dprv_notice_preview").innerHTML = DigiproveNotice;
 			}
+			function toggle_r_c_checkbox()
+			{
+				if (document.getElementById(\'dprv_frustrate_no\').checked == false)
+				{
+					document.getElementById(\'dprv_right_click_box\').disabled = false;
+					document.getElementById(\'dprv_right_click_box\').style.backgroundColor = \'#FFFFFF\';
+					if (document.getElementById(\'dprv_right_click_box\').checked == true)
+					{
+						document.getElementById(\'dprv_right_click_message\').disabled = false;
+						document.getElementById(\'dprv_right_click_message\').style.backgroundColor = \'#FFFFFF\';
+					}
+					else
+					{
+						document.getElementById(\'dprv_right_click_message\').disabled = true;
+						document.getElementById(\'dprv_right_click_message\').style.backgroundColor = \'#CCCCCC\';
+					}
+				}
+				else
+				{
+					document.getElementById(\'dprv_right_click_box\').disabled = true;
+					document.getElementById(\'dprv_right_click_box\').style.backgroundColor = \'#CCCCCC\';
+					document.getElementById(\'dprv_right_click_message\').disabled = true;
+					document.getElementById(\'dprv_right_click_message\').style.backgroundColor = \'#CCCCC\';
+				}
 
+			}
+			toggle_r_c_checkbox();
+			function toggle_r_c_text(element)
+			{
+				if (element.checked == true)
+				{
+					document.getElementById(\'dprv_right_click_message\').disabled = false;
+					document.getElementById(\'dprv_right_click_message\').style.backgroundColor = \'#FFFFFF\';
+					if (document.getElementById(\'dprv_right_click_message\').value == "")
+					{
+						document.getElementById(\'dprv_right_click_message\').value = "Sorry, right-clicking is disabled; please respect copyrights";
+					}
+				}
+				else
+				{
+					document.getElementById(\'dprv_right_click_message\').value = "";
+					document.getElementById(\'dprv_right_click_message\').disabled = true;
+					document.getElementById(\'dprv_right_click_message\').style.backgroundColor = \'#CCCCCC\';
+				}
+			}
 			toggleCredentials();
 			function toggleCredentials()
 			{
@@ -1749,6 +1910,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				document.getElementById(\'HelpText\').innerHTML = \'The Copyright Proof notice appearing at the foot of your blog posts contains a link to a web-page showing details of the Digiprove certificate of your content. If you do not want your name to appear on this page select the &#39;Keep private&#39; option. Your email address and Digiprove User id are never revealed. Click <a href="http://www.digiprove.com/privacypolicy.aspx" target="_blank">here</a> to read the full privacy statement.\';
 				document.getElementById(\'HelpTextContainer\').style.display=\'inline\';
 			}
+			
+			
+			function ShowFrustrateCopyText()
+			{
+				document.getElementById(\'HelpText\').innerHTML = \'Selecting this option will prevent a user from right-clicking on your web-page (in order to view the source) or selecting content (in order to copy to clipboard) in most browsers.  The settings you choose will apply to all posts published or updated from then on.  This may prevent the unauthorised use of your content by unsophisticated users, but will be a small nuisance to a determined content thief. This is as good as it gets on the web - DO NOT BELIEVE the claims of other plugin authors that your content cannot be stolen...\';
+				document.getElementById(\'HelpTextContainer\').style.display=\'inline\';
+			}
+
+			
 			function HideHelpText()
 			{
 				document.getElementById(\'HelpTextContainer\').style.display=\'none\';
