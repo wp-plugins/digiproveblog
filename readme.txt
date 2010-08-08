@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.0
-Stable tag: 0.75
+Stable tag: 0.76
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -117,6 +117,9 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+
+= 0.76 =
+* Fixed javascript bug which stopped Settings from working properly in IE
 
 = 0.75 =
 * New Copy-Protect feature to prevent right-clicking and text selection
