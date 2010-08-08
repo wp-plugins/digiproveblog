@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.75
+Version: 0.76
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -48,7 +48,7 @@ $dprv_ssl = "Yes";                       // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.75");
+define("DPRV_VERSION", "0.76");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -1782,7 +1782,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					document.getElementById(\'dprv_right_click_box\').disabled = true;
 					document.getElementById(\'dprv_right_click_box\').style.backgroundColor = \'#CCCCCC\';
 					document.getElementById(\'dprv_right_click_message\').disabled = true;
-					document.getElementById(\'dprv_right_click_message\').style.backgroundColor = \'#CCCCC\';
+					document.getElementById(\'dprv_right_click_message\').style.backgroundColor = \'#CCCCCC\';
 				}
 
 			}
