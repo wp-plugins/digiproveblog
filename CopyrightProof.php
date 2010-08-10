@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.76
+Version: 0.77
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -48,7 +48,7 @@ $dprv_ssl = "Yes";                       // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.76");
+define("DPRV_VERSION", "0.77");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -145,7 +145,7 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 				if (document.getElementById("message") && document.getElementById("message") != null)
 				{
 					var existing_message = document.getElementById("message").innerHTML;
-					var pos = existing_message.indexOf("</p>");
+					var pos = existing_message.toLowerCase().indexOf("</p>");
 					var pub = existing_message.indexOf("Post published");
 					var upd = existing_message.indexOf("Post updated");
 					if (pos > 0 && (pub != -1 || upd != -1))
@@ -166,7 +166,7 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 			if (document.getElementById("message") && document.getElementById("message") != null)
 				{
 					var existing_message = document.getElementById("message").innerHTML;
-					var pos = existing_message.indexOf("</p>");
+					var pos = existing_message.toLowerCase().indexOf("</p>");
 					var act = existing_message.indexOf("activated");
 					if (pos > 0 && act != -1)
 					{
@@ -409,7 +409,7 @@ function dprv_composeNotice($certifyResponse)
 			$home = get_settings('siteurl');
 			$DigiproveNotice .= "<style type='text/css'>body{-moz-user-select: none;}</style><script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js'></script>";
 		}
-		$DigiproveNotice .= '<span style="vertical-align:middle; display:inline-table; padding:3px; line-height:normal;';
+		$DigiproveNotice .= '<span style="vertical-align:middle; display:inline; padding:3px; line-height:normal;';
 		$dprv_notice_border = get_option('dprv_notice_border');
 		if ($dprv_notice_border == "None")
 		{
@@ -1508,8 +1508,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr>
 														<td>' . __('Frustrate content copying attempts:&nbsp;&nbsp;', 'dprv_cp') . '</td>
 														<td>
-															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_yes" value="Yes" ' . $dprv_frustrate_yes_checked . ' onchange="toggle_r_c_checkbox()" />Prevent right-click &amp;select&nbsp;&nbsp;&nbsp;
-															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_no" value="No" ' . $dprv_frustrate_no_checked . ' onchange="toggle_r_c_checkbox()" />Allow right-click &amp; select&nbsp;&nbsp;&nbsp;&nbsp;
+															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_yes" value="Yes" ' . $dprv_frustrate_yes_checked . ' onclick="toggle_r_c_checkbox()" />Prevent right-click &amp;select&nbsp;&nbsp;&nbsp;
+															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_no" value="No" ' . $dprv_frustrate_no_checked . ' onclick="toggle_r_c_checkbox()" />Allow right-click &amp; select&nbsp;&nbsp;&nbsp;&nbsp;
 														</td>
 														<td style="padding-left:10px" class="description" ><a href="javascript:ShowFrustrateCopyText()">' .__('Note on content protection', 'dprv_cp') . '</a></td>
 													</tr>
@@ -1517,7 +1517,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr>
 														<td>' . __('Display warning note on right-click? :&nbsp;&nbsp;', 'dprv_cp') . '</td>
 														<td colspan="2">
-															<input type="checkbox" ' . $right_click_checktext . ' id="dprv_right_click_box" onchange="toggle_r_c_text(this);" />
+															<input type="checkbox" ' . $right_click_checktext . ' id="dprv_right_click_box" onclick="toggle_r_c_text(this);" />
 															&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 															<input type="text" id="dprv_right_click_message" name="dprv_right_click_message" ' . $right_click_message_styletext . ' value="' . $dprv_right_click_message . '"/>
 														</td>
