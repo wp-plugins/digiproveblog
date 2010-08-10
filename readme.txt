@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.0
-Stable tag: 0.75
+Stable tag: 0.77
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
