@@ -1,16 +1,16 @@
 ﻿=== Copyright Proof ===
 Contributors: Digiprove
 Donate link: http://www.digiprove.com/
-Tags: copyright, protect ip, plagiarism, splogging, link-building, link, free, proof of ownership
+Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.0
-Stable tag: 0.77
+Tested up to: 3.0.1
+Stable tag: 0.78
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
 == Description ==
 
-A copyright notice with teeth!  Prove authorship, deter plagiarism, and protect your copyright.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post. Optional anti-theft feature to copy protect your content.
+A copyright notice with teeth!  Prove ownership, protect your copyright, and copy protect.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post. Optional anti-theft feature to copy protect your content.
 
 [Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
 
@@ -118,13 +118,26 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 == Changelog ==
 
+= 0.78 =
+* Tested with Wordpress 3.0.1
+* New option - whether to receive certificates by email
+* Was using Wordpress installation url rather than blog url as domain - corrected
+* Traps error situation where no blog url can be found
+* Linked privacy setting for name display to Copyright notice text as well as certificate display
+* Improved help text for getting started (registration etc.)
+* Added facility to obtain new Digiprove api key from within Wordpress
+* Cosmetic improvements to behaviour & appearance on IE
+* Fixed bug dealing with long email addresses
+* rel="copyright" now included in copyright notice link
+
+
 = 0.77 =
 * Fixed javascript bug that caused Copy-Protect settings problems in IE
 * Digiprove information messages now displayed in IE
 * Digiprove notice now displayed in 'inline' mode - should be better in most browsers
 
 = 0.76 =
-* Fixed javascript bug that caused Settings not to work in IE
+* Fixed javascript bug (Settings did not work properly on IE)
 
 = 0.75 =
 * New Copy-Protect feature to prevent right-clicking and text selection
