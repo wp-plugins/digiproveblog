@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.0.1
-Stable tag: 0.78
+Stable tag: 0.79
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -99,6 +99,8 @@ Copyright Proof will automatically assign one to you using the domain name recor
 plugin to run in another blog, you can request a new api key for the new domain. Do this by logging into Digiprove at https://www.digiprove.com/secure/login.aspx, then choosing "Preferences" and 
 "Issue/Renew API Keys".  This will allow you to obtain multiple API keys corresponding to the domains you wish to work with, which can then be input in the Copyright Proof Settings page in Wordpress.
 
+If the API key value gets messed up you can get a new one by ticking the "Renew API Key" box, entering your password, and pressing Update.
+
 = I get an error message: "daily limit of API requests exceeded - please upgrade Digiprove account" =
 
 If you are getting this message, it means that you are attempting to do more than 50 Digiprove transactions in any given day, which is a maximum we have introduced for free users. Some users are going
@@ -117,6 +119,10 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+
+= 0.79 =
+* Can now request re-send of activation email
+* Pages (as well as posts) now Digiproved
 
 = 0.78 =
 * Tested with Wordpress 3.0.1

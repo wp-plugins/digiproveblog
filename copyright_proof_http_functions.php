@@ -92,7 +92,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 			if ($errno == 0)
 			{
 				fwrite($fs, $http_request);
-				$log->lwrite("fwrite done, now get response when it comes");
+				//$log->lwrite("fwrite done, now get response when it comes");
 				stream_set_timeout($fs, 40);
 				$get_count = 0;
 				while ( !feof($fs) )
@@ -108,9 +108,9 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 					}
 					else
 					{
-						$log->lwrite("got this: " . $temp);
+						//$log->lwrite("got this: " . $temp);
 						$response .= $temp;
-						$log->lwrite("get " . $get_count . " done, response length = " . strlen($response));
+						//$log->lwrite("get " . $get_count . " done, response length = " . strlen($response));
 						$get_count = $get_count + 1;
 					}
 				}
@@ -118,7 +118,8 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 				fclose($fs);
 				//TODO: check that response is complete (ends with </string>)
 				$response = htmlspecialchars_decode($response, ENT_QUOTES);
-				$log->lwrite("response=$response, length=" . strlen($response));
+				//$log->lwrite("response=$response, length=" . strlen($response));
+				$log->lwrite("response length=" . strlen($response));
 				if (strlen($response) == 0)
 				{
 					$log->lwrite("Empty response from server");
