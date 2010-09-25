@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.79
+Version: 0.80
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -41,14 +41,14 @@ else
 }
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
-$dprv_log_is_on = false;             // Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "www.digiprove.com";    // -> should be set to "www.digiprove.com"
-$dprv_port = 443;                    // -> should be set to 443 (standard settings 80 for http, 443 for https)
-$dprv_ssl = "Yes";                   // -> should be set to "Yes"
+$dprv_log_is_on = false;                // Set this to true to generate local log-file (needs write permissions)
+$dprv_host = "www.digiprove.com";       // -> should be set to "www.digiprove.com"
+$dprv_port = 443;                       // -> should be set to 443 (standard settings 80 for http, 443 for https)
+$dprv_ssl = "Yes";                      // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.79");
+define("DPRV_VERSION", "0.80");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -59,8 +59,7 @@ add_action('admin_head', 'dprv_admin_head');
 add_action('admin_footer', 'dprv_admin_footer');
 add_filter('wp_insert_post_data', 'dprv_digiprove_post_new', 99, 2);
 add_filter('wp_insert_page_data', 'dprv_digiprove_post_new', 99, 2);
-// Instruction below part of new strategy for storing/displaying Digiprove certificate data
-//add_filter( "the_content", "dprv_display_notice" );
+add_filter( "the_content", "dprv_display_content" );
 
 
 function dprv_activate()
@@ -285,7 +284,6 @@ function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post 
 				// New strategy:
 				// Instructions below write certificate information as post/page metadata
 				// and remove any previously embedded Digiprove notice from the content
-				// Note this also requires the instruction "add_filter( "the_content", "dprv_display_notice" );" in Register hooks section
 				// TODO before implementation - find neat way to give access to Digiproving history
 				//dprv_record_dp_action($dprv_post_id, $certifyResponse);
 				//$data['post_content'] = dprv_strip_old_notice($newContent);
@@ -294,7 +292,7 @@ function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post 
 				// Old Strategy
 				// Instructions below create a formatted Digiprove notice from the certificate information
 				// and embed it directly in the content (replacing any earlier notice)
-				// If using this method remove the instruction "add_filter( "the_content", "dprv_display_notice" );" in Register hooks section
+				// If using this method remove the instruction "add_filter( "the_content", "dprv_display_content" );" in Register hooks section
 				$DigiproveNotice = dprv_composeNotice($certifyResponse);
 				$data['post_content'] = dprv_insertNotice($newContent, $DigiproveNotice);
 
@@ -350,6 +348,8 @@ function dprv_strip_old_notice($content)
 	return $raw_content;
 }
 
+
+// Combine this into dprv_display_content if changing to new strategy of dynamically creating digiprove notice
 function dprv_display_notice($content)
 {
 	$log = new Logging();  
@@ -377,6 +377,32 @@ function dprv_display_notice($content)
 		$dprv_notice = dprv_composeNotice($certificate_info);
 		$content .=  "\r\n\r\n<!--Digiprove_Start-->" . $dprv_notice . "<!--Digiprove_End-->";
 	}
+	return $content;
+}
+
+function dprv_display_content($content)
+{
+	$log = new Logging();  
+	$log->lwrite("dprv_display_content starts");
+	$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
+	$dprv_right_click_message = get_option('dprv_right_click_message');
+	$dprv_record_IP = get_option('dprv_record_IP');
+	$content_prefix = "";
+	if ($dprv_record_IP == "Yes")
+	{
+		$content_prefix .= "<script src='record_IP.js' type='text/javascript'></script>";
+		$dprv_wp_url = parse_url(get_option('siteurl'));
+		$dprv_wp_host = $dprv_wp_url[host];
+		$log->lwrite("dprv_wp_host = " . $dprv_wp_host);  
+		$content_prefix .= "<form action='http://" . $dprv_wp_host . "/copyright_proof_handler.php' method='post' id='IPAddress'><input type='hidden' value='" . @$REMOTE_ADDR . "' /></form>";
+	}
+
+	if ($dprv_frustrate_copy == "Yes")
+	{
+		$home = get_settings('siteurl');
+		$content_prefix .= "<style type='text/css'>body{-moz-user-select: none;}</style><script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js'></script>";
+	}
+	$content = $content_prefix . $content;
 	return $content;
 }
 
@@ -426,7 +452,7 @@ function dprv_composeNotice($certifyResponse)
 		{
 			$dprv_hover_color = "#A35353";
 		}
-
+/*
 		$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
 		$dprv_right_click_message = get_option('dprv_right_click_message');
 		$dprv_record_IP = get_option('dprv_record_IP');
@@ -445,6 +471,7 @@ function dprv_composeNotice($certifyResponse)
 			$home = get_settings('siteurl');
 			$DigiproveNotice .= "<style type='text/css'>body{-moz-user-select: none;}</style><script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js'></script>";
 		}
+*/
 		$DigiproveNotice .= '<span style="vertical-align:middle; display:inline; padding:3px; line-height:normal;';
 		$dprv_notice_border = get_option('dprv_notice_border');
 		if ($dprv_notice_border == "None")
@@ -1039,11 +1066,17 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				{
 					update_option('dprv_frustrate_copy',$_POST['dprv_frustrate_copy']);
 				}
-				if (isset($_POST['dprv_right_click_message']))
+				if ($_POST['dprv_right_click_box'] =="on")
 				{
-					update_option('dprv_right_click_message',htmlspecialchars(stripslashes($_POST['dprv_right_click_message']), ENT_QUOTES));
+					if (isset($_POST['dprv_right_click_message']))
+					{
+						update_option('dprv_right_click_message',htmlspecialchars(stripslashes($_POST['dprv_right_click_message']), ENT_QUOTES));
+					}
 				}
-				
+				else
+				{
+					update_option('dprv_right_click_message', "");
+				}
 				if (isset($_POST['dprv_record_IP']))
 				{
 					update_option('dprv_record_IP',$_POST['dprv_record_IP']);
@@ -1597,7 +1630,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr>
 														<td>' . __('Display warning note on right-click? :&nbsp;&nbsp;', 'dprv_cp') . '</td>
 														<td colspan="2">
-															<input type="checkbox" ' . $right_click_checktext . ' id="dprv_right_click_box" onclick="toggle_r_c_text(this);" />
+															<input type="checkbox" ' . $right_click_checktext . ' id="dprv_right_click_box" name="dprv_right_click_box" onclick="toggle_r_c_text(this);" />
 															&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 															<input type="text" id="dprv_right_click_message" name="dprv_right_click_message" ' . $right_click_message_styletext . ' value="' . $dprv_right_click_message . '"/>
 														</td>
