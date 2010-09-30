@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.80
+Version: 0.81
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -41,14 +41,14 @@ else
 }
 // Declare and initialise global variables:
 global $dprv_log_is_on, $dprv_host, $dprv_port, $dprv_ssl, $start_Digiprove, $end_Digiprove, $dprv_soap_count;
-$dprv_log_is_on = false;                // Set this to true to generate local log-file (needs write permissions)
-$dprv_host = "www.digiprove.com";       // -> should be set to "www.digiprove.com"
-$dprv_port = 443;                       // -> should be set to 443 (standard settings 80 for http, 443 for https)
-$dprv_ssl = "Yes";                      // -> should be set to "Yes"
+$dprv_log_is_on = false;                  // Set this to true to generate local log-file (needs write permissions)
+$dprv_host = "www.digiprove.com";         // -> should be set to "www.digiprove.com"
+$dprv_port = 443;                         // -> should be set to 443 (standard settings 80 for http, 443 for https)
+$dprv_ssl = "Yes";                        // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.80");
+define("DPRV_VERSION", "0.81");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -472,7 +472,7 @@ function dprv_composeNotice($certifyResponse)
 			$DigiproveNotice .= "<style type='text/css'>body{-moz-user-select: none;}</style><script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js'></script>";
 		}
 */
-		$DigiproveNotice .= '<span style="vertical-align:middle; display:inline; padding:3px; line-height:normal;';
+		$DigiproveNotice .= '<span lang="en" xml:lang="en" style="vertical-align:middle; display:inline; padding:3px; line-height:normal;';
 		$dprv_notice_border = get_option('dprv_notice_border');
 		if ($dprv_notice_border == "None")
 		{

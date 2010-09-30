@@ -93,7 +93,7 @@ function disableSelection()
 	disableCtrlKeys();
 }
 
-window.onload = disableSelection;
+//window.onload = disableSelection;
 
 function disableCtrlKeys()
 {
@@ -119,6 +119,7 @@ function trapCtrlKeyCombination(ev)
         var key;
         var isCtrl;
 		//ev=ev||event;
+		// TODO - change this test to checking whether undefined or not to avoid javascript warning message
         if(window.event)	// This is true in IE and Safari  - Note ev.which also exists in Safari, Opera and Chrome
         {
 			key = window.event.keyCode;
@@ -161,3 +162,5 @@ function htmlspecialchars_decode(encodedString)
 	var decodedString = encodedString.replace('&amp;', '&');
 	return decodedString.replace('&quot;', '"').replace('&#039;', '\'').replace('&lt;', '<').replace('&gt;','>');
 }
+
+disableSelection();
