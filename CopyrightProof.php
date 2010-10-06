@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.81
+Version: 0.82
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -48,7 +48,7 @@ $dprv_ssl = "Yes";                        // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.81");
+define("DPRV_VERSION", "0.82");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -230,7 +230,7 @@ function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post 
 	$log->lwrite("title=" . $dprv_title . ", id=" . $dprv_post_id);  
 	$log->lwrite("dprv_digiprove_post STARTS");  
 	
-	$newContent = stripslashes($content);
+	$newContent = stripslashes($content);					// TODO - Do we need to stripslashes?
 	$certifyResponse = dprv_certify($dprv_post_id, $dprv_title, $newContent);
 	if (strpos($certifyResponse, "Hashes are identical") === false)
 	{
@@ -294,7 +294,8 @@ function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post 
 				// and embed it directly in the content (replacing any earlier notice)
 				// If using this method remove the instruction "add_filter( "the_content", "dprv_display_content" );" in Register hooks section
 				$DigiproveNotice = dprv_composeNotice($certifyResponse);
-				$data['post_content'] = dprv_insertNotice($newContent, $DigiproveNotice);
+				//$data['post_content'] = dprv_insertNotice($newContent, $DigiproveNotice);
+				$data['post_content'] = dprv_insertNotice($data['post_content'], $DigiproveNotice);
 
 				// Surely the following bit is unnecessary?  Check and delete:			
 				if (get_option('dprv_enrolled') != "Yes")
