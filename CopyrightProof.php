@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.82
+Version: 0.83
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -48,7 +48,7 @@ $dprv_ssl = "Yes";                        // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.82");
+define("DPRV_VERSION", "0.83");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -59,7 +59,8 @@ add_action('admin_head', 'dprv_admin_head');
 add_action('admin_footer', 'dprv_admin_footer');
 add_filter('wp_insert_post_data', 'dprv_digiprove_post_new', 99, 2);
 add_filter('wp_insert_page_data', 'dprv_digiprove_post_new', 99, 2);
-add_filter( "the_content", "dprv_display_content" );
+//add_filter( "the_content", "dprv_display_content" );
+add_filter( "wp_footer", "dprv_footer" );
 
 
 function dprv_activate()
@@ -292,7 +293,6 @@ function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post 
 				// Old Strategy
 				// Instructions below create a formatted Digiprove notice from the certificate information
 				// and embed it directly in the content (replacing any earlier notice)
-				// If using this method remove the instruction "add_filter( "the_content", "dprv_display_content" );" in Register hooks section
 				$DigiproveNotice = dprv_composeNotice($certifyResponse);
 				//$data['post_content'] = dprv_insertNotice($newContent, $DigiproveNotice);
 				$data['post_content'] = dprv_insertNotice($data['post_content'], $DigiproveNotice);
@@ -381,14 +381,18 @@ function dprv_display_notice($content)
 	return $content;
 }
 
-function dprv_display_content($content)
+
+function dprv_footer()
 {
 	$log = new Logging();  
-	$log->lwrite("dprv_display_content starts");
+	$log->lwrite("dprv_footer starts");
+	$post_id = get_the_ID();
+	$log->lwrite("post_id = " . $post_id);
+
+	// Then, create HTML/CSS/Javascript to do copy-protect functions if necessary
 	$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
 	$dprv_right_click_message = get_option('dprv_right_click_message');
 	$dprv_record_IP = get_option('dprv_record_IP');
-	$content_prefix = "";
 	if ($dprv_record_IP == "Yes")
 	{
 		$content_prefix .= "<script src='record_IP.js' type='text/javascript'></script>";
@@ -401,11 +405,10 @@ function dprv_display_content($content)
 	if ($dprv_frustrate_copy == "Yes")
 	{
 		$home = get_settings('siteurl');
-		$content_prefix .= "<style type='text/css'>body{-moz-user-select: none;}</style><script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js'></script>";
+		echo ("<script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js?v=0.83'></script>");
 	}
-	$content = $content_prefix . $content;
-	return $content;
 }
+
 
 function dprv_record_dp_action($post_id, $certifyResponse)
 {
@@ -453,26 +456,7 @@ function dprv_composeNotice($certifyResponse)
 		{
 			$dprv_hover_color = "#A35353";
 		}
-/*
-		$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
-		$dprv_right_click_message = get_option('dprv_right_click_message');
-		$dprv_record_IP = get_option('dprv_record_IP');
 
-		if ($dprv_record_IP == "Yes")
-		{
-			$DigiproveNotice .= "<script src='record_IP.js' type='text/javascript'></script>";
-			$dprv_wp_url = parse_url(get_option('siteurl'));
-			$dprv_wp_host = $dprv_wp_url[host];
-			$log->lwrite("dprv_wp_host = " . $dprv_wp_host);  
-			$DigiproveNotice .= "<form action='http://" . $dprv_wp_host . "/copyright_proof_handler.php' method='post' id='IPAddress'><input type='hidden' value='" . @$REMOTE_ADDR . "' /></form>";
-		}
-
-		if ($dprv_frustrate_copy == "Yes")
-		{
-			$home = get_settings('siteurl');
-			$DigiproveNotice .= "<style type='text/css'>body{-moz-user-select: none;}</style><script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js'></script>";
-		}
-*/
 		$DigiproveNotice .= '<span lang="en" xml:lang="en" style="vertical-align:middle; display:inline; padding:3px; line-height:normal;';
 		$dprv_notice_border = get_option('dprv_notice_border');
 		if ($dprv_notice_border == "None")
