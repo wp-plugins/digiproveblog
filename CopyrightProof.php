@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.83
+Version: 0.84
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -48,7 +48,7 @@ $dprv_ssl = "Yes";                        // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.83");
+define("DPRV_VERSION", "0.84");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -405,7 +405,7 @@ function dprv_footer()
 	if ($dprv_frustrate_copy == "Yes")
 	{
 		$home = get_settings('siteurl');
-		echo ("<script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js?v=0.83'></script>");
+		echo ("<script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js?v=0.84'></script>");
 	}
 }
 
@@ -514,7 +514,13 @@ function dprv_insertNotice($content, $DigiproveNotice)
 {
 	$log = new Logging();  
 	$log->lwrite("dprv_insertNotice starts");  
-	global $start_Digiprove, $end_Digiprove;
+	//global $start_Digiprove, $end_Digiprove;
+	$log->lwrite("content = " . $content);  
+
+	$start_Digiprove = strpos($content, "<!--Digiprove_Start-->");
+	$end_Digiprove = strpos($content, "<!--Digiprove_End-->");
+	$log->lwrite($start_Digiprove . ", " . $end_Digiprove);
+
 	if ($start_Digiprove === false || $end_Digiprove === false || $end_Digiprove <= $start_Digiprove)
 	{
 		if ($end_Digiprove !== false)

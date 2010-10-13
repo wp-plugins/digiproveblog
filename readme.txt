@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.0.1
-Stable tag: 0.83
+Stable tag: 0.84
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -119,6 +119,10 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+
+= 0.84 =
+* Fixed silly and annoying bug (introduced at 0.82) where Digiprove notice of an updated post was corrupted
+* To fix existing notices, please make a small change to post content and press Update
 
 = 0.83 =
 * Fixed bug where copy-protect mechanism was interfering with ability to post comments on post page
