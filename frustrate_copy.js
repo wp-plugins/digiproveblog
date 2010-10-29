@@ -1,27 +1,87 @@
 function disableSelection(target)
 {
-	//var noRightClickMessage = "";
-	if (typeof target.onselectstart!='undefined') //For IE, Chrome, or Safari
-	{
-		target.onselectstart=function(){return false}
-	}
-	else
-	{
+/*		// MozUserSelect has a bug - Bug 561691 : sub-elements cannot be excepted from the rule
 		if (typeof target.style.MozUserSelect!='undefined')    // Firefox
 		{
 			target.style.MozUserSelect='none';
+			enableInputElements(target);
 		}
-		else //All other route (For Opera)
+*/
+
+	if (typeof target.style.WebkitUserSelect!='undefined')    // Safari or Chrome
+	{
+		target.style.WebkitUserSelect='none';
+		enableInputElements(target);
+	}
+	else
+	{
+		if (typeof target.onselectstart!='undefined') //For IE, Chrome or Safari (but Chrome or Safari already picked up above)
 		{
-			target.onmousedown=function(){return false}
+			target.onselectstart=function()
+			{
+				if (event.srcElement.type != "text" && event.srcElement.type != "textarea" && event.srcElement.type != "password")
+				{return false;}
+				else
+				{return true;}
+			}
+		}
+		else
+		{
+			if (window.sidebar)	// Firefox IE and Chrome and Safari (and Netscape?): IE, Chrome and Safari already picked up above
+			{
+				target.onmousedown=trapMouseDown;
+			}
+			else //All other route (For Opera)
+			{
+				target.onmousedown=trapMouseDown;
+			}
 		}
 	}
-	disableCtrlKeys();
 }
 
+function enableInputElements(target)
+{
+	var inputElements = target.getElementsByTagName("input");
+	for (var i=0; i<inputElements.length; i++)
+	{
+		enableSelection(inputElements[i]);
+	}
+	inputElements = target.getElementsByTagName("textarea");
+	for (var i=0; i<inputElements.length; i++)
+	{
+		enableSelection(inputElements[i]);
+	}
+}
 
-function disableText(){return false;}
-function reEnable(){return true;}
+function enableSelection(target)
+{
+	if (typeof target.style.WebkitUserSelect!='undefined')    // Safari
+	{
+		target.style.WebkitUserSelect='text';
+	}
+}
+
+function trapMouseDown(e)
+{
+	var element
+	if (!e) var e = window.event
+	if (e.target) element = e.target
+	else if (e.srcElement) element = e.srcElement
+	if (element.nodeType == 3) // defeat Safari bug
+	element = element.parentNode
+	var tagname=element.tagName.toUpperCase();
+	if (tagname == "INPUT" || tagname == "TEXTAREA")
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+//function disableText(){return false;}
+//function reEnable(){return true;}
 
 
 function disableCtrlKeys()
@@ -164,8 +224,8 @@ else
 document.oncontextmenu=new Function("displayMessage();return false")
 var justDisplayed = 0;
 
-//For browser NS6
-if (window.sidebar){target.onmousedown = disableText;target.onclick = reEnable;}
-
-// Prevent Selection and CTRL keys
+// Prevent Selection of Text on non-input elements
 disableSelection(target);
+
+// Prevent use of CTRL/U and CTRL/A
+disableCtrlKeys();

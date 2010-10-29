@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your Wordpress posts to prove copyright ownership.
-Version: 0.84
+Version: 0.85
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -48,7 +48,7 @@ $dprv_ssl = "Yes";                        // -> should be set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.84");
+define("DPRV_VERSION", "0.85");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -405,7 +405,7 @@ function dprv_footer()
 	if ($dprv_frustrate_copy == "Yes")
 	{
 		$home = get_settings('siteurl');
-		echo ("<script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js?v=0.84'></script>");
+		echo ("<script type='text/javascript'>var noRightClickMessage='" . $dprv_right_click_message . "';</script><script type='text/javascript' src='" . $home . "/wp-content/plugins/digiproveblog/frustrate_copy.js?v=" . DPRV_VERSION . "'></script>");
 	}
 }
 
@@ -489,9 +489,9 @@ function dprv_composeNotice($certifyResponse)
 		$DigiproveNotice .= $backgroundStyle . '" '; 
 		$DigiproveNotice .= 'title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" ';
-		$DigiproveNotice .= 'style="border:0px; float:none; display:inline; text-decoration: none;' . $backgroundStyle . '">';
+		$DigiproveNotice .= 'style="border:0px; float:none; display:inline; text-decoration: none; background-color:transparent">';
 		$DigiproveNotice .= '<img src="http://www.digiprove.com/images/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px; margin:0px; float:none; background-color:transparent" border="0"' . $dprv_image_scale . ' alt=""/>';
-		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_font_size . '; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal" ';
+		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal" ';
 		$DigiproveNotice .= 'onmouseover="this.style.color=\'' . $dprv_hover_color . '\';" onmouseout="this.style.color=\'' . $dprv_notice_color . '\';">';
 		$DigiproveNotice .= '&nbsp;&nbsp;' . $dprv_notice;
 		$dprv_c_notice = get_option('dprv_c_notice');
