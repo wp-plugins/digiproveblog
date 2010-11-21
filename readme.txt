@@ -39,15 +39,14 @@ A copyright notice with teeth!  Prove ownership, protect your copyright, and cop
 
 [Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
 
-= When I try to upgrade the plugin, it fails (often with the message "Could not remove the old plugin") - what to do? =
+= How does this protect copyright? =
 
-This is a frustrating thing that doesn't happen to everybody. It can happen with any plugin. Basically your host server operating system is preventing Wordpress from
-deleting the old plugin files or the directory in which they are contained.  The short-term solution is to access your site via FTP and delete the plugin folder/directory.
-In the case of Copyright Proof the folder is (within your wordpress root directory) "/wp-content/plugins/digiproveblog". Then install the Copyright Proof plugin afresh -
-your existing settings will all be retained.
+Note that in most countries, you are already the copyright owner of any original work (literary or otherwise) that you have created, as soon as you record or publish it (whether or not you subsequently go through a formal registration process).  By Digiproving your work, you are creating time-stamped evidence that you are the possessor of that content, which is the critical factor in ensuring you can prove your ownership (or someone else's plagiarism).
 
-The long term solution is to find the source of the problem - usually some permission settings somewhere on the server, maybe with the aid of your hosting company. Unfortunately
-because of the wide variety of environments that Wordpress can find itself in, there is no "one-size-fits-all" solution.
+In some countries, you can go a step further by formally registering your copyright in your work as it is created/published or subsequently.  There is usually a fee for this, and the benefits vary from country to country - in the U.S. for instance this should be done prior to instituting any legal proceedings for breach of copyright.
+
+Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
+Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
 
 = What's with the registration process?  =
@@ -63,14 +62,17 @@ Digiprove does not make use of these details except to deliver the service.  Ple
 This is a Beta version of the Copyright Proof plug-in - it is free for all to use.  For the future our intention is that there will be no cost for personal use (or use by an educational establishment or a registered charity) of the Digiprove service via this plug-in.
 
 
-= How does this protect copyright? =
+= When I try to upgrade the plugin, it fails (often with the message "Could not remove the old plugin") - what to do? =
 
-Note that in most countries, you are already the copyright owner of any original work (literary or otherwise) that you have created, as soon as you record or publish it (whether or not you subsequently go through a formal registration process).  By Digiproving your work, you are creating time-stamped evidence that you are the possessor of that content, which is the critical factor in ensuring you can prove your ownership (or someone else's plagiarism).
+This is a frustrating thing that doesn't happen to everybody. It can happen with any plugin. Basically your host server operating system is preventing Wordpress from
+deleting the old plugin files or the directory in which they are contained.  Sometimes this is caused by the existence of temporary files created by the operating system,
+in which case waiting 10 minutes or more may solve the problem.   The short-term solution is to access your site via FTP and delete the plugin folder/directory.
+In the case of Copyright Proof the folder is (within your wordpress root directory) "/wp-content/plugins/digiproveblog". Then install the Copyright Proof plugin afresh -
+your existing settings will all be retained.
 
-In some countries, you can go a step further by formally registering your copyright in your work as it is created/published or subsequently.  There is usually a fee for this, and the benefits vary from country to country - in the U.S. for instance this should be done prior to instituting any legal proceedings for breach of copyright.
+The long term solution is to find the source of the problem - usually some permission settings somewhere on the server, maybe with the aid of your hosting company. Unfortunately
+because of the wide variety of environments that Wordpress can find itself in, there is no "one-size-fits-all" solution.
 
-Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
-Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
 = I think I've found a bug, what can I do? =
 
@@ -79,7 +81,7 @@ This is a beta version of the plug-in, and we actively seek information about pr
 
 = I like your plugin, but it would be much better if ... =
 
-We actively seek your suggestions at suggestions@digiprove.com.  We will respond to every suggestion and if we like it we'll act on it.
+We actively seek your suggestions at enquiries@digiprove.com.  We will respond to every suggestion and if we like it we'll act on it.
 
 
 = Can I review my history of Digiproving online? =
@@ -92,14 +94,14 @@ Yes, you can review your history online (and perform other functions) by visitin
 From release 0.71 onwards as part of our preparation to exit Beta mode, we no longer store user Digiprove passwords in Settings, using an api key instead.  Existing users do not need to do anything,
 the plug-in will automatically request and install a new api key for you. For new users registering via the plug-in, issuance of an api key is also done automatically.
 
-= I get an error message: "invalid user id, domain, or api key" =
+= I get an error message: "Invalid domain or api key" =
 
-Check your user id first; if that is correct, there is a problem with the API key and/or domain. Each API key is associated with a domain (e.g. myinterestingblog.com, or www.myinterestingblog.com).
-Copyright Proof will automatically assign one to you using the domain name recorded in the Wordpress "General" settings of your blog. If you change this domain name, or you want to set up the
-plugin to run in another blog, you can request a new api key for the new domain. Do this by logging into Digiprove at https://www.digiprove.com/secure/login.aspx, then choosing "Preferences" and 
-"Issue/Renew API Keys".  This will allow you to obtain multiple API keys corresponding to the domains you wish to work with, which can then be input in the Copyright Proof Settings page in Wordpress.
+Each API key is associated with a domain (e.g. myinterestingblog.com, or www.myinterestingblog.com). Copyright Proof will automatically assign one to you using the domain name recorded in the Wordpress 
+"General" settings of your blog. If you change this domain name, or you want to set up the plugin to run in another Wordpress installation under your existing Digiprove identity, you can request a new api
+key for the new domain, by ticking the "Issue New API Key" box (you will be asked for your password to do this function). You can also obtain a new API key by logging into Digiprove at https://www.digiprove.com/secure/login.aspx,
+then choosing "Preferences" and "Issue/Renew API Keys".  This will allow you to obtain multiple API keys corresponding to the domains you wish to work with, which can then be input in the Copyright Proof Settings page in Wordpress.
 
-If the API key value gets messed up you can get a new one by ticking the "Renew API Key" box, entering your password, and pressing Update.
+If the API key value gets messed up you can get a new one by ticking the "Issue New API Key" box, entering your password, and pressing Update.
 
 = I get an error message: "daily limit of API requests exceeded - please upgrade Digiprove account" =
 
@@ -119,6 +121,13 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+
+= 0.86 =
+* More validation and better help text in registration processes
+* Small change to minimise file permission problems when upgrading this plug-in in future
+* Google "notranslate" class now applied to Digiprove notice
+* Now detects if SSL not installed on Wordpress Server and drops back to http on port 80
+* Fixed bug to do with start of header control character (0x01) in XML
 
 = 0.85 =
 * Fixed bug where input fields within a post or page were disabled on Firefox when copy-protect feature was on

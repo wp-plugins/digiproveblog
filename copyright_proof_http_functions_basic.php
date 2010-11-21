@@ -29,11 +29,27 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 	$response = '';                 
 	if ($dprv_ssl == "Yes")
 	{
-		$http_host = "ssl://" . $http_host;
+		$t = stream_get_transports();
+		for ($i=0; $i<count($t); $i++)
+		{
+			if (stripos($t[$i], "ssl") !== false)
+			{
+				$http_host = "ssl://" . $http_host;
+				break;
+			}
+		}
+		if (strpos($http_host, "ssl://") === false)
+		{
+			$dprv_port = 80;
+		} 
+		//$http_host = "ssl://" . $http_host;
 	}
+	$log->lwrite("http_host " . $http_host);
 	
 //	try																	// try/catch block not supported in php4
 //	{
+		$errno = -1;
+		$errstr = "Unknown";
 		if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr, 10) ) ) 
 		{                 
 			$log->lwrite("socket open, errno = " . $errno);
@@ -76,8 +92,8 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 			}
 			else
 			{
-				$log->lwrite("Socket may be open, but error code = " . $errno);
-				return "Error: Could not open socket to " . $http_host . ".  Error code = " . $errno;
+				$log->lwrite("Socket may be open, but error = " . $errno . "/" . $errstr);
+				return "Error: Could not open socket to " . $http_host . ".  Error = " . $errno . "/" . $errstr;
 			}
 		}
 		else
@@ -87,10 +103,11 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 				$log->lwrite("Could not initialise socket");
 				return "Error: Could not initialise socket to " . $http_host . ", server may be offline";
 			}
-			$log->lwrite("Could not open socket, error = " . $errno);
-			return "Error: Could not open socket to " . $http_host . ", server may be offline.  Error code = " . $errno;
+			$log->lwrite("Could not open socket, error = " . $errno . "/" . $errstr);
+			return "Error: Could not open socket to " . $http_host . ", server may be offline.  Error = " . $errno . "/" . $errstr;
 		}
 		$log->lwrite("Got response ok: " . $response);
+		// TODO: Trap HTTP errors such as 403 here (happens if you try to connect to live server w/o ssl)
 		return $response;
 //	}
 //	catch (Exception $e)
