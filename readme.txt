@@ -28,12 +28,6 @@ A copyright notice with teeth!  Prove ownership, protect your copyright, and cop
 
 == Frequently Asked Questions ==
 
-= I uploaded the plug-in and nothing seems to happen when I publish a new or edited post? =
-
-- Have you registered with Digiprove yet (see Installation)?
-- Have you activated your Digiprove registration by clicking on the link received by email?
-- If you have not received the activation mail, check your junk mail folder, then contact us at support@digiprove.com
-
 = How does this protect copyright? =
 
 Note that in most countries, you are already the copyright owner of any original work (literary or otherwise) that you have created, as soon as you record or publish it (whether or not you subsequently go through a formal registration process).  By Digiproving your work, you are creating time-stamped evidence that you are the possessor of that content, which is the critical factor in ensuring you can prove your ownership (or someone else's plagiarism).
@@ -43,6 +37,11 @@ In some countries, you can go a step further by formally registering your copyri
 Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
 Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
+= I uploaded the plug-in and nothing seems to happen when I publish a new or edited post? =
+
+- Have you registered with Digiprove yet (see Installation)?
+- Have you activated your Digiprove registration by clicking on the link received by email?
+- If you have not received the activation mail, check your junk mail folder, then contact us at support@digiprove.com
 
 = What's with the registration process?  =
 
