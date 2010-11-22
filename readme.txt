@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.0.1
-Stable tag: 0.85
+Stable tag: 0.86
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -33,11 +33,6 @@ A copyright notice with teeth!  Prove ownership, protect your copyright, and cop
 - Have you registered with Digiprove yet (see Installation)?
 - Have you activated your Digiprove registration by clicking on the link received by email?
 - If you have not received the activation mail, check your junk mail folder, then contact us at support@digiprove.com
-
-
-= What is the plugin page?  =
-
-[Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
 
 = How does this protect copyright? =
 
