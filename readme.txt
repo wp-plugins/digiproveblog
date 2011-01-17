@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.0.1
-Stable tag: 0.86
+Tested up to: 3.0.4
+Stable tag: 0.87
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
@@ -115,6 +115,13 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+
+= 0.87 =
+* Fixed bug to do with synchronous idle control character (0x16) in XML
+* Installed workaround for erroneous api key error message
+* PHP4 compatibility restored (was using stream_get_transports which is only php5)
+* Plugin now checks for daily limit exceeded (30) before wasting bandwidth contacting server
+* Digiprove seal image now located in plugin directory for faster serving
 
 = 0.86 =
 * More validation and better help text in registration processes
