@@ -29,10 +29,10 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 	$response = '';                 
 	if ($dprv_ssl == "Yes")
 	{
-		$t = stream_get_transports();
-		for ($i=0; $i<count($t); $i++)
+		$e = get_loaded_extensions();	// using this instead of preferable stream_get_transports() which is only supported from php 5 onwards
+		foreach ($e as $value)
 		{
-			if (stripos($t[$i], "ssl") !== false)
+			if ($value == "openssl")
 			{
 				$http_host = "ssl://" . $http_host;
 				break;
@@ -42,9 +42,8 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 		{
 			$dprv_port = 80;
 		} 
-		//$http_host = "ssl://" . $http_host;
 	}
-	$log->lwrite("http_host " . $http_host);
+	$log->lwrite("php4 http_host " . $http_host);
 	
 //	try																	// try/catch block not supported in php4
 //	{

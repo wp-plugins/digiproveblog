@@ -3,13 +3,11 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images.
-Version: 0.86
+Version: 0.87
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
 */
-// NOTE : THIS IS A RELEASE CANDIDATE FOR 0.86
-
 
 /*  Copyright 2008-2010  Digiprove (email : cian.kinsella@digiprove.com)
     This program is free software; you can redistribute it and/or modify
@@ -51,7 +49,7 @@ $dprv_ssl = "Yes";                        // -> normally set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.86");
+define("DPRV_VERSION", "0.87");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
@@ -94,6 +92,8 @@ function dprv_activate()
 	add_option('dprv_user_id', '');
 	add_option('dprv_api_key', '');
 	add_option('dprv_last_result', '');
+	add_option('dprv_last_date','');
+	add_option('dprv_last_date_count','0');
 }
 
 function dprv_deactivate()
@@ -228,6 +228,27 @@ function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post 
 		$log->lwrite("dprv_digiprove_post not starting because content is empty");
 		return $data;
 	}
+
+	if (get_option('dprv_last_date') != date("Ymd"))
+	{
+		update_option('dprv_last_date', date("Ymd"));
+		update_option('dprv_last_date_count','1');
+	}
+	else
+	{
+		$today_count = intval(get_option('dprv_last_date_count'));
+		$today_count += 1;
+		if ($today_count > 30 && get_option('dprv_subscription_type') == 'Basic')
+		{
+			update_option('dprv_last_result', 'Digiprove daily limit (30) for Basic accounts already reached, please upgrade at www.digiprove.com to remove this limit');
+			return $data;
+		}
+		else
+		{
+			update_option('dprv_last_date_count', $today_count);
+		}
+	}
+
 
 	update_option('dprv_last_result', '');
 	$dprv_post_id = $raw_data['ID'];
@@ -498,7 +519,8 @@ function dprv_composeNotice($certifyResponse)
 		$DigiproveNotice .= 'title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" ';
 		$DigiproveNotice .= 'style="border:0px; float:none; display:inline; text-decoration: none; background-color:transparent">';
-		$DigiproveNotice .= '<img src="http://www.digiprove.com/images/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px; margin:0px; float:none; background-color:transparent" border="0"' . $dprv_image_scale . ' alt=""/>';
+		$home = get_settings('siteurl');
+		$DigiproveNotice .= '<img src="' . $home. '/wp-content/plugins/digiproveblog/dp_seal_trans_16x16.png" style="vertical-align:middle; display:inline; border:0px; margin:0px; float:none; background-color:transparent" border="0"' . $dprv_image_scale . ' alt=""/>';
 		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal" ';
 		$DigiproveNotice .= 'onmouseover="this.style.color=\'' . $dprv_hover_color . '\';" onmouseout="this.style.color=\'' . $dprv_notice_color . '\';">';
 		$DigiproveNotice .= '&nbsp;&nbsp;' . $dprv_notice;
@@ -573,8 +595,10 @@ function dprv_certify($post_id, $title, $content)
 	$rawContent = htmlspecialchars($rawContent, ENT_QUOTES, 'UTF-8');
 	// Statement below inserted at 0.75 as vertical tabs not converted and cause a problem in XML .net server process
 	// TODO: there are probably other characters that will trip it up - review whole XML-encoding to create more systemic solution
-	$rawContent = str_replace("\v", " ", $rawContent);			// vertical tab           11 0013 0x0b
-	$rawContent = str_replace(chr(1), '&#x1;', $rawContent);	// soh - start of header   1 0001 0x01
+	                                                            //                        DEC OCT  HEX
+	$rawContent = str_replace("\v", " ", $rawContent);			// vertical tab           11  013 0x0b
+	$rawContent = str_replace(chr(1), '&#x1;', $rawContent);	// soh - start of header   1  001 0x01
+	$rawContent = str_replace(chr(22), ' ', $rawContent);		// SYN - Synchronous Idle 22  026 0x16
 
 	// Prepare title for XML transmission
 	if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
@@ -2114,7 +2138,10 @@ function dprv_settings()		// Run when Copyright Proof selected from Settings men
 				}
 				if (document.getElementById(\'dprv_api_key\').value.length != 22)
 				{
-					alert("That is an invalid API key - must be 22 characters exactly");
+					if (confirm("That API key (" + document.getElementById(\'dprv_api_key\').value + "), of length " + document.getElementById(\'dprv_api_key\').value.length + " is invalid - must be 22 characters exactly.  Press OK to proceed anyway."))
+					{
+						return true;
+					}
 					return false;
 				}
 				if (lastApiKey == "")
