@@ -4,13 +4,13 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.0.4
-Stable tag: 0.87
+Stable tag: 0.88
 
 Digitally certify your blog posts - proving authorship, deterring plagiarists, and protecting copyright.
 
 == Description ==
 
-A copyright notice with teeth!  Prove ownership, protect your copyright, and copy protect.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, there will be a link back from digiprove.com to your post. Optional anti-theft feature to copy protect your content.
+A copyright notice with teeth!  Prove ownership, protect your copyright, and copy protect.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts notice of Digiprove certificate at end of post. At your option, your post's url will be shown on digiprove.com (will be a hyperlink for Digiprove subscribers) to your post. Optional anti-theft feature to copy protect your content.
 
 [Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
 
@@ -115,6 +115,9 @@ Use of the Digiprove API from other applications is free for personal (non-comme
 
 
 == Changelog ==
+= 0.88 =
+* Fixed bug which permitted an empty api key to be recorded on db
+* Easier refresh of subscription data after upgrade if experiencing "daily limit exceeded" errors - just press "Update Settings"
 
 = 0.87 =
 * Fixed bug to do with synchronous idle control character (0x16) in XML
