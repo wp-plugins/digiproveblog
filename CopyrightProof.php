@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images.
-Version: 0.87
+Version: 0.88
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -49,18 +49,16 @@ $dprv_ssl = "Yes";                        // -> normally set to "Yes"
 $start_Digiprove = false;
 $end_Digiprove = false;
 $dprv_soap_count=0;
-define("DPRV_VERSION", "0.87");
+define("DPRV_VERSION", "0.88");
 
 // Register hooks
 register_activation_hook(__FILE__, 'dprv_activate');
 register_deactivation_hook(__FILE__, 'dprv_deactivate');
 add_action('init', 'dprv_init');
 add_action('admin_menu', 'dprv_settings_menu');
-//add_action('admin_head', 'dprv_admin_head');
 add_action('admin_footer', 'dprv_admin_footer');
 add_filter('wp_insert_post_data', 'dprv_digiprove_post_new', 99, 2);
 add_filter('wp_insert_page_data', 'dprv_digiprove_post_new', 99, 2);
-//add_filter( "the_content", "dprv_display_content" );
 add_filter( "wp_footer", "dprv_footer" );
 
 
@@ -121,17 +119,6 @@ function dprv_settings_menu()	// Runs after the basic admin panel menu structure
 	$pagename = add_options_page('DigiproveBlog', 'Copyright Proof', 10, basename(__FILE__), 'dprv_settings');
 }
 
-/*
-function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - include js file
-{
-	$log = new Logging();  
-	$log->lwrite("dprv_admin_head starts");  
-	$home = get_settings('siteurl');
-	$base="digiproveblog";
-	$jsfile = $home.'/wp-content/plugins/' . $base . '/jscolor.js';
-	echo('<script type="text/javascript" src="' . $jsfile . '"></script>');
-}
-*/
 
 function dprv_admin_footer()	// runs in admin panel inside body tags - add Digiprove message to message bar
 {
@@ -286,7 +273,7 @@ function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post 
 			{
 				// This code is to replace password with a new API key, eventually we'll eliminate passwords from db
 				$dprv_api_key = dprv_getTag($certifyResponse, "api_key");
-				if ($dprv_api_key != false)
+				if ($dprv_api_key != false && $dprv_api_key != "")
 				{
 					update_option('dprv_api_key',$dprv_api_key);
 					delete_option('dprv_password');
@@ -295,7 +282,7 @@ function dprv_digiprove_post_new ($data, $raw_data)	// Core Digiprove-this-post 
 				{
 					// If there was a working api key, delete any recorded password from the options db
 					$dprv_api_key = get_option('dprv_api_key');
-					if ($dprv_api_key != null & $dprv_api_key != "")
+					if ($dprv_api_key != false && $dprv_api_key != "")
 					{
 						delete_option('dprv_password');
 					}
@@ -1227,7 +1214,7 @@ function dprv_settings()		// Run when Copyright Proof selected from Settings men
 				}
 				else
 				{
-					if ($dprv_enrolled == "Yes" && $dprv_update_user == true)
+					if ($dprv_enrolled == "Yes" && ($dprv_update_user == true || stripos (get_option('dprv_last_result'), "Digiprove daily limit") !== false))
 					{
 						$register_response = dprv_update_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs, $dprv_renew_api_key);
 						$dprv_renew_api_key = "";	// unset this, user will have to retick if required
