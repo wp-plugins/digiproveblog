@@ -4,7 +4,7 @@
 /* this function based on that from akismet.php by Matt Mullenweg.  */
 function dprv_http_post($request, $host, $path, $service, $ip=null) 
 {
-	global $dprv_port, $dprv_ssl;
+	global $dprv_port;
 	$log = new Logging();  
 	$request = "xml_string=" . urlencode($request);
 	$http_request  = "POST " . $path . $service . " HTTP/1.1\r\n";
@@ -27,7 +27,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 	$log->lwrite("http_post of " . $http_request);
 
 	$response = '';                 
-	if ($dprv_ssl == "Yes")
+	if (DPRV_SSL == "Yes")
 	{
 		$e = get_loaded_extensions();	// using this instead of preferable stream_get_transports() which is only supported from php 5 onwards
 		foreach ($e as $value)
@@ -43,7 +43,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 			$dprv_port = 80;
 		} 
 	}
-	$log->lwrite("php4 http_host " . $http_host);
+	$log->lwrite("http_host " . $http_host);
 	
 //	try																	// try/catch block not supported in php4
 //	{
@@ -56,7 +56,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 			{
 				fwrite($fs, $http_request);
 				$log->lwrite("fwrite done, now get response when it comes");
-				stream_set_timeout($fs, 40);
+				stream_set_timeout($fs, 50);
 				$get_count = 0;
 				while ( !feof($fs) )
 				{
@@ -71,9 +71,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 					}
 					else
 					{
-						//$log->lwrite("got this: " . $temp);
 						$response .= $temp;
-						//$log->lwrite("get " . $get_count . " done, response length = " . strlen($response));
 						$get_count = $get_count + 1;
 					}
 				}
@@ -81,7 +79,6 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 				fclose($fs);
 				//TODO: check that response is complete (ends with </string>)
 				$response = htmlspecialchars_decode($response, ENT_QUOTES);
-				//$log->lwrite("response=$response, length=" . strlen($response));
 				$log->lwrite("response length=" . strlen($response));
 				if (strlen($response) == 0)
 				{
@@ -107,6 +104,14 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 		}
 		$log->lwrite("Got response ok: " . $response);
 		// TODO: Trap HTTP errors such as 403 here (happens if you try to connect to live server w/o ssl)
+		if (substr($response,0,4) == "HTTP")			// error starts like this: HTTP/1.1 404 Not Found
+		{	
+			$pos = strpos($response, " ");
+			if (substr($response, $pos+1, 3) != "200" && strpos(strtolower($response), "<title>digiprove service temporarily offline</title>") != false)
+			{
+				return "The Digiprove service is temporarily offline for maintenance, please try again in a few minutes";
+			}
+		}
 		return $response;
 //	}
 //	catch (Exception $e)

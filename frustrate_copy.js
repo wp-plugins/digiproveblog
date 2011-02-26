@@ -1,3 +1,6 @@
+//<![CDATA[ 
+// FUNCTIONS
+
 function disableSelection(target)
 {
 /*		// MozUserSelect has a bug - Bug 561691 : sub-elements cannot be excepted from the rule
@@ -80,22 +83,74 @@ function trapMouseDown(e)
 	}
 }
 
-//function disableText(){return false;}
-//function reEnable(){return true;}
 
 
+// FUNCTIONS TO PREVENT RIGHT-CLICK:
+
+function disableRightClick()
+{
+	if (document.layers)
+	{
+		document.captureEvents(Event.MOUSEDOWN);
+		document.onmousedown=clickNS;
+	}
+	else
+	{
+		document.onmouseup=clickNS;
+	}
+	document.oncontextmenu=new Function("displayMessage();return false")
+}
+
+function clickNS(e)
+{
+	if	(document.layers||(document.getElementById&&!document.all))
+	{
+		if (e.which==2||e.which==3)	// Was it a right-click? 
+		{
+			displayMessage();
+			return false;
+		}
+	}
+	return true;
+}
+
+function displayMessage()
+{
+	if (justDisplayed == 0)
+	{
+		if (noRightClickMessage != "")
+		{
+			alert(htmlspecialchars_decode(noRightClickMessage));
+			justDisplayed = 1;
+			setTimeout("justDisplayed = 0;", 50);
+		}
+	}
+}
+
+function htmlspecialchars_decode(encodedString)
+{
+	var decodedString = encodedString.replace('&amp;', '&');
+	return decodedString.replace('&quot;', '"').replace('&#039;', '\'').replace('&lt;', '<').replace('&gt;','>');
+}
+
+
+
+// FUNCTIONS TO DISABLE CERTAIN CTRL KEY COMBINATIONS:
 function disableCtrlKeys()
 {
-	// onkeypress is not triggered in Safari with a ctrl/key combination
+	//alert("disableCtrlKeys starts");
+	// onkeypress is not triggered in safari with a ctrl/key combination
 	// onkeypress is not triggered in IE or Chrome with a function-linked ctrl/key combination (e.g ctrl/a, ctrl/c)
 	// onkeypress in IE gives different keyCode values (seems to be low numbers for ctrl/key and +32 for others) than onkeydown
 	// Set code to suppress ctrl/a and ctrl/u
+	//alert(navigator.userAgent);
 	if ((navigator.userAgent.indexOf('Safari') != -1) || navigator.userAgent.indexOf('MSIE') != -1)
 	{
 		document.onkeydown=trapCtrlKeyCombination;	// IE or Safari or Chrome
 	}
 	else
 	{
+	//alert("onkeypress");
 		document.onkeypress=trapCtrlKeyCombination;
 	}
 }
@@ -113,8 +168,6 @@ function trapCtrlKeyCombination(ev)
 			{
 				return true;
 			}
-			//alert("IE, Safari or Opera key=" + key + ", ctrlKey = " + window.event.ctrlKey);
-			//alert("ev.which = " + ev.which);
 			if(window.event.ctrlKey)
 					isCtrl = true;
 			else
@@ -124,7 +177,6 @@ function trapCtrlKeyCombination(ev)
         else
         {
 			key = ev.which;     //firefox
-			//alert("FF key=" + key);
 			if(ev.ctrlKey)
 					isCtrl = true;
 			else
@@ -133,99 +185,13 @@ function trapCtrlKeyCombination(ev)
 
         if(isCtrl)
         {
-				//alert ("you pressed ctrl / " + String.fromCharCode(key).toLowerCase());
 				if (String.fromCharCode(key).toLowerCase() == 'a' || String.fromCharCode(key).toLowerCase() == 'u')
 				{
-					//alert("returning false");
 					void(0);  // CANCEL LAST EVENT
 					return false;
 				}
 		}
         return true;
 }
-function htmlspecialchars_decode(encodedString)
-{
-	var decodedString = encodedString.replace('&amp;', '&');
-	return decodedString.replace('&quot;', '"').replace('&#039;', '\'').replace('&lt;', '<').replace('&gt;','>');
-}
-function displayMessage()
-{
-	if (justDisplayed == 0)
-	{
-		if (noRightClickMessage != "")
-		{
-			alert(htmlspecialchars_decode(noRightClickMessage));
-			justDisplayed = 1;
-			setTimeout("justDisplayed = 0;", 50);
-		}
-	}
-}
 
-function clickNS(e)
-{
-	
-	if	(document.layers||(document.getElementById&&!document.all))
-	{
-		if (e.which==2||e.which==3)    // Was it a right-click? 
-		{
-			displayMessage();
-			return false;
-		}
-	}
-	return true;
-}
-
-
-//alert("body class = " + document.body.className);
-var target = document.body;
-
-if (typeof(document.body.className)!="undefined")
-{
-	var className = document.body.className;
-
-	if (className != null && className != "" && className.indexOf('single') == 0)
-	{
-		var start_post_id = className.indexOf('postid-');
-		if (start_post_id != -1)
-		{
-			var end_post_id = className.substr(start_post_id + 7).indexOf(' ');
-			//alert(start_post_id + ", " + end_post_id);
-			if (end_post_id!= -1 && end_post_id!= 0)
-			{
-				var post_id = className.substr(start_post_id + 7, end_post_id);
-				//alert ("required id = " + post_id);
-				if (document.getElementById("post-" + post_id))
-				{
-
-					target = document.getElementById("post-" + post_id);
-					if (target == null)
-					{
-						//alert("target is null");
-						terget = document.body;
-					}
-				}
-			}
-		}
-	}
-}
-
-//alert ("will now protect " + target.nodeName + " id " + target.id + " class " + target.className);
-
-// Prevent Right Click
-if (document.layers)
-{
-	document.captureEvents(Event.MOUSEDOWN);
-	document.onmousedown=clickNS;
-}
-else
-{
-	document.onmouseup=clickNS;
-}
-document.oncontextmenu=new Function("displayMessage();return false")
-var justDisplayed = 0;
-
-// Prevent Selection of Text on non-input elements
-disableSelection(target);
-
-// Prevent use of CTRL/U and CTRL/A
-disableCtrlKeys();
+//]]>
