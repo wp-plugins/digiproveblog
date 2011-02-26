@@ -2,61 +2,11 @@
 
 // THIS VERSION USES TRY/CATCH BLOCKS AND NEEDS PHP5 OR LATER
 
-/*  This is not used at present - re-introduce later
-function dprv_soap_post($request, $method) 
-{
-	global $dprv_host, $dprv_port, $dprv_ssl;
-	$log = new Logging();
-	try								// Does not work in PHP4 - use different approach
-	{
-		$log->lwrite("dprv_soap_post starts, method=" . $method);
-		$dprv_WSDL_url = "";
-		if ($dprv_ssl == "Yes")
-		{
-			$dprv_WSDL_url = "https://" . $dprv_host;
-			if ($dprv_port != 443)
-			{
-				$dprv_WSDL_url .= ":" . $dprv_port;
-			}
-		}
-		else
-		{
-			$dprv_WSDL_url = "http://" . $dprv_host;
-			if ($dprv_port != 80)
-			{
-				$dprv_WSDL_url .= ":" . $dprv_port;
-			}
-		}
-		$dprv_WSDL_url .= "/secure/Service.asmx?WSDL";
-		//$client = new SoapClient("https://www.digiprove.com/secure/Service.asmx?WSDL",  
-		$client = new SoapClient($dprv_WSDL_url,  
-			array(	'soap_version' => SOAP_1_2,
-					'trace' => true,
-					'encoding'=>'utf-8'));
-		$dprv_result = $client->$method(array('xml_string' => $request));
-		$result_vars    = get_object_vars($dprv_result);
-		return $result_vars[$method . "Result"];
-	}
-	catch(SoapFault $ex)
-	{
-		$dprv_error = $ex->getMessage();
-		$log->lwrite("Soap error in dprv_soap_post: " . $dprv_error);
-		$return_value = $dprv_error;
-		$pos = strpos($dprv_error, "\n");
-		if ($pos != false && $pos > 0)
-		{
-			$return_value = substr($dprv_error, 0, $pos);
-		}
-		return "Error: " . $return_value;
-	}
-}
-
-*/
-
 /* this function based on that from akismet.php by Matt Mullenweg.  */
 function dprv_http_post($request, $host, $path, $service, $ip=null) 
 {
-	global $dprv_port, $dprv_ssl;
+	//global $dprv_port, $dprv_ssl;
+	global $dprv_port;
 	$log = new Logging();  
 	$request = "xml_string=" . urlencode($request);
 	$http_request  = "POST " . $path . $service . " HTTP/1.1\r\n";
@@ -79,7 +29,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 	$log->lwrite("http_post of " . $http_request);
 
 	$response = '';                 
-	if ($dprv_ssl == "Yes")
+	if (DPRV_SSL == "Yes")
 	{
 		$t = stream_get_transports();
 		for ($i=0; $i<count($t); $i++)
@@ -94,11 +44,9 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 		{
 			$dprv_port = 80;
 		} 
-		//$http_host = "ssl://" . $http_host;
 	}
 	$log->lwrite("http_host " . $http_host);
-
-	try																	// Note try/catch block not supported in php4
+	try																	// try/catch block not supported in php4
 	{
 		$errno = -1;
 		$errstr = "Unknown";
@@ -108,8 +56,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 			if ($errno == 0)
 			{
 				fwrite($fs, $http_request);
-				//$log->lwrite("fwrite done, now get response when it comes");
-				stream_set_timeout($fs, 40);
+				stream_set_timeout($fs, 50);
 				$get_count = 0;
 				while ( !feof($fs) )
 				{
@@ -124,9 +71,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 					}
 					else
 					{
-						//$log->lwrite("got this: " . $temp);
 						$response .= $temp;
-						//$log->lwrite("get " . $get_count . " done, response length = " . strlen($response));
 						$get_count = $get_count + 1;
 					}
 				}
@@ -134,7 +79,6 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 				fclose($fs);
 				//TODO: check that response is complete (ends with </string>)
 				$response = htmlspecialchars_decode($response, ENT_QUOTES);
-				//$log->lwrite("response=$response, length=" . strlen($response));
 				$log->lwrite("response length=" . strlen($response));
 				if (strlen($response) == 0)
 				{
@@ -160,21 +104,12 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 		}
 		$log->lwrite("Got response ok: " . $response);
 		// TODO: Trap HTTP errors such as 403 here (happens if you try to connect to live server w/o ssl)
-		$pos = stripos ($response, "HTTP/");
-		$posA = strpos($response, " ", $pos_5);
-		if ($pos !== false && $posA > 0)
-		{
-			$http_version = substr($response, $pos+5,  $posA);
-			$log->lwrite("http_version = " . $http_version);
-
-			if (strlen($response) > ($pos + 8 + $posA))
+		if (substr($response,0,4) == "HTTP")			// error starts like this: HTTP/1.1 404 Not Found
+		{	
+			$pos = strpos($response, " ");
+			if (substr($response, $pos+1, 3) != "200" && strpos(strtolower($response), "<title>digiprove service temporarily offline</title>") != false)
 			{
-				$http_response_code = substr($response, ($pos+$posA+6), 3);
-				$log->lwrite("http_response_code = " . $http_response_code);
-				if (substr($http_response_code,0,1) != "2")
-				{
-					$response = "Error: " . $response;
-				}
+				return "The Digiprove service is temporarily offline for maintenance, please try again in a few minutes";
 			}
 		}
 		return $response;
