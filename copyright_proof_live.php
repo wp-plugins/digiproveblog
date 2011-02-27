@@ -86,8 +86,20 @@ function dprv_display_content($content)
 
 	// If stuff is recorded specifically for this post, use that
 	$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+	$dprv_status_info = "";
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-	if (count($dprv_post_info) > 0)
+
+	if (is_null($dprv_post_info))
+	{
+		$dprv_status_info = "<span style='display:none'>Null return selecting " . $dprv_post_id;
+		if (trim($wpdb->last_error) != "")
+		{
+			$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
+		}
+		$dprv_status_info .= "; dprv_event=" . get_option('dprv_event') . "</span>";
+	}
+		
+	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
 		$dprv_this_all_original = "No";
 		if ($dprv_post_info["this_all_original"] == true)
@@ -166,8 +178,13 @@ function dprv_display_content($content)
 			$dprv_notice = dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv_digital_fingerprint, $dprv_certificate_url, false, $dprv_first_year, $dprv_this_license, $dprv_this_license_caption, $dprv_this_license_abstract, $dprv_this_license_url, $dprv_this_all_original, $dprv_this_attributions, $dprv_license_html);
 			$content .= $dprv_notice;
 		}
+		else
+		{
+			// can probably remove this
+			$dprv_status_info .= "<span style='display:none'>No Digiprove cert recorded for " . $dprv_post_id . "; dprv_event=" . get_option('dprv_event') . "</span>";
+		}
 	}
-
+	$content .= $dprv_status_info;
 	$content .= $dprv_license_html;
 	$log->lwrite("content to be displayed:" . $content);
 	return $content;
@@ -309,7 +326,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 			$extra_style = "padding-top:" . $dprv_container_pad_top . ";padding-bottom:0px;";
 		}
 		$container_style = 'vertical-align:baseline; padding:3px; margin-top:2px; margin-bottom:2px; line-height:' . $dprv_line_height . ';float:none; font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_outside_font_size . ';' . $dprv_border_css . $background_css . $dprv_boxmodel . $extra_style;
-		$DigiproveNotice = '<' . $dprv_container . ' lang="en" xml:lang="en" valign="top" class="notranslate" style="' . $container_style . '" title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
+		$DigiproveNotice = '<' . $dprv_container . ' id="dprv_cp_V' . DPRV_VERSION . '" lang="en" xml:lang="en" valign="top" class="notranslate" style="' . $container_style . '" title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
 
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" style="height:' . $dprv_a_height . '; line-height: ' . $dprv_a_height . '; border:0px; padding:0px; margin:0px; float:none; display:inline; text-decoration: none; background:transparent none; line-height:normal; font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . ';">';
 		

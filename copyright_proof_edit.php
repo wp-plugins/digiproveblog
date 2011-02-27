@@ -61,8 +61,9 @@ function dprv_show_postbox($post_info)
 		$log->lwrite("not new post, global post_id = " . $post_id);
 		
 		$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $post_id;
+		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-		if (count($dprv_post_info) > 0)
+		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			if ($dprv_post_info["digiprove_this_post"] == true)
 			{
@@ -419,16 +420,35 @@ function dprv_parse_post ($data, $raw_data)
 		if ($dprv_post_id != -1)
 		{
 			$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+			//$wpdb->show_errors();
 			$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 			$log->lwrite("count(dprv_post_info) = " . count($dprv_post_info));
 			if (count($dprv_post_info) == 0)
 			{
 				// create record
-				$wpdb->insert($table_prefix . "dprv_posts", array('digiprove_this_post'=>false, 'id'=>$dprv_post_id), array('%f','%f'));
+				//$wpdb->show_errors();
+				if (false === $wpdb->insert($table_prefix . "dprv_posts", array('digiprove_this_post'=>false, 'id'=>$dprv_post_id), array('%f','%f')))
+				{
+					update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id);
+				}
+				else
+				{
+					update_option('dprv_event', 'inserted no-digiprove for ' . $dprv_post_id);
+				}
+
 			}
 			else
 			{
-				$wpdb->update($table_prefix . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%f', '%f');   // %f indicates treat data and where as floating number
+				//$wpdb->show_errors();
+				if (false === $wpdb->update($table_prefix . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%f', '%f'))
+				{
+					update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id);
+				}
+				else
+				{
+					update_option('dprv_event', 'updated no-digiprove for ' . $dprv_post_id);
+				}
+
 			}
 		}
 		return $data;
@@ -462,8 +482,9 @@ function dprv_parse_post ($data, $raw_data)
 	{
 		$dprv_new_certificate_id = false;
 		$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-		if (count($dprv_post_info) > 0)
+		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			$dprv_new_certificate_id = $dprv_post_info["certificate_id"];
 			$log->lwrite("a row already exists for this post");				
@@ -472,6 +493,7 @@ function dprv_parse_post ($data, $raw_data)
 		// If (as expected) nothing yet on db, record the information from the notice into the db 
 		if ($dprv_new_certificate_id == false || $dprv_new_certificate_id == "")
 		{
+			$dprv_event = get_option('dprv_event');
 			if (count($dprv_post_info) > 0)
 			{
 				if ($dprv_post_info["first_year"] == null)
@@ -482,12 +504,27 @@ function dprv_parse_post ($data, $raw_data)
 				{
 					$dprv_first_year = intval($dprv_post_info["first_year"]);
 				}
-
-				$wpdb->update($table_prefix . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year)), array('id'=>$dprv_post_id)); 
+				//$wpdb->show_errors();
+				if (false === $wpdb->update($table_prefix . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year)), array('id'=>$dprv_post_id)))
+				{
+					update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' writing old notice ' . $dprv_post_id . ' to db');
+				}
+				else
+				{
+					update_option('dprv_event', $dprv_event . '; wrote old notice ' . $dprv_post_id . ' to db');
+				}
 			}
 			else
-			{
-				$wpdb->insert($table_prefix . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year)));
+			{	
+				//$wpdb->show_errors();
+				if (false === $wpdb->insert($table_prefix . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year))))
+				{
+					update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting old notice to db');
+				}
+				else
+				{
+					update_option('dprv_event', $dprv_event . '; inserted old notice ' . $wpdb->insert_id . ' to db');
+				}
 			}
 		}
 	}
@@ -574,8 +611,9 @@ function dprv_digiprove_post($dprv_post_id)
 		$log->lwrite("dprv_digiprove_this_post = " . $dprv_digiprove_this_post);
 		global $wpdb, $table_prefix;
 		$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-		if (count($dprv_post_info) > 0)
+		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			if ($dprv_post_info["digiprove_this_post"] == false)
 			{
@@ -928,14 +966,32 @@ function dprv_record_copyright_details($dprv_post_id)
 
 
 	$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+	//$wpdb->show_errors();
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-	if (count($dprv_post_info) > 0)
+	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
-		$wpdb->update($table_prefix . "dprv_posts", array('digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license, 'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url), array('id'=>$dprv_post_id));
+		//$wpdb->show_errors();
+		if (false === $wpdb->update($table_prefix . "dprv_posts", array('digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license, 'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url), array('id'=>$dprv_post_id)))
+		{
+			update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating copyright details for ' . $dprv_post_id);
+		}
+		else
+		{
+			update_option('dprv_event', 'updated copyright details for ' . $dprv_post_id);
+		}
 	}
 	else
 	{
-		$wpdb->insert($table_prefix . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license,  'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url));
+		//$wpdb->show_errors();
+		if (false === $wpdb->insert($table_prefix . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license,  'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url)))
+		{
+			update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id);
+		}
+		else
+		{
+			update_option('dprv_event', 'inserted copyright details for ' . $dprv_post_id);
+		}
+
 	}
 }
 
@@ -957,8 +1013,10 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse)
 	}
 
 	$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+	$dprv_event = get_option('dprv_event');
+	//$wpdb->show_errors();
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-	if (count($dprv_post_info) > 0)
+	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
 		if ($dprv_post_info["first_year"] == null)
 		{
@@ -968,11 +1026,27 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse)
 		{
 			$dprv_year_certified = intval($dprv_post_info["first_year"]);
 		}
-		$wpdb->update($table_prefix . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified), array('id'=>$dprv_post_id));   //  leave out %f indicates treat data and where as floating number
+		//$wpdb->show_errors();
+		if (false === $wpdb->update($table_prefix . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified), array('id'=>$dprv_post_id)))
+		{
+			update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' updating dp action for ' . $dprv_post_id);
+		}
+		else
+		{
+			update_option('dprv_event', $dprv_event . '; updated dp action for ' . $dprv_post_id);
+		}
 	}
 	else
 	{
-		$wpdb->insert($table_prefix . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'this_all_original'=>true,'using_default_license'=>true, 'certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified));
+		//$wpdb->show_errors();
+		if (false === $wpdb->insert($table_prefix . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'this_all_original'=>true,'using_default_license'=>true, 'certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified)))
+		{
+			update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting dp action for ' . $dprv_post_id);
+		}
+		else
+		{
+			update_option('dprv_event', $dprv_event . '; inserted dp action for ' . $dprv_post_id);
+		}
 	}
 }
 
@@ -988,8 +1062,9 @@ function dprv_certify($post_id, $title, $content)
 	if ($raw_content_hash != "")
 	{
 		$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $post_id;
+		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-		if (count($dprv_post_info) > 0 && $raw_content_hash == $dprv_post_info["digital_fingerprint"])
+		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0 && $raw_content_hash == $dprv_post_info["digital_fingerprint"])
 		{
 			return " Hashes are identical";	// Content has not changed, do not Digiprove again - stick with earlier certification
 		}
