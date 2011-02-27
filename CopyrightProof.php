@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images.
-Version: 1.00
+Version: 1.01
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -44,14 +44,14 @@ else
 
 
 // Declare and initialise global variables:
-define("DPRV_VERSION", "1.00");
-define("DPRV_HOST", "www.digiprove.com");	// -> should be set to "www.digiprove.com"
-define("DPRV_SSL", "Yes");						// -> should be set to "Yes"
-define("DPRV_Log", "No");						// Set this to "Yes" to generate local log-file (needs write permissions)
+define("DPRV_VERSION", "1.01");
+define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
+define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
+define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
 
 global $dprv_port, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id;
 
-$dprv_port = 443;                         // -> should be set to 443 (standard settings 80 for http, 443 for https)
+$dprv_port = 443;                               // -> should be set to 443 (standard settings 80 for http, 443 for https)
 
 // Define arrays of license information - populated in header sections
 $dprv_licenseIds = array();
@@ -125,6 +125,7 @@ function dprv_activate()
 	add_option('dprv_last_result', '');
 	add_option('dprv_last_date','');
 	add_option('dprv_last_date_count','0');
+	add_option('dprv_event');
 	create_dprv_license_table();
 	create_dprv_post_table();
 }
@@ -140,6 +141,7 @@ function create_dprv_license_table()
 	$dprv_licenses = $table_prefix . "dprv_licenses";
 
 	// Check to see if the table exists already, if not, then create it
+	$wpdb->show_errors();
 	if($wpdb->get_var("show tables like '$dprv_licenses'") != $dprv_licenses)
 	{
 		$log->lwrite("creating license table " . $dprv_licenses);  
@@ -175,6 +177,7 @@ function create_dprv_post_table()
 	$dprv_posts = $table_prefix . "dprv_posts";
 
 	// Check to see if the table exists already, if not, then create it
+	$wpdb->show_errors();
 	if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
 	{
 		$log->lwrite("creating table " . $dprv_posts);  
@@ -293,6 +296,7 @@ function populate_licenses()
 	$log = new Logging();
 	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $table_prefix, $wpdb;
 	$dbquery = 'SELECT * FROM ' . $table_prefix . 'dprv_licenses';
+	//$wpdb->show_errors();
 	$license_info = $wpdb->get_results($dbquery, ARRAY_A);
 	if (empty($license_info))
 	{
@@ -386,7 +390,7 @@ function dprv_post_sync($pid)
 {
 	global $table_prefix, $wpdb;
 	$log = new Logging();
-	$wpdb->show_errors();
+	//$wpdb->show_errors();
 	$log->lwrite("post " . $pid . " deleted, checking for dprv_post record with same id");
 	$sql='SELECT id FROM ' . $table_prefix . 'dprv_posts WHERE id = ' . $pid;
 	if ($wpdb->get_var($wpdb->prepare($sql)))
