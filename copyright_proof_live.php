@@ -87,7 +87,7 @@ function dprv_display_content($content)
 	// If stuff is recorded specifically for this post, use that
 	//$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-	$dprv_status_info = "<span style='display:none'>post " . $dprv_post_id;
+	$dprv_status_info = "<!--post " . $dprv_post_id;
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 
 	if (is_null($dprv_post_info))		// will be null if nothing found or error
@@ -98,7 +98,7 @@ function dprv_display_content($content)
 			$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
 		}
 	}
-	$dprv_status_info .= "; dprv_event=" . get_option('dprv_event') . ", dprv_activation_event=" . get_option('dprv_activation_event') . "</span>";
+	$dprv_status_info .= "; dprv_event=" . get_option('dprv_event') . ", dprv_activation_event=" . get_option('dprv_activation_event') . "-->";
 		
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{

@@ -155,7 +155,8 @@ function create_dprv_license_table()
 			break;
 		}
 	}
-	$dprv_activation_event = $table_prefix . " / " . $wpdb->prefix . "; ";
+	$dprv_activation_event = $table_prefix . " / " . $wpdb->prefix . " / " . $dprv_prefix . "; ";
+	$dprv_prefix = str_replace(".", "_", $dprv_prefix);
 	$log->lwrite("table prefix = " . $table_prefix . ", used prefix = " . $dprv_prefix);
 	update_option('dprv_prefix', $dprv_prefix);
 
