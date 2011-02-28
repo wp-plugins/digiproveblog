@@ -115,7 +115,8 @@ function dprv_admin_footer()	// runs in admin panel inside body tags - add Digip
 
 function dprv_settings()		// Run when Digiprove selected from Settings menu
 {		
-	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $wpdb, $table_prefix;
+	//global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $wpdb, $table_prefix;
+	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $wpdb;
 	$log = new Logging();  
 	$log->lwrite("dprv_settings starting");
 	$dprv_upgrade_link = createUpgradeLink();
@@ -143,7 +144,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	$dprv_last_name = get_option('dprv_last_name');
 	if ($dprv_last_name == false)
 	{
-		$dprv_last_name = $user_info->last_name;;
+		$dprv_last_name = $user_info->last_name;
 	}
 
 	$dprv_display_name = get_option('dprv_display_name');
@@ -371,7 +372,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			case "UpdateLicense":
 			{
 				$log->lwrite("about to update license " . $_POST['dprv_license']);
-				$dbquery = 'SELECT * FROM ' . $table_prefix . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
+				//$dbquery = 'SELECT * FROM ' . $table_prefix . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
+				$dbquery = 'SELECT * FROM ' . get_option('dprv_prefix') . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
 				//$wpdb->show_errors();
 				$license_info = $wpdb->get_row($dbquery, ARRAY_A);
 				if (!empty ($license_info))
@@ -381,7 +383,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					$license_info["license_abstract"] = $dprv_custom_license_abstract;
 					$license_info["license_url"] = $dprv_custom_license_url;
 					//$wpdb->show_errors();
-					$wpdb->update($table_prefix . 'dprv_licenses', $license_info, array('id'=>$_POST['dprv_license']));
+					//$wpdb->update($table_prefix . 'dprv_licenses', $license_info, array('id'=>$_POST['dprv_license']));
+					$wpdb->update(get_option('dprv_prefix') . 'dprv_licenses', $license_info, array('id'=>$_POST['dprv_license']));
 					populate_licenses();			// Rebuild dprv_license table in php
 					populate_licenses_js();			// and in javascript
 				}
@@ -394,7 +397,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				$log->lwrite("about to add license " . $dprv_custom_license);
 
 				//$wpdb->show_errors();
-				$dprv_licenses = $table_prefix . "dprv_licenses";
+				//$dprv_licenses = $table_prefix . "dprv_licenses";
+				$dprv_licenses = get_option('dprv_prefix') . "dprv_licenses";
 				$rows_affected = $wpdb->insert($dprv_licenses, array('license_type'=>$dprv_custom_license, 'license_caption'=>$dprv_custom_license_caption, 'license_abstract'=>$dprv_custom_license_abstract, 'license_url'=>$dprv_custom_license_url));
 				populate_licenses();			// Rebuild dprv_license table in php
 				populate_licenses_js();			// and in javascript
@@ -406,7 +410,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			{
 				$log->lwrite("about to remove license " .  $_POST['dprv_license']);
 				//$wpdb->show_errors();
-				$dbquery = 'DELETE FROM ' . $table_prefix . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
+				//$dbquery = 'DELETE FROM ' . $table_prefix . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
+				$dbquery = 'DELETE FROM ' . get_option('dprv_prefix') . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
 				$wpdb->query($dbquery);
 				if ( $_POST['dprv_license'] == get_option('dprv_license'))
 				{
