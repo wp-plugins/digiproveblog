@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images.
-Version: 1.02
+Version: 1.03
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -44,7 +44,7 @@ else
 
 
 // Declare and initialise global variables:
-define("DPRV_VERSION", "1.02");
+define("DPRV_VERSION", "1.03");
 define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
 define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
 define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
@@ -96,6 +96,7 @@ function dprv_activate()
 	$log = new Logging();  
 	$log->lwrite("");  
 	$log->lwrite("VERSION " . DPRV_VERSION . " ACTIVATED");  
+	update_option('dprv_activated_version', DPRV_VERSION);
 	add_option('dprv_email_address', '');
 	add_option('dprv_first_name', '');
 	add_option('dprv_last_name', '');
@@ -137,12 +138,14 @@ function create_dprv_license_table()
 	$log = new Logging();  
 	global $table_prefix, $wpdb;
 	$log->lwrite("table prefix / wp-prefix = " . $table_prefix . " / " . $wpdb->prefix);
-	// Found that table prefix often contains invalid characters so tidy up here:
-	$dprv_prefix = $table_prefix;
+
+	$dprv_prefix = $wpdb->prefix;
+
+	// Stuff below is probably unnecessary, remove once sure
 	$permitted_chars = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	for ($t=0; $t<strlen($table_prefix); $t++)
+	for ($t=0; $t<strlen($dprv_prefix); $t++)
 	{
-		$c = substr($table_prefix, $t, 1);
+		$c = substr($dprv_prefix, $t, 1);
 		if (strpos($permitted_chars, $c) === false)
 		{
 			$dprv_prefix = "";
@@ -157,10 +160,9 @@ function create_dprv_license_table()
 	}
 	$dprv_activation_event = $table_prefix . " / " . $wpdb->prefix . " / " . $dprv_prefix . "; ";
 	$dprv_prefix = str_replace(".", "_", $dprv_prefix);
-	$log->lwrite("table prefix = " . $table_prefix . ", used prefix = " . $dprv_prefix);
+
 	update_option('dprv_prefix', $dprv_prefix);
 
-	//$dprv_licenses = $table_prefix . "dprv_licenses";
 	$dprv_licenses = $dprv_prefix . "dprv_licenses";
 
 	// Check to see if the table exists already, if not, then create it
@@ -186,30 +188,28 @@ function create_dprv_license_table()
 		$wpdb->show_errors();
 		if($wpdb->get_var("show tables like '$dprv_licenses'") != $dprv_licenses)
 		{
-			update_option('dprv_activation_event', $dprv_activation_event . 'table ' . $dprv_licenses . ' failed to create with error ' .  $dprv_db_error);
+			update_option('dprv_activation_event', $dprv_activation_event . '; table ' . $dprv_licenses . ' failed to create with error ' .  $dprv_db_error);
 		}
 		else
 		{
-			update_option('dprv_activation_event', $dprv_activation_event . 'table ' . $dprv_licenses . ' created ok');
+			update_option('dprv_activation_event', $dprv_activation_event . '; table ' . $dprv_licenses . ' created ok');
 			record_dprv_licenses();
-			//$log->lwrite("last sql query = " . $wpdb->last_query);
-			//$log->lwrite("sql info = " . mysql_info());
-			//$log->lwrite("posts table=" . $wpdb->posts);	
 		}
+
 	}
 	else
 	{
 		$log->lwrite("Table " . $dprv_licenses . " exists already");  
-		update_option('dprv_activation_event', $dprv_activation_event . 'table ' . $dprv_licenses . ' existed already');
+		update_option('dprv_activation_event', $dprv_activation_event . '; table ' . $dprv_licenses . ' existed already');
 	}
 }
 
 function create_dprv_post_table()
 {
 	$log = new Logging();  
-	global $table_prefix, $wpdb;
+	//global $table_prefix, $wpdb;
+	global $wpdb;
 	$dprv_prefix = get_option('dprv_prefix');
-	//$log->lwrite("table prefix = " . $table_prefix . ", used prefix = " . $dprv_prefix);
 
 	// Create the 'name' of our table which is prefixed by the standard WP table prefix (which you specified when you installed WP)
 	$dprv_posts = $dprv_prefix . "dprv_posts";
@@ -334,6 +334,10 @@ function dprv_deactivate()
 // EVERY TIME WE START UP, DISPLAY REMINDER ABOUT CONFIGURATION IF NECESSARY
 function dprv_init()
 {
+	if (get_option('dprv_activated_version') != DPRV_VERSION)
+	{
+		dprv_activate();
+	}
 	if (get_option('dprv_enrolled') != "Yes")
 	{
 		function dprv_reminder()
