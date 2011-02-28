@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images.
-Version: 1.01
+Version: 1.02
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -44,7 +44,7 @@ else
 
 
 // Declare and initialise global variables:
-define("DPRV_VERSION", "1.01");
+define("DPRV_VERSION", "1.02");
 define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
 define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
 define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
@@ -126,6 +126,8 @@ function dprv_activate()
 	add_option('dprv_last_date','');
 	add_option('dprv_last_date_count','0');
 	add_option('dprv_event');
+	add_option('dprv_activation_event');
+	add_option('dprv_prefix');
 	create_dprv_license_table();
 	create_dprv_post_table();
 }
@@ -133,12 +135,32 @@ function dprv_activate()
 function create_dprv_license_table()
 {
 	$log = new Logging();  
-
-	// To allow this to be as extensible as possible, make sure $table_prefix is globalised, we also need the $wpdb class functions too
 	global $table_prefix, $wpdb;
+	$log->lwrite("table prefix / wp-prefix = " . $table_prefix . " / " . $wpdb->prefix);
+	// Found that table prefix often contains invalid characters so tidy up here:
+	$dprv_prefix = $table_prefix;
+	$permitted_chars = "_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	for ($t=0; $t<strlen($table_prefix); $t++)
+	{
+		$c = substr($table_prefix, $t, 1);
+		if (strpos($permitted_chars, $c) === false)
+		{
+			$dprv_prefix = "";
+			$post_table_name = $wpdb->posts;
+			$pos=strrpos($post_table_name, "posts");
+			if ($pos != false && $pos != 0)
+			{
+				$dprv_prefix = substr($post_table_name, 0, $pos);
+			}
+			break;
+		}
+	}
+	$dprv_activation_event = $table_prefix . " / " . $wpdb->prefix . "; ";
+	$log->lwrite("table prefix = " . $table_prefix . ", used prefix = " . $dprv_prefix);
+	update_option('dprv_prefix', $dprv_prefix);
 
-	// Create the 'name' of our table which is prefixed by the standard WP table prefix (which you specified when you installed WP)
-	$dprv_licenses = $table_prefix . "dprv_licenses";
+	//$dprv_licenses = $table_prefix . "dprv_licenses";
+	$dprv_licenses = $dprv_prefix . "dprv_licenses";
 
 	// Check to see if the table exists already, if not, then create it
 	$wpdb->show_errors();
@@ -158,29 +180,45 @@ function create_dprv_license_table()
 		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 
 		dbDelta($sql);
-		record_dprv_licenses();
+		$dprv_db_error = mysql_error() . " / " . $wpdb->last_error;
+		$log->lwrite("just created license table " . $dprv_licenses . "; error texts = " . $dprv_db_error);
+		$wpdb->show_errors();
+		if($wpdb->get_var("show tables like '$dprv_licenses'") != $dprv_licenses)
+		{
+			update_option('dprv_activation_event', $dprv_activation_event . 'table ' . $dprv_licenses . ' failed to create with error ' .  $dprv_db_error);
+		}
+		else
+		{
+			update_option('dprv_activation_event', $dprv_activation_event . 'table ' . $dprv_licenses . ' created ok');
+			record_dprv_licenses();
+			//$log->lwrite("last sql query = " . $wpdb->last_query);
+			//$log->lwrite("sql info = " . mysql_info());
+			//$log->lwrite("posts table=" . $wpdb->posts);	
+		}
 	}
 	else
 	{
 		$log->lwrite("Table " . $dprv_licenses . " exists already");  
+		update_option('dprv_activation_event', $dprv_activation_event . 'table ' . $dprv_licenses . ' existed already');
 	}
 }
 
 function create_dprv_post_table()
 {
 	$log = new Logging();  
-
-	// To allow this to be as extensible as possible, make sure $table_prefix is globalised, we also need the $wpdb class functions too
 	global $table_prefix, $wpdb;
+	$dprv_prefix = get_option('dprv_prefix');
+	//$log->lwrite("table prefix = " . $table_prefix . ", used prefix = " . $dprv_prefix);
 
 	// Create the 'name' of our table which is prefixed by the standard WP table prefix (which you specified when you installed WP)
-	$dprv_posts = $table_prefix . "dprv_posts";
+	$dprv_posts = $dprv_prefix . "dprv_posts";
 
 	// Check to see if the table exists already, if not, then create it
+	$dprv_activation_event = get_option('dprv_activation_event');
 	$wpdb->show_errors();
 	if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
 	{
-		$log->lwrite("creating table " . $dprv_posts);  
+		$log->lwrite("creating table " . $dprv_posts);
 		$sql = "CREATE TABLE " . $dprv_posts . " (
 				id bigint(20) NOT NULL,
 				digiprove_this_post bool NOT NULL,
@@ -202,10 +240,22 @@ function create_dprv_post_table()
 		//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
 		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 		dbDelta($sql);
+		$dprv_db_error = mysql_error() . " / " . $wpdb->last_error;
+		$log->lwrite("just created posts table " . $dprv_posts . "; error texts = " . $dprv_db_error);
+		$wpdb->show_errors();
+		if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
+		{
+			update_option('dprv_activation_event', $dprv_activation_event . '; table ' . $dprv_posts . ' failed to create with error ' .  $dprv_db_error);
+		}
+		else
+		{
+			update_option('dprv_activation_event', $dprv_activation_event . '; table ' . $dprv_posts . ' created ok');
+		}
 	}
 	else
 	{
 		$log->lwrite("Table " . $dprv_posts . " exists already");  
+		update_option('dprv_activation_event', $dprv_activation_event . '; table ' . $dprv_posts . ' existed already');
 	}
 }
 
@@ -257,9 +307,11 @@ $licenseURLs = array(
 						"http://creativecommons.org/licenses/by-sa/3.0/",
 						"http://www.gnu.org/licenses/gpl.html");
 
-	global $table_prefix, $wpdb;
+	//global $table_prefix, $wpdb;
+	global $wpdb;
 	// Create the 'name' of our table which is prefixed by the standard WP table prefix (which you specified when you installed WP)
-	$dprv_licenses = $table_prefix . "dprv_licenses";
+	//$dprv_licenses = $table_prefix . "dprv_licenses";
+	$dprv_licenses = get_option('dprv_prefix') . "dprv_licenses";
 
 	for ($i=0; $i<count($licenseTypes); $i++)
 	{
@@ -294,8 +346,10 @@ function dprv_init()
 function populate_licenses()
 {
 	$log = new Logging();
-	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $table_prefix, $wpdb;
-	$dbquery = 'SELECT * FROM ' . $table_prefix . 'dprv_licenses';
+	//global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $table_prefix, $wpdb;
+	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $wpdb;
+	//$dbquery = 'SELECT * FROM ' . $table_prefix . 'dprv_licenses';
+	$dbquery = 'SELECT * FROM ' . get_option('dprv_prefix') . 'dprv_licenses';
 	//$wpdb->show_errors();
 	$license_info = $wpdb->get_results($dbquery, ARRAY_A);
 	if (empty($license_info))
@@ -388,15 +442,19 @@ function createUpgradeLink()
 
 function dprv_post_sync($pid)
 {
-	global $table_prefix, $wpdb;
+	//global $table_prefix, $wpdb;
+	global $wpdb;
+
 	$log = new Logging();
 	//$wpdb->show_errors();
 	$log->lwrite("post " . $pid . " deleted, checking for dprv_post record with same id");
-	$sql='SELECT id FROM ' . $table_prefix . 'dprv_posts WHERE id = ' . $pid;
+	//$sql='SELECT id FROM ' . $table_prefix . 'dprv_posts WHERE id = ' . $pid;
+	$sql='SELECT id FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = ' . $pid;
 	if ($wpdb->get_var($wpdb->prepare($sql)))
 	{
 		$log->lwrite("found a dprv_post " . $pid . ", will now delete it");
-		return $wpdb->query($wpdb->prepare('DELETE FROM ' . $table_prefix . 'dprv_posts WHERE id = %d', $pid));
+		//return $wpdb->query($wpdb->prepare('DELETE FROM ' . $table_prefix . 'dprv_posts WHERE id = %d', $pid));
+		return $wpdb->query($wpdb->prepare('DELETE FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = %d', $pid));
 		$log->lwrite("last query was " . $last_query);
 	}
 	return true;
