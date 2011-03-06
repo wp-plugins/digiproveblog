@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.1
-Stable tag: 1.03
+Stable tag: 1.04
 
 Digitally certify your original content - proving authorship, deterring plagiarists, and protecting copyright.
 Copyright and Licensing of original content and include attributions for non-original content. 
@@ -118,6 +118,12 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 1.04 =
+* Changed display mode to use margins above and below notice
+* Code tidy-up; removed diagnostic/debug code
+* Removed dependency on get_post_type_object (for compatibility with pre 3.0 WP installations)
+
 = 1.03 =
 * Did not re-activate properly on upgrade in a Wordpress 3.1 environment
 
