@@ -45,7 +45,6 @@ function dprv_head()
 
 function dprv_display_content($content)
 {
-	//global $wpdb, $table_prefix, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs;
 	global $wpdb, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs;
 	$log = new Logging();  
 	$dprv_post_id = get_the_ID();
@@ -85,20 +84,31 @@ function dprv_display_content($content)
 	$dprv_this_license_url = "";
 
 	// If stuff is recorded specifically for this post, use that
-	//$sql="SELECT * FROM " . $table_prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-	$dprv_status_info = "<!--post " . $dprv_post_id;
+	$dprv_status_info = "";
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 
-	if (is_null($dprv_post_info))		// will be null if nothing found or error
+	//if (trim($wpdb->last_error) != "" || get_option('dprv_event') != "" || get_option('dprv_activation_event') != "")
+	if (trim($wpdb->last_error) != "" || is_null($dprv_post_info) ||  $dprv_post_info["digiprove_this_post"] == false || get_option('dprv_activation_event') != "")
 	{
-		$dprv_status_info .= "; Null return on select";
+		$dprv_status_info = "<!--post " . $dprv_post_id;
+		if (is_null($dprv_post_info))		// will be null if nothing found or error
+		{
+			$dprv_status_info .= "; Null return on select";
+		}
+		else
+		{
+			if ($dprv_post_info["digiprove_this_post"] == false)
+			{
+				$dprv_status_info .= "; d_t_p == false";
+			}
+		}
 		if (trim($wpdb->last_error) != "")
 		{
 			$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
 		}
+		$dprv_status_info .= "; dprv_e=" . get_option('dprv_event') . ", dprv_a_e=" . get_option('dprv_activation_event') . "-->";
 	}
-	$dprv_status_info .= "; dprv_event=" . get_option('dprv_event') . ", dprv_activation_event=" . get_option('dprv_activation_event') . "-->";
 		
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
@@ -246,13 +256,13 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 	else
 	{
 		$dprv_container = "span";
-		$dprv_boxmodel = "display:inline;";
+		$dprv_boxmodel = "display:inline-block;";	// minimise width, enforce upper/lower margins, no line break
 		$dprv_container_pad_top = "2px";
 
 		if (($attributions != false && $attributions != "" && $all_original != "Yes") || ($licenseType != false && $licenseType != "" && $licenseType != "Not Specified"))
 		{
 			$dprv_container = "div";
-			$dprv_boxmodel = "display:inline-block;";
+			$dprv_boxmodel = "display:table;";		// minimise width, enforce upper/lower margins, line break
 			$dprv_container_pad_top = "3px";
 		}
 
