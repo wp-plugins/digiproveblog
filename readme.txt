@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.1
-Stable tag: 1.04
+Stable tag: 1.05
 
 Digitally certify your original content - proving authorship, deterring plagiarists, and protecting copyright.
 Copyright and Licensing of original content and include attributions for non-original content. 
@@ -118,6 +118,10 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 1.05 =
+* Fixed bug where always the first license box on a webpage was popped up instead of the desired one
+* Removed dependency on PHP 5 functions (introduced at 1.00) - now works with PHP 4 (again)
 
 = 1.04 =
 * Changed display mode to use margins above and below notice
