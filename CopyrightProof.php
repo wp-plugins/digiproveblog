@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images.
-Version: 1.04
+Version: 1.05
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -44,7 +44,7 @@ else
 
 
 // Declare and initialise global variables:
-define("DPRV_VERSION", "1.04");
+define("DPRV_VERSION", "1.05");
 define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
 define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
 define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
@@ -87,6 +87,40 @@ add_filter( "wp_head", "dprv_head" );
 add_filter( "the_content", "dprv_display_content" );
 add_filter( "wp_footer", "dprv_footer" );
 
+if (!function_exists("stripos"))
+{
+    function stripos($haystack, $needle, $offset=0)
+    {
+        return strpos(strtoupper($haystack), strtoupper($needle), $offset);
+    }
+}
+
+if (!function_exists("strpbrk"))
+{
+    function strpbrk($haystack, $char_list)
+    {
+        $strlen = strlen($char_list);
+        $found = false;
+        for($i=0; $i<$strlen; $i++)
+		{
+            if(($tmp = strpos($haystack, $char_list{$i})) !== false )
+			{
+                if(!$found) 
+				{
+                    $pos = $tmp;
+                    $found = true;
+                    continue;
+                }
+                $pos = min($pos, $tmp);
+            }
+        }
+        if(!$found)
+		{
+            return false;
+        }
+        return substr($haystack, $pos);
+    }
+}
 
 // FROM HERE DOWN IS ALL FUNCTIONS:
 

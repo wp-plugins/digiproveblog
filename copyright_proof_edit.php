@@ -795,6 +795,8 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	}
 	$posA = stripos($content, "<span", $start_Digiprove + 22);
 	$posA2 = stripos($content, "<div", $start_Digiprove + 22);
+	$log->lwrite("just did a couple of stripos ops, results =" . $posA . ", " . $posA2);
+
 	if ($posA === false && $posA2 === false)
 	{
 		$log->lwrite("no span or div marker found");
@@ -809,6 +811,8 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 
 	// Find Date of Certification
 	$posA = stripos($Digiprove_notice, "title=\"certified");
+	$log->lwrite("just did another stripos, posA = " . $posA);
+
 	$posB = stripos($Digiprove_notice, " UTC by Digiprove certificate ");
 	if ($posA === false || $posB === false || $posA >= $posB)
 	{
@@ -836,14 +840,21 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 		return;
 	}
 	$remainder = substr($Digiprove_notice, $posA);
+	$log->lwrite("about to call strpbrk");
+
 	$remainder = strpbrk($remainder, '\'\"');
+	if ($remainder === false)
+	{
+		$log->lwrite("could not find starting delimiter");
+		return;
+	}
+
 	$delimiter = substr($remainder,0,1);
 	$remainder = substr($remainder,1);
 	$posB = strpos($remainder, $delimiter);
-
 	if ($posB === false)
 	{
-		$log->lwrite("could not find delimiter");
+		$log->lwrite("could not find finishing delimiter");
 		return;
 	}
 	$dprv_certificate_url = substr($remainder, 0, $posB);
@@ -854,6 +865,7 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	{
 		$posA = strpos($Digiprove_notice, chr(169));
 	}
+
 	if ($posA !== false)
 	{
 		$remainder = substr($Digiprove_notice, $posA + 2);
@@ -882,7 +894,6 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	{
 		$log->lwrite("could not find c symbol, did not search for year or name");
 	}
-
 
 	// Find Digital Fingerprint
 	$posA = strpos($remainder, "<!--");
@@ -916,6 +927,7 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	$log->lwrite("successfully parsed old notice and removed it");
 	return;
 }
+
 
 function dprv_record_copyright_details($dprv_post_id)
 {
