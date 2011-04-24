@@ -431,10 +431,6 @@ function dprv_parse_post ($data, $raw_data)
 				{
 					update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id);
 				}
-				else
-				{
-					//update_option('dprv_event', 'inserted no-digiprove for ' . $dprv_post_id);
-				}
 			}
 			else
 			{
@@ -443,11 +439,6 @@ function dprv_parse_post ($data, $raw_data)
 				{
 					update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id);
 				}
-				else
-				{
-					//update_option('dprv_event', 'updated no-digiprove for ' . $dprv_post_id);
-				}
-
 			}
 		}
 		return $data;
@@ -508,10 +499,6 @@ function dprv_parse_post ($data, $raw_data)
 				{
 					update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' writing old notice ' . $dprv_post_id . ' to db');
 				}
-				else
-				{
-					//update_option('dprv_event', 'wrote old notice ' . $dprv_post_id . ' to db');
-				}
 			}
 			else
 			{	
@@ -519,10 +506,6 @@ function dprv_parse_post ($data, $raw_data)
 				if (false === $wpdb->insert(get_option('dprv_prefix') . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year))))
 				{
 					update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting old notice to db');
-				}
-				else
-				{
-					//update_option('dprv_event', 'inserted old notice ' . $wpdb->insert_id . ' to db');
 				}
 			}
 		}
@@ -689,7 +672,7 @@ function dprv_digiprove_post($dprv_post_id)
 
 	update_option('dprv_last_result', '');
 	$newContent = stripslashes($content);
-	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent);
+	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $raw_content_hash);
 	if (strpos($certifyResponse, "Hashes are identical") === false)
 	{
 		if (strpos($certifyResponse, "Raw content is empty") === false)
@@ -746,7 +729,7 @@ function dprv_digiprove_post($dprv_post_id)
 					}
 				}
 
-				dprv_record_dp_action($dprv_post_id, $certifyResponse, $post_record->post_status);
+				dprv_record_dp_action($dprv_post_id, $certifyResponse, $post_record->post_status, $raw_content_hash);
 
 				// Surely the following bit is unnecessary?  Check and delete:			
 				if (get_option('dprv_enrolled') != "Yes")
@@ -986,10 +969,6 @@ function dprv_record_copyright_details($dprv_post_id)
 		{
 			update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating copyright details for ' . $dprv_post_id);
 		}
-		else
-		{
-			//update_option('dprv_event', 'updated copyright details for ' . $dprv_post_id);
-		}
 	}
 	else
 	{
@@ -998,15 +977,10 @@ function dprv_record_copyright_details($dprv_post_id)
 		{
 			update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id);
 		}
-		else
-		{
-			//update_option('dprv_event', 'inserted copyright details for ' . $dprv_post_id);
-		}
-
 	}
 }
 
-function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_status)
+function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_status, $raw_content_hash)
 {
 	global $wpdb;
 	$log = new Logging();  
@@ -1016,6 +990,11 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 	$dprv_utc_date_and_time = dprv_getTag($certifyResponse, "utc_date_and_time");
 
 	$dprv_digital_fingerprint = dprv_getTag($certifyResponse, "digital_fingerprint");
+	// If this is PHP 5.1.2 or later, we already have digital fingerprint, use this if not supplied by server
+	if ($dprv_digital_fingerprint === false || $dprv_digital_fingerprint == "")
+	{
+		$dprv_digital_fingerprint = $raw_content_hash;
+	}
 	$posA = strpos($dprv_utc_date_and_time, " 20");	// crude way of finding year
 	$dprv_year_certified = 2010;  // default
 	if ($posA != false)
@@ -1042,10 +1021,6 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 		{
 			update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' updating dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
 		}
-		else
-		{
-			//update_option('dprv_event', $dprv_event . '; updated dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
-		}
 	}
 	else
 	{
@@ -1054,14 +1029,10 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 		{
 			update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
 		}
-		else
-		{
-			//update_option('dprv_event', $dprv_event . '; inserted dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
-		}
 	}
 }
 
-function dprv_certify($post_id, $title, $content)
+function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 {
 	$log = new Logging();  
 	global $wp_version, $wpdb;
@@ -1158,18 +1129,15 @@ function dprv_certify($post_id, $title, $content)
 	{
 		$postText .= '<content_fingerprint>' . $raw_content_hash . '</content_fingerprint>';
 	}
-    //if (get_option('dprv_linkback') == "Linkback")
-	//{
-		$postText .= '<content_url>';
-		$permalink = get_bloginfo('url');
-		if ($post_id != -1)									// will be set to -1 if the value is unknown
-		{
-			// Note - Decided not to implement soft permalinks as can end up with broken links if user changes scheme
-			$permalink = get_bloginfo('url') . "/?p=" . $post_id;
-		}
-		$postText .= $permalink;
-		$postText .= '</content_url>';
-	//}
+	$postText .= '<content_url>';
+	$permalink = get_bloginfo('url');
+	if ($post_id != -1)									// will be set to -1 if the value is unknown
+	{
+		// Note - Decided not to implement soft permalinks as can end up with broken links if user changes scheme
+		$permalink = get_bloginfo('url') . "/?p=" . $post_id;
+	}
+	$postText .= $permalink;
+	$postText .= '</content_url>';
 	$postText .= "<linkback>" . get_option('dprv_linkback') . "</linkback>";
 
 	if (get_option('dprv_obscure_url') == "Clear")
@@ -1216,8 +1184,6 @@ function dprv_getRawContent($post_id, $contentString, &$raw_content_hash)
 	if (function_exists("hash"))					// Before 5.1.2, the hash() function did not exist, calling it gives a fatal error
 	{
 		$raw_content_hash = strtoupper(hash("sha256", $raw_content));
-		//$log->lwrite("Content fingerprinted = START" . $raw_content . "END");
-		//$log->lwrite("Calculated digital fingerprint = " . $raw_content_hash);
 	}
 	return $raw_content;
 }

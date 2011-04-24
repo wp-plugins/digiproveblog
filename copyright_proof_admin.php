@@ -237,10 +237,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	{
 		$dprv_save_content = 'Nosave';
 	}
-	$dprv_body_or_footer = get_option('dprv_body_or_footer');
-	if ($dprv_body_or_footer == false)
+	$dprv_footer = get_option('dprv_footer');
+	if ($dprv_footer == false)
 	{
-		$dprv_body_or_footer = 'Body';
+		$dprv__footer = 'No';
+	}
+	$dprv_multi_post = get_option('dprv_multi_post');
+	if ($dprv_multi_post == false)
+	{
+		$dprv_multi_post = 'Yes';
 	}
 
 
@@ -564,11 +569,25 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 						$dprv_save_content = $_POST['dprv_save_content'];
 						update_option('dprv_save_content',$_POST['dprv_save_content']);
 					}
-					if (isset($_POST['dprv_body_or_footer']))
+					if ($_POST['dprv_footer'] =="on")
 					{
-						$dprv_body_or_footer = $_POST['dprv_body_or_footer'];
-						update_option('dprv_body_or_footer',$_POST['dprv_body_or_footer']);
+						$dprv_footer = "Yes";
 					}
+					else
+					{
+						$dprv_footer = "No";
+					}
+					update_option('dprv_footer', $dprv_footer);
+
+					if ($_POST['dprv_multi_post'] =="on")
+					{
+						$dprv_multi_post = "Yes";
+					}
+					else
+					{
+						$dprv_multi_post = "No";
+					}
+					update_option('dprv_multi_post', $dprv_multi_post);
 
 
 					// LICENSE TAB INFO:
@@ -780,7 +799,22 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					$dprv_obscure_url = $_POST['dprv_obscure_url'];
 					$dprv_linkback = $_POST['dprv_linkback'];
 					$dprv_save_content = $_POST['dprv_save_content'];
-					$dprv_body_or_footer = $_POST['dprv_body_or_footer'];
+					if ($_POST['dprv_footer'] =="on")
+					{
+						$dprv_footer = "Yes";
+					}
+					else
+					{
+						$dprv_footer = "No";
+					}
+					if ($_POST['dprv_multi_post'] =="on")
+					{
+						$dprv_multi_post = "Yes";
+					}
+					else
+					{
+						$dprv_multi_post = "No";
+					}
 
 					$dprv_license = $_POST['dprv_license'];
 					$log->lwrite("dprv_license=".$dprv_license);
@@ -925,12 +959,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_no_save_content_selected = ' selected="selected"';
 	}
 
-	$dprv_body_selected = ' selected="selected"';
-	$dprv_footer_selected = '';
-	if ($dprv_body_or_footer != 'Body')
+	$dprv_footer_checked = '';
+	if ($dprv_footer != 'No')
 	{
-		$dprv_body_selected = '';
-		$dprv_footer_selected = ' selected="selected"';
+		$dprv_footer_checked = ' checked="checked"';
+	}
+	$dprv_multi_post_checked = '';
+	if ($dprv_multi_post != 'No')
+	{
+		$dprv_multi_post_checked = ' checked="checked"';
 	}
 
 	$dprv_reg_button_display = 'none';
@@ -1181,7 +1218,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													</tr>
 													<tr id="dprv_api_key_row_2"' . $dprv_display_api_row2 . '>
 														<td id="dprv_api_key_caption"></td>
-														<td><input name="dprv_api_key" id="dprv_api_key" type="text" value="'.htmlspecialchars(stripslashes($dprv_api_key)).'" onchange="ApiKeyChange();" style="margin-left:0px;width:190px"' . $dprv_reg_disabled . '/></td>
+														<td><input name="dprv_api_key" id="dprv_api_key" type="text" value="'.htmlspecialchars(stripslashes($dprv_api_key)).'" style="margin-left:0px;width:190px"' . $dprv_reg_disabled . '/></td>
 														<td></td>
 													</tr>
 													<tr id="dprv_password_row1"' . $dprv_display_password_rows . '>
@@ -1286,14 +1323,18 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 															</table>
 														</td>
 													</tr>
-													<tr style="display:none"><td style="height:10px"></td></tr>
-													<tr style="display:none">
-														<td>' . __('Place Digiprove notice in body or footer:&nbsp;&nbsp;', 'dprv_cp') . '</td>
-														<td><select name="dprv_body_or_footer" id="dprv_body_or_footer" onchange="ToggleFooterWarning()" style="width:290px">
-																<option value="Body"' . $dprv_body_selected . '>Insert at end of blog post</option>
-																<option value="Footer"' . $dprv_footer_selected . '>Display in footer*</option>
-															</select>
-															&nbsp;<a id="footer_warning_link" href="javascript:ShowFooterText()">Note about using footer</a></td>
+													<tr><td style="height:4px"></td></tr>
+													<tr>
+														<td>' . __('Show notice on multi-post web-pages:&nbsp;&nbsp;', 'dprv_cp') . '</td>
+														<td><input type="checkbox" id="dprv_multi_post" name="dprv_multi_post" ' . $dprv_multi_post_checked . ' />
+														&nbsp;&nbsp;<a href="javascript:ShowMultiPostText()">Note - for search pages, archive pages etc.</a>
+														</td>
+													</tr>
+													<tr><td style="height:6px"></td></tr>
+													<tr>
+														<td>' . __('Show generic Digiprove notice in footer:&nbsp;&nbsp;', 'dprv_cp') . '</td>
+														<td><input type="checkbox" id="dprv_footer" name="dprv_footer" ' . $dprv_footer_checked . ' onclick="ToggleFooterWarning()" />
+															&nbsp;&nbsp;<a id="footer_warning_link" href="javascript:ShowFooterText()">Note - appearance depends on theme</a></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 												</table>

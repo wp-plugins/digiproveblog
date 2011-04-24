@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.1
-Stable tag: 1.05
+Tested up to: 3.1.1
+Stable tag: 1.06
 
 Digitally certify your original content - proving authorship, deterring plagiarists, and protecting copyright.
 Copyright and Licensing of original content and include attributions for non-original content. 
@@ -38,13 +38,19 @@ In some countries, you can go a step further by formally registering your copyri
 Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
 Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
+= Is my content uploaded to Digiprove?
 
-= I uploaded the plug-in and nothing seems to happen when I publish a new or edited post? =
+Unless you (or your hosting provider) are using an old version of PHP (earlier than PHP 5.1.2) or you have specified otherwise, only the digital fingerprint of your content is uploaded, not the 
+content itself.  This allows you to protect private content on a private network using Wordpress.  On the other hand, premium users have the option to upload content, which
+preserves your content independently of Wordpress.
+
+
+= I installed the plug-in and nothing seems to happen when I publish a new or edited post? =
 
 - Have you registered with Digiprove yet (see Installation)?
 - Have you activated your Digiprove registration by clicking on the link received by email?
 - If you have not received the activation mail, check your junk mail folder, then contact us at support@digiprove.com
-- Note: To get the Digiprove notice to appear on existing posts, you should open each one and press Update
+- Note: To get the Digiprove notice to appear on existing posts, you should open each one and press Update & Digiprove
 
 
 = When I try to upgrade the plugin, it fails (often with the message "Could not remove the old plugin") - what to do? =
@@ -72,10 +78,25 @@ Digiprove does not make use of these details except to deliver the service.  Ple
 Most of the features of the plug-in are totally free.  There are some features that are dependent on a valid subscription with Digiprove.  It is free for use by registered educational
 establishments or charities, just write to us at support@digiprove.com with details including evidence of your status to obtain this free subscription.
 
+= What are the benefits of becoming a Digiprove subscriber?  =
+
+From Wordpress:
+- You can publish content from multiple domains
+- You can elect to have your valuable Digiprove Content Certificates emailed to you automatically
+- You can create a custom text to display in your Digiprove notice rather than using one of the standard texts
+- You can have a hyperlink from your certificate page on www.digiprove.com back to your Wordpress post (or page)
+- You can save content at digiprove.com
+- You can compose your own license caption and statement rather than selecting from one of the standard ones
+
+At www.digiprove.com:
+- You can protect the IP of all types of content
+- You can create tamper-proof audit trails within applications
+- You can send certified email
+- You can create authentication methods for your content files
 
 = I think I've found a bug, what can I do? =
 
-This is a beta version of the plug-in, and we actively seek information about problems or criticisms you may have.  So please let us know at support@digiprove.com - we will address the problem as soon as possible. 
+We actively seek information about problems or criticisms you may have.  So please let us know at support@digiprove.com - we will address the problem as soon as possible. 
 
 
 = I like your plugin, but it would be much better if ... =
@@ -91,12 +112,10 @@ Yes, you can review your history online (and perform other functions) by visitin
 = I get an error message: "invalid user id, domain, or api key" =
 
 Check your user id first; if that is correct, there is a problem with the API key and/or domain. Each API key is associated with a domain (e.g. myinterestingblog.com, or www.myinterestingblog.com).
-Copyright Proof will automatically assign one to you using the domain name recorded in the Wordpress "General" settings of your blog. If you change this domain name, or you want to set up the
-plugin to run in another blog, you can request a new api key for the new domain. Do this by logging into Digiprove at https://www.digiprove.com/secure/login.aspx, then choosing "Preferences" and 
-"Issue/Renew API Keys".  This will allow you to obtain multiple API keys corresponding to the domains you wish to work with, which can then be input in the Copyright Proof Settings page in Wordpress.
-Note that multiple domains under one user id is only permissible to subscribers.  Free users are limited to one domain.
-
-If the API key value gets messed up you can get a new one by ticking the "Obtain new API Key automatically" box, entering your password, and pressing Update.
+On initial installation, Copyright Proof will automatically assign one to you using the domain name recorded in the Wordpress "General" settings of your blog. If you change this domain name, or you
+want to set up the plugin to run in another blog, you can request a new api key for the new domain. The quickest way to do this is to go to Copyright Proof Settings page and tick the box entitled
+"Obtain new API key automatically" and press "Update Settings" (you will be asked for your password).  Note that multiple domains under one user id is only permissible to subscribers.  Free users
+are limited to one domain.
 
 = I get an error message: "daily limit of API requests exceeded - please upgrade Digiprove account" =
 
@@ -118,6 +137,16 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 1.06 =
+* Removed non-standard valign attribute on notice
+* License display panel now works with themes and plugins that cause default target (for <a>) to be new tab/window
+* Copy-protect function now works even with themes that do not call wp_footer()
+* Optional footer message "Original content on these pages is fingerprinted and certified by Digiprove"
+* Option whether or not to display Digiprove notice only on single-post-pages
+* Small optimisation of http traffic (PHP5.1.2 or later) - retains calculated digital fingerprint - no longer repeated in http response
+* Improved alignment of license text within Digiprove notice
+* Check for invalid api key will not appear until Update is pressed (to avoid annoying pop-up messages)
+* Will now prevent user from assigning a blank/empty api key
 
 = 1.05 =
 * Fixed bug where always the first license box on a webpage was popped up instead of the desired one

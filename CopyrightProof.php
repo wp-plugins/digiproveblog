@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images.
-Version: 1.05
+Version: 1.06
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -44,7 +44,7 @@ else
 
 
 // Declare and initialise global variables:
-define("DPRV_VERSION", "1.05");
+define("DPRV_VERSION", "1.06");
 define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
 define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
 define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
@@ -57,7 +57,7 @@ $dprv_port = 443;                               // -> should be set to 443 (stan
 $dprv_licenseIds = array();
 $dprv_licenseTypes = array();
 $dprv_licenseCaptions = array();
-$dprv_licenseAbstracts = Array();
+$dprv_licenseAbstracts = array();
 $dprv_licenseURLs = array();
 
 
@@ -152,7 +152,9 @@ function dprv_activate()
 	add_option('dprv_display_name','Yes');
 	add_option('dprv_email_certs','No');
 	add_option('dprv_linkback','Nolink');
-	add_option('dprv_body_or_footer', 'Body');
+	delete_option('dprv_body_or_footer');		// Not used, discard
+	add_option('dprv_footer', 'No');
+	add_option('dprv_multi_post', 'Yes');
 	add_option('dprv_enrolled', 'No');
 	add_option('dprv_user_id', '');
 	add_option('dprv_api_key', '');
@@ -249,7 +251,7 @@ function create_dprv_post_table()
 		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 		dbDelta($sql);
 		$dprv_db_error = $wpdb->last_error;
-		$log->lwrite("just created posts table " . $dprv_posts . "; error texts = " . $dprv_db_error);
+		$log->lwrite("just created posts table " . $dprv_posts . "; error text = " . $dprv_db_error);
 		//$wpdb->show_errors();
 		if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
 		{
@@ -281,7 +283,7 @@ $licenseTypes = array(
 						__("Attribution, Share Alike","dprv_cp"),
 						__("General Public License","dprv_cp"));
 
-$licenseCaptions = Array(
+$licenseCaptions = array(
 							__("All Rights Reserved", "dprv_cp"),
 							__("All Rights Reserved", "dprv_cp"),
 							__("Some Rights Reserved", "dprv_cp"),
@@ -292,7 +294,7 @@ $licenseCaptions = Array(
 							__("Some Rights Reserved", "dprv_cp"),
 							__("Some Rights Reserved", "dprv_cp"));
 
-$licenseAbstracts = Array(
+$licenseAbstracts = array(
 							__("You may read the original content in the context in which it is published (at this web address). No other copying or use is permitted without written agreement from the author.","dprv_cp"),
 							__("You may read the original content in the context in which it is published (at this web address). You may make other uses of the content only with the written permission of the author on payment of a fee.","dprv_cp"),
 							__("You may copy this content, create derivative work from it, and re-publish it, provided you include an overt attribution to the author(s).","dprv_cp"),
@@ -367,7 +369,7 @@ function populate_licenses()
 		$dprv_licenseIds = array(count($license_info));
 		$dprv_licenseTypes = array(count($license_info));
 		$dprv_licenseCaptions = array(count($license_info));
-		$dprv_licenseAbstracts = Array(count($license_info));
+		$dprv_licenseAbstracts = array(count($license_info));
 		$dprv_licenseURLs = array(count($license_info));
 
 		for ($i=0; $i<count($license_info); $i++)
