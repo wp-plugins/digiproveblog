@@ -4,41 +4,89 @@ function dprv_head()
 {
 	$log = new Logging();  
 	$log->lwrite("dprv_wp_head starts");
-	populate_licenses();
-
 	$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
 	$dprv_right_click_message = get_option('dprv_right_click_message');
-	echo ("<script type='text/javascript'>
-				//<![CDATA[
-				function DisplayAttributions(attribution_text)
-				{
-					document.getElementById(\"dprv_attribution\").innerHTML = attribution_text;
-					document.getElementById(\"dprv_attribution\").title = \"Attributions - owner(s) of some content\";
-					document.getElementById(\"dprv_attribution\").onmouseover = \"\";
-				}
-				function DisplayLicense(post_id)
-				{
-					document.getElementById('license_panel' + post_id).style.display='block';
-					document.getElementById('license_panel' + post_id).style.zIndex='2';
-				}
-				function HideLicense(post_id)
-				{
-					document.getElementById('license_panel' + post_id).style.display='none';
-					//document.getElementById('license_panel' + post_id).style.zIndex='0';
-				}");
+	if ($dprv_frustrate_copy == "Yes")
+	{
+		$dprv_home = get_settings('siteurl');
+		echo ("<script type='text/javascript' src='" . $dprv_home . "/wp-content/plugins/digiproveblog/frustrate_copy.js?v=".DPRV_VERSION."'></script>");
+	}
+
+	echo ("
+	<script type='text/javascript'>
+		//<![CDATA[");
 	
 	// Then, create Javascript to do copy-protect functions if necessary
-	if ($dprv_frustrate_copy == "Yes")
-	{
-		echo ("var noRightClickMessage='" . $dprv_right_click_message . "';");
-	}
-	echo (" //]]>
-			</script>");
 
-	$dprv_home = get_settings('siteurl');
 	if ($dprv_frustrate_copy == "Yes")
 	{
-		echo ("<script type='text/javascript' src='" . $dprv_home . "/wp-content/plugins/digiproveblog/frustrate_copy.js?v=".DPRV_VERSION."'></script>");
+		echo ("
+		var noRightClickMessage='" . $dprv_right_click_message . "';
+		var justDisplayed = 0;
+		var oldonload = window.onload; 
+		function addLoadEvent(func)
+		{
+			if (typeof window.onload != 'function')
+			{ 
+				window.onload = func; 
+			}
+			else
+			{ 
+				window.onload = function()
+				{
+					if (oldonload)
+					{ 
+						oldonload(); 
+					}
+					func(); 
+				} 
+			} 
+		} 
+		function copy_frustrate()
+		{
+			// Prevent Right-Clicking (entire page)
+			disableRightClick();
+			// Prevent Control Key combinations (like CTRL A, CTRL U)
+			disableCtrlKeys();
+
+			disableSelection(document.body);
+		}
+		addLoadEvent(copy_frustrate);
+		");
+	}
+
+	echo ("
+		function DisplayAttributions(attribution_text)
+		{
+			document.getElementById(\"dprv_attribution\").innerHTML = attribution_text;
+			document.getElementById(\"dprv_attribution\").title = \"Attributions - owner(s) of some content\";
+			document.getElementById(\"dprv_attribution\").onmouseover = \"\";
+		}
+		function DisplayLicense(post_id)
+		{
+			document.getElementById('license_panel' + post_id).style.display='block';
+			document.getElementById('license_panel' + post_id).style.zIndex='2';
+		}
+		function HideLicense(post_id)
+		{
+			document.getElementById('license_panel' + post_id).style.display='none';
+			//document.getElementById('license_panel' + post_id).style.zIndex='0';
+		}");
+
+	echo ("
+	//]]>
+	</script>");
+
+	populate_licenses();
+	
+	$dprv_record_IP = get_option('dprv_record_IP');
+	if ($dprv_record_IP == "Yes")
+	{
+		$content_prefix .= "<script src='record_IP.js' type='text/javascript'></script>";
+		$dprv_wp_url = parse_url(get_option('siteurl'));
+		$dprv_wp_host = $dprv_wp_url[host];
+		$log->lwrite("dprv_wp_host = " . $dprv_wp_host);  
+		$content_prefix .= "<form action='http://" . $dprv_wp_host . "/copyright_proof_handler.php' method='post' id='IPAddress'><input type='hidden' value='" . @$REMOTE_ADDR . "' /></form>";
 	}
 }
 
@@ -65,11 +113,13 @@ function dprv_display_content($content)
 		}
 	}
 
-	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
-
 	// Remove old-style notice (if there is one there) and return the core information from it 
 	dprv_strip_old_notice($content, $dprv_certificate_id, $dprv_utc_date_and_time, $dprv_digital_fingerprint, $dprv_certificate_url, $dprv_first_year);
 
+	if (!is_singular() && get_option('dprv_multi_post') == "No")
+	{
+		return $content;
+	}
 	// a Digiprove Notice is required to append to content
 	$dprv_notice = "";
 
@@ -200,38 +250,9 @@ function dprv_footer()
 {
 	$log = new Logging();  
 	$log->lwrite("dprv_footer starts");
-	
-	// Create Javascript to do copy-protect functions if necessary
-	// Needs to be here, unless it gets added to existing onload functionality in which case it could go in head section
-	$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
-	$dprv_right_click_message = get_option('dprv_right_click_message');
-	$dprv_record_IP = get_option('dprv_record_IP');
-	if ($dprv_record_IP == "Yes")
+	if (get_option('dprv_footer') == "Yes")
 	{
-		$content_prefix .= "<script src='record_IP.js' type='text/javascript'></script>";
-		$dprv_wp_url = parse_url(get_option('siteurl'));
-		$dprv_wp_host = $dprv_wp_url[host];
-		$log->lwrite("dprv_wp_host = " . $dprv_wp_host);  
-		$content_prefix .= "<form action='http://" . $dprv_wp_host . "/copyright_proof_handler.php' method='post' id='IPAddress'><input type='hidden' value='" . @$REMOTE_ADDR . "' /></form>";
-	}
-
-	if ($dprv_frustrate_copy == "Yes")
-	{
-		echo ("<script type='text/javascript'>
-					//<![CDATA[
-					// MAINLINE CODE
-
-					// Prevent Right-Clicking (entire page)
-					disableRightClick();
-					var justDisplayed = 0;
-
-					// Prevent Control Key combinations (like CTRL A, CTRL U)
-					disableCtrlKeys();
-
-					disableSelection(document.body);
-
-					//]]>
-				</script>");
+		echo ("All original content on these pages is fingerprinted and certified by <a href='http://www.digiprove.com' target='_blank'>Digiprove</a>");
 	}
 }
 
@@ -332,7 +353,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 			$extra_style = "padding-top:" . $dprv_container_pad_top . ";padding-bottom:0px;";
 		}
 		$container_style = 'vertical-align:baseline; padding:3px; margin-top:2px; margin-bottom:2px; line-height:' . $dprv_line_height . ';float:none; font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_outside_font_size . ';' . $dprv_border_css . $background_css . $dprv_boxmodel . $extra_style;
-		$DigiproveNotice = '<' . $dprv_container . ' id="dprv_cp_v' . DPRV_VERSION . '" lang="en" xml:lang="en" valign="top" class="notranslate" style="' . $container_style . '" title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
+		$DigiproveNotice = '<' . $dprv_container . ' id="dprv_cp_v' . DPRV_VERSION . '" lang="en" xml:lang="en" class="notranslate" style="' . $container_style . '" title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
 
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" style="height:' . $dprv_a_height . '; line-height: ' . $dprv_a_height . '; border:0px; padding:0px; margin:0px; float:none; display:inline; text-decoration: none; background:transparent none; line-height:normal; font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . ';">';
 		
@@ -368,7 +389,8 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		}
 		$DigiproveNotice .= '</span></a>';
 
-		$span_style = "font-family: Tahoma, MS Sans Serif; font-style:normal; display:block; font-size:" . $dprv_font_size . "; font-weight:normal; color:" . $dprv_notice_color . "; border:0px; float:none; text-decoration:none; letter-spacing:normal; line-height:" . $dprv_a_height . "; vertical-align:" . $dprv_txt_valign . "; padding:0px; padding-left:" . $dprv_leftpad . ";margin-bottom:" . $dprv_line_margin . ";";
+		$span_style = "font-family: Tahoma, MS Sans Serif; font-style:normal; display:block; font-size:" . $dprv_font_size . "; font-weight:normal; color:" . $dprv_notice_color . "; border:0px; float:none; text-align:left; text-decoration:none; letter-spacing:normal; line-height:" . $dprv_a_height . "; vertical-align:" . $dprv_txt_valign . "; padding:0px; padding-left:" . $dprv_leftpad . ";margin-bottom:" . $dprv_line_margin . ";";
+
 		$mouseover = "";
 		if ($preview != true)
 		{
@@ -391,7 +413,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		$log->lwrite("licenseType = " . $licenseType . ", licenseCaption=" . $licenseCaption);
 		if ($licenseType != false && $licenseType != "" && $licenseType != "Not Specified")
 		{
-			$DigiproveNotice .= "<a title='" . __("Click to see details of license", "dprv_cp") . "' href=\"javascript:DisplayLicense('" . $dprv_post_id . "')\" style=\"" . $span_style . "\" " . $mouseover . ">";
+			$DigiproveNotice .= "<a title='" . __("Click to see details of license", "dprv_cp") . "' href=\"javascript:DisplayLicense('" . $dprv_post_id . "')\" style=\"" . $span_style . "\" " . $mouseover . "target='_self'>";
 			$DigiproveNotice .= $licenseCaption;
 			$DigiproveNotice .= "</a>";
 			// Need to replace transparency with inversion of text color (as license_panel is a layer):
@@ -409,7 +431,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 				$background_css = 'background:' . $background_color . ' none; opacity:0.8; filter:alpha(opacity=80);';
 				//$log->lwrite("calculated background color of " . $background_color . " from foreground " . $dprv_notice_color);
 			}
-			$dprv_license_html = '<div id="license_panel' . $dprv_post_id . '" style="position: absolute; display:none ; font-family: Tahoma, MS Sans Serif; font-style:normal; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . $dprv_border_css . ' float:none; max-width:640px; text-decoration:none; letter-spacing:normal; line-height:' . $dprv_line_height . '; vertical-align:' . $dprv_txt_valign . '; padding:0px;' . $background_css . '">';
+			$dprv_license_html = '<div id="license_panel' . $dprv_post_id . '" style="position: absolute; display:none ; font-family: Tahoma, MS Sans Serif; font-style:normal; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . ';' . $dprv_border_css . ' float:none; max-width:640px; text-decoration:none; letter-spacing:normal; line-height:' . $dprv_line_height . '; vertical-align:' . $dprv_txt_valign . '; padding:0px;' . $background_css . '">';
 			$dprv_license_html .= '<table cellpadding="0" cellspacing="0" border="0" style="line-height:17px;margin:0px;padding:0px;background-color:transparent;font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . '; color:' . $dprv_notice_color . '"><tbody>';
 			$dprv_license_html .= '<tr><td colspan="2" style="background-color:transparent;border:0px;font-weight:bold;padding:0px;padding-left:6px; text-align:left">Original content here is published under these license terms:</td><td style="width:20px;background-color:transparent;border:0px;padding:0px"><span style="float:right; background-color:black; color:white; width:20px; text-align:center; cursor:pointer" onclick="HideLicense(\'' . $dprv_post_id . '\')">&nbsp;X&nbsp;</span></td></tr>';
 			$dprv_license_html .= '<tr><td colspan="3" style="height:4px;padding:0px;background-color:transparent;border:0px"></td></tr>';

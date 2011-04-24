@@ -251,11 +251,7 @@ function ApiKeyChange()
 	}
 	if (dprv_lastApiKey == "")
 	{
-		if (confirm("You have entered a value for API Key - do this only if the new API key was obtained from Digiprove"))
-		{
-			dprv_lastApiKey = document.getElementById('dprv_api_key').value;
-		}
-		else
+		if (!confirm("You have entered a value for API Key - do this only if the new API key was obtained from Digiprove"))
 		{
 			document.getElementById('dprv_api_key').value = dprv_lastApiKey;
 			return false;
@@ -263,20 +259,24 @@ function ApiKeyChange()
 	}
 	else
 	{
-		if (confirm("You are changing the API Key - do this only if the new API key was obtained from Digiprove, otherwise the plugin will stop working. Press OK to proceed with change or Cancel to restore original value"))
+		if (document.getElementById('dprv_api_key').value == "")
 		{
-			dprv_lastApiKey = document.getElementById('dprv_api_key').value;
+			alert("An empty api key is invalid.");
+			document.getElementById('dprv_api_key').value = dprv_lastApiKey;
+			return false;
 		}
-		else
+		var length_message = "";
+		if (document.getElementById('dprv_api_key').value.length != 22)
+		{
+			length_message = " That does not look like a valid API key which is normally 22 characters.";
+		}
+		if (!confirm("You are changing the API Key - do this only if the new API key was obtained from Digiprove, otherwise the plugin will stop working." + length_message + " Press OK to proceed with change or Cancel to restore original value"))
 		{
 			document.getElementById('dprv_api_key').value = dprv_lastApiKey;
 			return false;
 		}
 	}
-	if (document.getElementById('dprv_api_key').value.length != 22 && !confirm("That looks like an invalid API key - should normally be 22 characters - press OK to ignore this"))
-	{
-		return false;
-	}
+	dprv_lastApiKey = document.getElementById('dprv_api_key').value;
 	return true;
 }
 
@@ -573,7 +573,7 @@ function Preview()
 
 function ToggleFooterWarning()
 {
-	if (document.getElementById("dprv_body_or_footer").value == "Footer")
+	if (document.getElementById("dprv_footer").checked == true)
 	{
 		document.getElementById("footer_warning_link").style.display = "";
 	}
@@ -582,10 +582,14 @@ function ToggleFooterWarning()
 		document.getElementById("footer_warning_link").style.display = "none";
 	}
 }
+function ShowMultiPostText()
+{
+	DisplayHelpText('Tick this to allow the Digiprove notice to be included in post excerpts that appear on multi-post pages such as search results, archive pages etc.');
+}
 
 function ShowFooterText()
 {
-	DisplayHelpText('Please check how this looks with your selected theme.  Some themes do not display footers at all and some others are not designed to accommodate extra information being inserted into the footer area.');
+	DisplayHelpText('Please check how this looks on your site.  Whether and where the notice appears is determined by your theme.  To change this, look for wp_footer() in the footer.php file of your theme.');
 }
 
 // END OF FUNCTIONS FOR ADVANCED TAB
