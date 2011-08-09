@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images.
-Version: 1.06
+Version: 1.07
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -42,14 +42,13 @@ else
 	include_once('copyright_proof_http_functions_basic.php');	// Functions for HTTP
 }
 
-
 // Declare and initialise global variables:
-define("DPRV_VERSION", "1.06");
+define("DPRV_VERSION", "1.07");
 define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
 define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
 define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
 
-global $dprv_port, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id;
+global $dprv_port, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id, $dprv_mime_types;
 
 $dprv_port = 443;                               // -> should be set to 443 (standard settings 80 for http, 443 for https)
 
@@ -60,6 +59,13 @@ $dprv_licenseCaptions = array();
 $dprv_licenseAbstracts = array();
 $dprv_licenseURLs = array();
 
+$dprv_mime_types = array(	"All"=>array("All"),
+							"Images"=>array("bmp","cgm","djv","djvu","gif","ico","ief","j2","jpe","jpeg","jpg","mac","pbm","pct","pgm","pic","pict","png","pnm","pnt","pntg","ppm","qti","qtif","ras","rgb","svg","tif","tiff","wbmp","xpm"),
+							"Audio"=>array("aif","aifc","aiff","au","kar","m3u","m4a","m4b","m4p","mid","midi","mp2","mp3","mpga","mxu","ra","ram","wav"),
+							"Video"=>array("avi","dif","dv","m4u","m4v","mov","movie","mp4","mpe","mpeg","mpg","qt","swf"),
+							"Web Pages"=>array("","htm","html","php","asp","aspx"),
+							"Documents"=>array("csv","doc","docx","odt","ods","odp","pdf","ppt","pptx","rtf","txt","xls","xlsx"),
+							"Code"=>array("js","jar"));
 
 
 // Register hooks
@@ -80,12 +86,46 @@ add_action('wp_insert_page', 'dprv_digiprove_post');
 
 if (get_option('dprv_enrolled') == "Yes")
 {
-	add_action('add_meta_boxes', 'dprv_postbox');
+	global $wp_version;
+	if (intval($wp_version)>3)
+	{
+		add_action('add_meta_boxes', 'dprv_postbox');
+	}
+	else
+	{
+		add_action( 'admin_init', 'dprv_postbox', 1);
+	}
 }
 
-add_filter( "wp_head", "dprv_head" );
+//add_filter( "wp_head", "dprv_head");
+add_action("wp_head", "dprv_head");
 add_filter( "the_content", "dprv_display_content" );
-add_filter( "wp_footer", "dprv_footer" );
+//add_filter( "wp_footer", "dprv_footer" );
+add_action( "wp_footer", "dprv_footer" );
+
+
+if(!function_exists("strripos"))
+{
+    function strripos($haystack, $needle, $offset = 0)
+	{
+        if(!is_string($needle))
+		{
+			$needle = chr(intval($needle));
+		}
+        if ($offset < 0)
+		{
+            $temp_cut = strrev(substr($haystack, 0, abs($offset)));
+        }
+        else
+		{
+            $temp_cut = strrev(substr($haystack, 0, max((strlen($haystack) - $offset),0)));
+        }
+        if(($found = stripos( $temp_cut, strrev($needle))) === FALSE)return FALSE;
+        $pos = (strlen($haystack) - ($found + $offset + strlen( $needle)));
+        return $pos;
+    }
+}
+
 
 if (!function_exists("stripos"))
 {
@@ -128,13 +168,14 @@ if (!function_exists("strpbrk"))
 function dprv_activate()
 {
 	$log = new Logging();  
-	$log->lwrite("");  
-	$log->lwrite("VERSION " . DPRV_VERSION . " ACTIVATED");  
-	update_option('dprv_activated_version', DPRV_VERSION);
+	$log->lwrite("");
+	$log->lwrite("VERSION " . DPRV_VERSION . " ACTIVATED");
+	// default value first
+	update_option('dprv_activated_version', DPRV_VERSION);	// If different to installed, activation steps will take place
 	add_option('dprv_email_address', '');
 	add_option('dprv_first_name', '');
 	add_option('dprv_last_name', '');
-	add_option('dprv_subscription_type', '');
+	add_option('dprv_subscription_type', '');               // Will be empty until activation of membership
 	add_option('dprv_subscription_expiry', '');
 	add_option('dprv_content_type', '');
 	add_option('dprv_notice', '');
@@ -143,7 +184,7 @@ function dprv_activate()
 	add_option('dprv_license', '0');
 	add_option('dprv_frustrate_copy', '');
 	add_option('dprv_right_click_message', '');
-	add_option('dprv_record_IP', '');
+	add_option('dprv_record_IP', '');                       // Not used (yet)
 	add_option('dprv_notice_border', '');
 	add_option('dprv_notice_background', '');
 	add_option('dprv_notice_color', '');
@@ -152,31 +193,58 @@ function dprv_activate()
 	add_option('dprv_display_name','Yes');
 	add_option('dprv_email_certs','No');
 	add_option('dprv_linkback','Nolink');
+	add_option('dprv_save_content','Nosave');
+	add_option('dprv_post_types','post,page');
+	$subscription_type = get_option('dprv_subscription_type');
+	$dprv_html_tags = set_default_html_tags();
+	if ($subscription_type == 'Basic' || $subscription_type == '')
+	{
+		foreach ($dprv_html_tags as $key=>$value)
+		{
+			$log->lwrite("key=$key");
+			$log->lwrite("value=$value");
+			$dprv_html_tags[$key]["selected"] = "False";
+		}
+	}
+	add_option('dprv_html_tags',$dprv_html_tags);
+	add_option('dprv_outside_media','NoOutside');
 	delete_option('dprv_body_or_footer');		// Not used, discard
 	add_option('dprv_footer', 'No');
 	add_option('dprv_multi_post', 'Yes');
 	add_option('dprv_enrolled', 'No');
 	add_option('dprv_user_id', '');
 	add_option('dprv_api_key', '');
-	add_option('dprv_last_action', '');
-	add_option('dprv_last_result', '');
+	add_option('dprv_last_action', '');                     // Is set to "Digiprove id=nnnn" at start of a Digiprove action (parse_post) if this is blank dprv_last_result will not be displayed as an admin message
+	add_option('dprv_last_result', '');						// Contains result of Digiprove action
 	add_option('dprv_last_date','');
 	add_option('dprv_last_date_count','0');
 	update_option('dprv_event', '');
-	update_option('dprv_activation_event','');
+	update_option('dprv_activation_event', '');
 	add_option('dprv_prefix');
 	create_dprv_license_table();
 	create_dprv_post_table();
+}
+
+function set_default_html_tags()
+{
+	$dprv_html_tags=array(	"a"=>array("name"=>"Anchor","selected"=>"True","incl_excl"=>"Include", "All"=>"False", "Images"=>"False", "Audio"=>"True", "Video"=>"True", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"False"),
+							"img"=>array("name"=>"Images","selected"=>"True","incl_excl"=>"Include", "All"=>"True", "Images"=>"False", "Audio"=>"False", "Video"=>"False", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"False"), 
+							"embed"=>array("name"=>"Embedded Media","selected"=>"False","incl_excl"=>"Include", "All"=>"False", "Images"=>"False", "Audio"=>"False", "Video"=>"True", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"False"),
+							"applet"=>array("name"=>"Java Applets","selected"=>"False","incl_excl"=>"Include", "All"=>"False", "Images"=>"False", "Audio"=>"False", "Video"=>"False", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"True"), 
+							"object"=>array("name"=>"Objects (various)","selected"=>"False","incl_excl"=>"Include", "All"=>"False", "Images"=>"False", "Audio"=>"False", "Video"=>"True", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"True"), 
+							"iframe"=>array("name"=>"iFrame","selected"=>"False","incl_excl"=>"Exclude", "All"=>"False","Images"=>"False", "Audio"=>"False", "Video"=>"True", "Web Pages"=>"True", "Documents"=>"False", "Code"=>"True"), 
+							"script"=>array("name"=>"Scripts & Code","selected"=>"False","incl_excl"=>"Include", "All"=>"False","Images"=>"False", "Audio"=>"False", "Video"=>"False", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"True"),
+							"notag"=>array("name"=>"Elsewhere in HTML","selected"=>"True","incl_excl"=>"Include", "All"=>"False","Images"=>"True", "Audio"=>"True", "Video"=>"False", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"False"));
+	return $dprv_html_tags;
 }
 
 function create_dprv_license_table()
 {
 	$log = new Logging();  
 	global $wpdb;
-
 	$dprv_prefix = $wpdb->prefix;
-
 	update_option('dprv_prefix', $dprv_prefix);
+
 	$dprv_licenses = $dprv_prefix . "dprv_licenses";
 
 	// Check to see if the table exists already, if not, then create it
@@ -208,7 +276,6 @@ function create_dprv_license_table()
 		{
 			record_dprv_licenses();
 		}
-
 	}
 	else
 	{
@@ -250,7 +317,7 @@ function create_dprv_post_table()
 		//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
 		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 		dbDelta($sql);
-		$dprv_db_error = $wpdb->last_error;
+		$dprv_db_error =$wpdb->last_error;
 		$log->lwrite("just created posts table " . $dprv_posts . "; error text = " . $dprv_db_error);
 		//$wpdb->show_errors();
 		if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
@@ -267,7 +334,6 @@ function create_dprv_post_table()
 		$log->lwrite("Table " . $dprv_posts . " exists already");  
 	}
 }
-
 
 function record_dprv_licenses()
 {
@@ -343,13 +409,35 @@ function dprv_init()
 	{
 		dprv_activate();
 	}
+
+	function dprv_reminder()
+	{
+		$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+		$posDot = strrpos($script_name,'.');
+		if ($posDot != false)
+		{
+			$script_name = substr($script_name, 0, $posDot);
+		}
+
+		if ($script_name != "options-general" || strpos($_SERVER['QUERY_STRING'], "copyright_proof_admin.php") === false)
+		{
+			echo "<div id='dprv_reminder' class='updated fade'><p>" . DPRV_REMINDER . "</p></div>";
+			//echo "<div id='dprv_reminder' class='updated fade'><p><strong>".__("Copyright Proof is almost ready.", "dprv_cp")."</strong> ".__("You must <a href=\"options-general.php?page=copyright_proof_admin.php\"><b>Configure Copyright Proof and Register</b></a> to get it working</p></div>", "dprv_cp");
+		}
+	}
+
 	if (get_option('dprv_enrolled') != "Yes")
 	{
-		function dprv_reminder()
-		{
-			echo "<div id='dprv_reminder' class='updated fade'><p><strong>".__("Copyright Proof is almost ready.", "dprv_cp")."</strong> ".__("You must <a href=\"options-general.php?page=copyright_proof_admin.php\"><b>Configure Copyright Proof and Register</b></a> to get it working</p></div>", "dprv_cp");
-		}
+		define("DPRV_REMINDER", "<strong>".__("Copyright Proof is almost ready.", "dprv_cp")."</strong> ".__("You must <a href=\"options-general.php?page=copyright_proof_admin.php\"><b>Configure Copyright Proof and Register</b></a> to get it working", "dprv_cp"));
 		add_action('admin_notices', 'dprv_reminder');
+	}
+	else
+	{
+		if (trim(get_option('dprv_api_key')) == '')
+		{	
+			define("DPRV_REMINDER", "<strong>".__("Copyright Proof needs configuration.", "dprv_cp")."</strong> ".__("Please <a href=\"options-general.php?page=copyright_proof_admin.php\"><b>obtain a new api key</b></a> to get it working", "dprv_cp"));
+			add_action('admin_notices', 'dprv_reminder');
+		}
 	}
 }
 
@@ -430,11 +518,11 @@ function populate_licenses_js()
 function createUpgradeLink()
 {
 	$dprv_blog_url = parse_url(get_option('home'));
-	$dprv_blog_host = $dprv_blog_url[host];
+	$dprv_blog_host = $dprv_blog_url['host'];
 	$dprv_wp_host = "";		// default
 
 	$dprv_wp_url = parse_url(get_option('siteurl'));
-	$dprv_wp_host = $dprv_wp_url[host];
+	$dprv_wp_host = $dprv_wp_url['host'];
 	if (trim($dprv_blog_host) == "")
 	{
 		$dprv_blog_host = $dprv_wp_host;
@@ -444,7 +532,8 @@ function createUpgradeLink()
 	{
 		$protocol = "https://";
 	}
-	$dprv_upgrade_link = get_settings('siteurl') . '/wp-content/plugins/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&UserId='  . get_option('dprv_user_id') . '&ApiKey=' . get_option('dprv_api_key') . '&Domain=' . $dprv_blog_host . '&UserAgent=Copyright Proof ' . DPRV_VERSION;
+	//$dprv_upgrade_link = get_settings('siteurl') . '/wp-content/plugins/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&UserId='  . get_option('dprv_user_id') . '&ApiKey=' . get_option('dprv_api_key') . '&Domain=' . $dprv_blog_host . '&UserAgent=Copyright Proof ' . DPRV_VERSION;
+	$dprv_upgrade_link = get_settings('siteurl') . '/wp-content/plugins/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
 	return $dprv_upgrade_link;
 }
 
@@ -472,7 +561,7 @@ class Logging
 		if (DPRV_Log == "Yes")
 		{
 			// if file pointer doesn't exist, then open log file  
-			if (!$this->fp) $this->lopen(); 
+			if (!isset($this->fp) || !$this->fp) $this->lopen(); 
 			if (!$this->fp) return;														// if cannot open/create logfile, just return
 
 			$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);

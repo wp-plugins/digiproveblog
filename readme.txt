@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.1.1
-Stable tag: 1.06
+Stable tag: 1.07
 
 Digitally certify your original content - proving authorship, deterring plagiarists, and protecting copyright.
 Copyright and Licensing of original content and include attributions for non-original content. 
@@ -39,7 +39,6 @@ Digiproving your work is something that is done conveniently and will provide pr
 Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
 = Is my content uploaded to Digiprove?
-
 Unless you (or your hosting provider) are using an old version of PHP (earlier than PHP 5.1.2) or you have specified otherwise, only the digital fingerprint of your content is uploaded, not the 
 content itself.  This allows you to protect private content on a private network using Wordpress.  On the other hand, premium users have the option to upload content, which
 preserves your content independently of Wordpress.
@@ -78,6 +77,7 @@ Digiprove does not make use of these details except to deliver the service.  Ple
 Most of the features of the plug-in are totally free.  There are some features that are dependent on a valid subscription with Digiprove.  It is free for use by registered educational
 establishments or charities, just write to us at support@digiprove.com with details including evidence of your status to obtain this free subscription.
 
+
 = What are the benefits of becoming a Digiprove subscriber?  =
 
 From Wordpress:
@@ -93,6 +93,7 @@ At www.digiprove.com:
 - You can create tamper-proof audit trails within applications
 - You can send certified email
 - You can create authentication methods for your content files
+
 
 = I think I've found a bug, what can I do? =
 
@@ -122,6 +123,7 @@ are limited to one domain.
 If you are a free user getting this message, it means that you are attempting to do more than 30 Digiprove transactions in any given day, which is a maximum we have introduced for free users. Some
 users were going into the thousands.  Higher limits apply to subscription accounts.
 
+
 = I'm a developer - how do I link directly to Digiprove API?  =
 
 Use of the Digiprove API from other applications is free.  The same limitations apply for the premium services as if you were using this plugin.  Contact us at affiliates@digiprove.com if you would
@@ -129,14 +131,27 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 == Screenshots ==
 
-1. Settings (Basic)
-2. Settings (Advanced)
-3. Settings (License)
-4. Settings (Copy Protect)
-5. A Digiprove notice
+1. A Digiprove notice
+2. Settings (Basic)
+3. Settings (Advanced)
+4. Settings (Content)
+5. Settings (License)
+6. Settings (Copy Protect)
 
 
 == Changelog ==
+= 1.07 =
+* New option to include digital fingerprints of all or selected uploaded media files in Digiprove process (NOTE does not yet support [gallery] shortcode)
+* Now supports custom post types
+* Improved alignment of Digiprove notice in some circumstances
+* Fixed bug where xml in some cases omitted api key
+* Removed bug where old api key could be used for Upgrade instead of new one just created this session
+* Improved help text when api key is lost or deleted.
+* Removed situations giving rise to Notice-level PHP messages
+* Fixed incorrect calculation of expiry date
+* Fixed some compatability issues with older version of Wordpress
+* Various bug-fixes
+
 = 1.06 =
 * Removed non-standard valign attribute on notice
 * License display panel now works with themes and plugins that cause default target (for <a>) to be new tab/window

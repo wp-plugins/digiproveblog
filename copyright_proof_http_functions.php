@@ -26,7 +26,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 		//$http_host = akismet_get_host($host);  //TODO: implement this akismet resilience code
 		$http_host = $host;
 	}
-	$log->lwrite("http_post of " . $http_request);
+	//$log->lwrite("http_post of " . $http_request);
 
 	$response = '';                 
 	if (DPRV_SSL == "Yes")
@@ -52,17 +52,19 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 		$errstr = "Unknown";
 		if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr, 10) ) ) 
 		{                 
-			$log->lwrite("socket open, errno = " . $errno);
+			//$log->lwrite("socket open, errno = " . $errno);
 			if ($errno == 0)
 			{
 				fwrite($fs, $http_request);
 				stream_set_timeout($fs, 50);
 				$get_count = 0;
+				$err_level = error_reporting();							// Save current error reporting level
 				while ( !feof($fs) )
 				{
 					error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);	// Suppress Warning errors just for this due to intermittent bug (in IIS?)
 					$temp = fgets($fs);
-					error_reporting(E_ALL & ~E_NOTICE);					// Reset error reporting back to default
+					//error_reporting(E_ALL & ~E_NOTICE);				// Reset error reporting back to default
+					error_reporting($err_level);						// Reset error reporting back to previous value
 					$info = stream_get_meta_data($fs);
 					if ($info['timed_out'])
 					{
@@ -102,7 +104,7 @@ function dprv_http_post($request, $host, $path, $service, $ip=null)
 			$log->lwrite("Could not open socket, error = " . $errno . "/" . $errstr);
 			return "Error: Could not open socket to " . $http_host . ", server may be offline.  Error = " . $errno . "/" . $errstr;
 		}
-		$log->lwrite("Got response ok: " . $response);
+		//$log->lwrite("Got response ok: " . $response);
 		// TODO: Trap HTTP errors such as 403 here (happens if you try to connect to live server w/o ssl)
 		if (substr($response,0,4) == "HTTP")			// error starts like this: HTTP/1.1 404 Not Found
 		{	

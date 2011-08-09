@@ -1,18 +1,18 @@
 <?php
 // FUNCTIONS CALLED WHEN CREATING, OR EDITING POSTS OR PAGES
 
-/* Adds a box to the main column on the Post and Page edit screens */
 function dprv_postbox()
 {
-    add_meta_box( 'dprv_post_box', __( 'Copyright / Ownership / Licensing', 'dprv_cp' ), 
-                'dprv_show_postbox', 'post' );
-    add_meta_box( 'dprv_post_box', __( 'Copyright / Ownership / Licensing', 'dprv_cp' ), 
-                'dprv_show_postbox', 'page' );
+	$dprv_post_types = explode(',',get_option('dprv_post_types'));
+	foreach ($dprv_post_types as $dprv_post_type)
+	{
+	    add_meta_box('dprv_post_box', __('Copyright / Ownership / Licensing', 'dprv_cp'), 'dprv_show_postbox', $dprv_post_type);
+	}
 }
 
-/* Prints the box content */
 function dprv_show_postbox($post_info)
 {
+
 	global $wpdb, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $post_id;
  	$log = new Logging();  
 	$log->lwrite("dprv_show_postbox starts");  
@@ -56,12 +56,17 @@ function dprv_show_postbox($post_info)
 	}
 
 	// Secondly, get values previously assigned to this post (if set)
-	if ($script_name == "post")	// "post" means we are displaying form for editing an existing post ("post-new" is for a new post)
+	if ($script_name == "post" || $script_name == "page")	// "post" (or "page" in earlier versions of wp) means we are displaying form for editing an existing post/page ("post-new" is for a new post)
 	{
+		if (!isset($post_id))
+		{
+			$log->lwrite("post id not set, using post_info");
+			$post_id = $post_info->ID;
+		}
 		$log->lwrite("not new post, global post_id = " . $post_id);
 		
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
-		//$wpdb->show_errors();
+		$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
@@ -96,7 +101,7 @@ function dprv_show_postbox($post_info)
 				$dprv_this_license = $dprv_post_info["license"];
 			}
 			$dprv_this_license_type = "";
-			$dprv_this_license_caption = __("Some Rights Reserved", "dprv_cp");;
+			$dprv_this_license_caption = __("Some Rights Reserved", "dprv_cp");
 			$dprv_this_license_abstract = "";
 			$dprv_this_license_url = "";
 
@@ -118,7 +123,6 @@ function dprv_show_postbox($post_info)
 						$dprv_this_license_type = $dprv_licenseTypes[$i]; 
 						$dprv_this_license_caption = $dprv_licenseCaptions[$i];
 						$dprv_this_license_abstract = $dprv_licenseAbstracts[$i];
-						$log->lwrite("just set dprv_this_license_abstract = " . $dprv_this_license_abstract);
 						$dprv_this_license_url =  $dprv_licenseURLs[$i];
 					}
 				}
@@ -155,6 +159,7 @@ function dprv_show_postbox($post_info)
 	$inputDisplay = "none";
 	$labelDisplay = "none";
 	$selectDisplay = "";
+	$custom_checked = "";
 	$other_labelDisplay = "";
 	if ($dprv_this_default_license == "Yes")
 	{
@@ -172,10 +177,17 @@ function dprv_show_postbox($post_info)
 		$labelDisplay = "none";
 		$selectDisplay = "none";
 	}
-
-
+	$post_type_label = $post_info->post_type;
+	if ($post_info->post_type != "post" && $post_info->post_type != "page")
+	{
+		if (function_exists("get_post_types"))
+		{
+			$all_post_types = get_post_types('','objects');
+			$post_type_label = $all_post_types[$post_info->post_type]->labels->singular_name;
+		}
+	}
 	$a = "<table style='padding:6px;  padding-top:0px; width:100%'><tbody>";
-	$a .= "<tr><td style='width:160px; height:30px'>Digiprove this " . $post_info->post_type . "</td><td style='width:300px'><input type='radio' id='dprv_this_yes' name='dprv_this' value='Yes'" . $dprv_this_yes_checked . " onclick='TogglePanel()'/>" . __("Yes", "dprv_cp") . "&nbsp;&nbsp;&nbsp;&nbsp;<input type='radio' id='dprv_this_no' name='dprv_this' value='No'" . $dprv_this_no_checked . " onclick='TogglePanel()'/>" . __("No", "dprv_cp") . "</td><td colspan='2'>" . $dprv_last_digiprove_info . "</td></tr>";
+	$a .= "<tr><td style='width:160px; height:30px'>Digiprove this " . $post_type_label . "</td><td style='width:300px'><input type='radio' id='dprv_this_yes' name='dprv_this' value='Yes'" . $dprv_this_yes_checked . " onclick='TogglePanel()'/>" . __("Yes", "dprv_cp") . "&nbsp;&nbsp;&nbsp;&nbsp;<input type='radio' id='dprv_this_no' name='dprv_this' value='No'" . $dprv_this_no_checked . " onclick='TogglePanel()'/>" . __("No", "dprv_cp") . "</td><td colspan='2'>" . $dprv_last_digiprove_info . "</td></tr>";
 	$a .= "</tbody></table>";
 
 	$a .= "<table id='dprv_copyright_panel_body' style='padding:6px; padding-top:0px; width:100%'><tbody>";
@@ -211,7 +223,7 @@ function dprv_show_postbox($post_info)
 	$a .= "<tr><td style='height:6px'></td></tr>";
 	$a .= "<tr><td>" . __("License Caption", "dprv_cp") . "</td>";
 	$a .= "<td colspan='3'>";
-	$a .= "<select id='dprv_license_caption' name='dprv_license_caption' style='width:200px; display:" . $inputDisplay . "'>";   // rows='2' removed
+	$a .= "<select id='dprv_license_caption' name='dprv_license_caption' style='width:200px; display:" . $inputDisplay . "'>";
 	$selected = "";
 	if ($dprv_this_license_caption ==  __("Some Rights Reserved", "dprv_cp"))
 	{
@@ -238,7 +250,7 @@ function dprv_show_postbox($post_info)
 	$a .= "<tr><td style='height:6px'></td></tr>";
 	$a .= "<tr><td>" . __("License URL", "dprv_cp") . "</td><td colspan='3'>";
 	$a .= "<input id='dprv_license_url_input' name='dprv_license_url_input' value='" . htmlspecialchars(stripslashes($dprv_this_license_url), ENT_QUOTES, 'UTF-8') . "' style='width:100%;display:" . $inputDisplay . "'/>";
-	$a .= "<a id='dprv_license_url_link' name='dprv_license_url_link' href='" . $dprv_this_license_url . "' target='_blank' style='display:" . $other_labeldisplay . "'>" . htmlspecialchars(stripslashes($dprv_this_license_url), ENT_QUOTES, 'UTF-8') . "</a>";
+	$a .= "<a id='dprv_license_url_link' name='dprv_license_url_link' href='" . $dprv_this_license_url . "' target='_blank' style='display:" . $other_labelDisplay . "'>" . htmlspecialchars(stripslashes($dprv_this_license_url), ENT_QUOTES, 'UTF-8') . "</a>";
 	$a .= "</td></tr>";
 	$a .= "</tbody></table>";
 	echo $a;
@@ -264,10 +276,22 @@ function dprv_show_postbox($post_info)
 function dprv_add_digiprove_submit_button()
 {
 	global $post;
-	$post_type = $post->post_type;
-	//$post_type_object = get_post_type_object($post_type);
-	//$can_publish = current_user_can($post_type_object->cap->publish_posts);
- 	$can_publish = current_user_can("publish_" . $post_type. "s");
+
+	$dprv_post_types = explode(',',get_option('dprv_post_types'));
+
+	if (array_search($post->post_type, $dprv_post_types) === false)
+	{
+		return;
+	}
+	if ($post->post_type == "page")
+	{
+		$can_publish = current_user_can("publish_pages");
+	}
+	else
+	{
+		$can_publish = current_user_can("publish_posts");
+	}
+
 
 	echo ('<input name="dprv_publish_dp_action" type="hidden" id="dprv_publish_dp_action" value="No" />');
 	$dprv_publish_text = "default";
@@ -364,9 +388,10 @@ function dprv_add_digiprove_submit_button()
 // Write Copyright Panel details
 // Examine post content prior to Digiproving
 // Remove old notice if there, and write information from it into custom post fields 
-function dprv_parse_post ($data, $raw_data)	
+function dprv_parse_post ($data, $raw_data)
 {
-	global $wpdb, $dprv_digiprove_this_post, $post_id, $post_ID;
+	//global $wpdb, $dprv_digiprove_this_post, $post_id, $post_ID;
+	global $wpdb, $dprv_digiprove_this_post;
 	$log = new Logging();  
 	$log->lwrite("dprv_parse_post starts"); 
 	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
@@ -375,12 +400,17 @@ function dprv_parse_post ($data, $raw_data)
 	{
 		$script_name = substr($script_name, 0, $posDot);
 	}
-
-	$dprv_publish_dp_action = $_POST['dprv_publish_dp_action'];
+	if ($script_name == "admin-ajax")
+	{
+		$log->lwrite("parse_post not starting because this is ajax");
+		return $data;
+	}
+	//$log->lwrite("data[post_status] = " . $data['post_status']);
 	if ($data['post_status'] != "publish" && $data['post_status'] != "future")
 	{
-		if ($dprv_publish_dp_action == "Yes" && $data['post_status'] == "draft")
+		if ($data['post_status'] == "draft" && $_POST['dprv_publish_dp_action'] == "Yes")
 		{
+			$log->lwrite("draft but user has explicitly requested Digiproving, then we can proceed beyond this point");
 			// If the status is set to draft but user has explicitly requested Digiproving, then we can proceed beyond this point
 		}
 		else
@@ -389,9 +419,12 @@ function dprv_parse_post ($data, $raw_data)
 			return $data;
 		}
 	}
-	if ($data['post_type'] != "post" && $data['post_type'] != "page")
+	//$log->lwrite("data['post_type'] = " . $data['post_type']);
+	//if ($data['post_type'] != "post" && $data['post_type'] != "page")	
+	$dprv_post_types = explode(',',get_option('dprv_post_types'));
+	if (array_search($data['post_type'], $dprv_post_types) === false)
 	{
-		$log->lwrite("dprv_parse_post not starting because type (" . $data['post_type'] . ") is not post or page");  // Does this ever occur?
+		$log->lwrite("dprv_parse_post not starting because type (" . $data['post_type'] . ") is not " . get_option('dprv_post_types'));
 		return $data;
 	}
 
@@ -439,16 +472,17 @@ function dprv_parse_post ($data, $raw_data)
 				{
 					update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id);
 				}
+
 			}
 		}
 		return $data;
 	}
 
-	update_option('dprv_last_action', 'Digiprove id=' . $dprv_post_id);
+	update_option('dprv_last_action', 'Digiprove id=' . $dprv_post_id);     // Why?
 	$dprv_title = $data['post_title'];
-	$log->lwrite("title=" . $dprv_title . ", id=" . $dprv_post_id);  
+	//$log->lwrite("title=" . $dprv_title . ", id=" . $dprv_post_id);  
+	$log->lwrite("");  
 	$log->lwrite("dprv_parse_post STARTS");  
-
 	// if post_id = -1, means new post coming from xmlrpc (or postie) - in either case there is no copyright panel so no problem that this function does not get executed
 	if ($dprv_post_id != -1  && isset($_POST['dprv_this']))
 	{
@@ -521,6 +555,7 @@ function dprv_digiprove_post($dprv_post_id)
 	// This function executes after the post has been created/updated and we have a post id
 	// So we can read copyright options (or default if none there) and Digiprove content if appropriate
 	// Also record details of Digiprove action
+	
 	$log = new Logging();  
 	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
 	$posDot = strrpos($script_name,'.');
@@ -528,15 +563,24 @@ function dprv_digiprove_post($dprv_post_id)
 	{
 		$script_name = substr($script_name, 0, $posDot);
 	}
-	$log->lwrite("starting dprv_digiprove_post (" . $_POST["action"] . ")" . $dprv_post_id);
+	$post_action = "";
+	if (isset($_POST["action"]))
+	{
+		$post_action = $_POST["action"];
+	}
+	$post_record = get_post($dprv_post_id);
+	$log->lwrite("starting dprv_digiprove_post (" . $post_action . ") " . $dprv_post_id . ", status=" . $post_record->post_status);
 	// Values seen for POST[action]:	empty					when (script = wp-cron)
 	//															or   (script = post-new    && status = auto-draft)
 	//															or   (script = xmlrpc-post && status = ? publish?)
 	//															or   (script = xmlrpc-post && status = inherit)
 	//									autosave				when (script = admin-ajax  && status = draft)
 	//									editpost				when (script = post        && status = inherit)
+	//															or	 (script = post        && status = publish)
 	//															or	 (script = post        && status = future)
 	//															or	 (script = post        && status = draft)  (only seen so far on Opera on future-dated posts)
+	//									editpost				when (script = page        && status = inherit)     on WP 2.7
+	//															or	 (script = page        && status = publish)     on WP 2.7
 	//                                  runpostie				when (script = options-general  && status = draft)
 	//															or   (script = options-general  && status = ? publish?)
 	//									post-quickpress-save	when (script = post				&& status = auto-draft)
@@ -547,15 +591,17 @@ function dprv_digiprove_post($dprv_post_id)
 		return;
 	}
 
-	$post_record = get_post($dprv_post_id); 
 	if ($post_record->post_status != "publish" && $post_record->post_status != "future")
 	{
 		$log->lwrite("dprv_digiprove_post not starting because status (" . $post_record->post_status . ") is not publish or future");
 		return;
 	}
-	if ($post_record->post_type != "post" && $post_record->post_type != "page")
+
+	//if ($post_record->post_type != "post" && $post_record->post_type != "page")  // TODO: && $post_record->post_type != "xxxxx"
+	$dprv_post_types = explode(',',get_option('dprv_post_types'));
+	if (array_search($post_record->post_type, $dprv_post_types) === false)
 	{
-		$log->lwrite("dprv_digiprove_post not starting because type (" . $post_record->post_type . ") is not post or page");  // Does this ever occur?
+		$log->lwrite("dprv_digiprove_post not starting because type (" . $post_record->post_type . ") is not " . get_option('dprv_post_types'));  // Does this ever occur?
 		return;
 	}
 
@@ -620,10 +666,12 @@ function dprv_digiprove_post($dprv_post_id)
 	$today_count += 1;
 	update_option('dprv_last_date_count', $today_count);
 
+	$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
+	$dprv_subscription_type = get_option('dprv_subscription_type');
 	if ($today_count > 30)
 	{
 		$today_limit = 30;
-		switch (get_option('dprv_subscription_type'))
+		switch ($dprv_subscription_type)
 		{
 			case "Personal":
 			{
@@ -657,7 +705,7 @@ function dprv_digiprove_post($dprv_post_id)
 			update_option('dprv_last_result', "Digiprove daily limit (" . $today_limit . ") for " . get_option('dprv_subscription_type') . " accounts already reached, you can <a href='" . 	createUpgradeLink() . "&Action=Upgrade' target='_blank'>upgrade to increase this limit</a>.");
 			return;
 		}
-		$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
+		//$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
 		$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 86400;					// Add 24 hour grace period (also handles any unforeseen timezone issues)
 		if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
 		{
@@ -670,9 +718,11 @@ function dprv_digiprove_post($dprv_post_id)
 
 	$log->lwrite("dprv_digiprove_post STARTS");
 
-	update_option('dprv_last_result', '');
+	//update_option('dprv_last_result', '');
 	$newContent = stripslashes($content);
-	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $raw_content_hash);
+	$notice = "";
+	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $raw_content_hash, $dprv_subscription_type, $dprv_subscription_expiry, $dprv_last_time, $notice);
+	$log->lwrite("response: $certifyResponse");
 	if (strpos($certifyResponse, "Hashes are identical") === false)
 	{
 		if (strpos($certifyResponse, "Raw content is empty") === false)
@@ -739,7 +789,8 @@ function dprv_digiprove_post($dprv_post_id)
 				// end of unnecessary bit
 
 				$log->lwrite("Digiproving completed successfully");
-				update_option('dprv_last_result', __('Digiprove certificate id:', 'dprv_cp') . ' ' . dprv_getTag($certifyResponse, "certificate_id"));
+
+				update_option('dprv_last_result', __('Digiprove certificate id:', 'dprv_cp') . ' ' . dprv_getTag($certifyResponse, "certificate_id") . ' ' . $notice);
 			}
 		}
 		else
@@ -751,7 +802,16 @@ function dprv_digiprove_post($dprv_post_id)
 	}
 	else
 	{
-		update_option('dprv_last_result', __('Content unchanged since last edit', 'dprv_cp'));
+		// Doing this check because of weird situation where if an attachment is referred to within the content,
+		// wp_insert_post gets fired twice with apparently identical variables.  Thus the 2nd time (correctly) does
+		// not Digiprove becauses hashes are same, however, user does not see Digiprove Certificate ID message
+		// TODO: Check that this works across timezones (should do because time() gives utc)
+		$this_time = time();
+		$time_since_last = $this_time - $dprv_last_time;
+		if ($time_since_last > 2)		// only if last one occurred more than 2 seconds ago (arguably make this a bit longer)
+		{
+			update_option('dprv_last_result', __('Content unchanged since last edit', 'dprv_cp'));
+		}
 	}
 
 	$log->lwrite("finishing dprv_digiprove_post " . $dprv_post_id);
@@ -761,28 +821,27 @@ function dprv_digiprove_post($dprv_post_id)
 function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date_and_time, &$dprv_digital_fingerprint, &$dprv_certificate_url, &$dprv_copyright_year)
 {
 	$log = new Logging();  
-	$log->lwrite("dprv_strip_old_notice starts");
+	//$log->lwrite("dprv_strip_old_notice starts");
 	$certificate_info = "";
 	$start_Digiprove = strpos($content, "<!--Digiprove_Start-->");
 	$end_Digiprove = false;
 	if ($start_Digiprove === false)
 	{
-		$log->lwrite("did not find start_Digiprove marker");
+		//$log->lwrite("did not find start_Digiprove marker");
 		return;
 	}
 	$end_Digiprove = strpos($content, "<!--Digiprove_End-->");
 	if ($end_Digiprove === false || $end_Digiprove <= $start_Digiprove)
 	{
-		$log->lwrite("did not find end_Digiprove marker");
+		//$log->lwrite("did not find end_Digiprove marker");
 		return;
 	}
 	$posA = stripos($content, "<span", $start_Digiprove + 22);
 	$posA2 = stripos($content, "<div", $start_Digiprove + 22);
-	$log->lwrite("just did a couple of stripos ops, results =" . $posA . ", " . $posA2);
 
 	if ($posA === false && $posA2 === false)
 	{
-		$log->lwrite("no span or div marker found");
+		//$log->lwrite("no span or div marker found");
 		return;
 	}
 	if ($posA === false || ($posA2 !== false && $posA2 < $posA))
@@ -795,8 +854,8 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	// Find Date of Certification
 	$posA = stripos($Digiprove_notice, "title=\"certified");
 	$log->lwrite("just did another stripos, posA = " . $posA);
-
 	$posB = stripos($Digiprove_notice, " UTC by Digiprove certificate ");
+
 	if ($posA === false || $posB === false || $posA >= $posB)
 	{
 		$log->lwrite("No text UTC by Digiprove certificate");
@@ -824,7 +883,6 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	}
 	$remainder = substr($Digiprove_notice, $posA);
 	$log->lwrite("about to call strpbrk");
-
 	$remainder = strpbrk($remainder, '\'\"');
 	if ($remainder === false)
 	{
@@ -835,6 +893,7 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	$delimiter = substr($remainder,0,1);
 	$remainder = substr($remainder,1);
 	$posB = strpos($remainder, $delimiter);
+
 	if ($posB === false)
 	{
 		$log->lwrite("could not find finishing delimiter");
@@ -848,7 +907,6 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	{
 		$posA = strpos($Digiprove_notice, chr(169));
 	}
-
 	if ($posA !== false)
 	{
 		$remainder = substr($Digiprove_notice, $posA + 2);
@@ -877,6 +935,7 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	{
 		$log->lwrite("could not find c symbol, did not search for year or name");
 	}
+
 
 	// Find Digital Fingerprint
 	$posA = strpos($remainder, "<!--");
@@ -911,7 +970,6 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 	return;
 }
 
-
 function dprv_record_copyright_details($dprv_post_id)
 {
 	global $wpdb;
@@ -938,12 +996,13 @@ function dprv_record_copyright_details($dprv_post_id)
 	$attributions = $_POST['dprv_attributions'];
 
 	$using_default_license = true;
-	if ($_POST['dprv_default_license'] != "on")
+	if (!isset($_POST['dprv_default_license']) || $_POST['dprv_default_license'] != "on")
 	{
 		$using_default_license = false;
 	}
 
-	if ($_POST['dprv_custom_license'] != "on")
+	//if ($_POST['dprv_custom_license'] != "on")
+	if (!isset($_POST['dprv_custom_license']) || $_POST['dprv_custom_license'] != "on")
 	{
 		$license = $_POST['dprv_license_type'];
 		$custom_license_caption = null;
@@ -957,7 +1016,6 @@ function dprv_record_copyright_details($dprv_post_id)
 		$custom_license_abstract = $_POST['dprv_license_abstract'];
 		$custom_license_url = $_POST['dprv_license_url_input'];
 	}
-
 
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
 	//$wpdb->show_errors();
@@ -977,6 +1035,7 @@ function dprv_record_copyright_details($dprv_post_id)
 		{
 			update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id);
 		}
+
 	}
 }
 
@@ -1032,7 +1091,7 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 	}
 }
 
-function dprv_certify($post_id, $title, $content, &$raw_content_hash)
+function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subscription_type, $dprv_subscription_expiry, &$dprv_last_time,&$notice)
 {
 	$log = new Logging();  
 	global $wp_version, $wpdb;
@@ -1048,6 +1107,7 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0 && $raw_content_hash == $dprv_post_info["digital_fingerprint"])
 		{
+			$dprv_last_time = strtotime($dprv_post_info["cert_utc_date_and_time"]);
 			return " Hashes are identical";	// Content has not changed, do not Digiprove again - stick with earlier certification
 		}
 	}
@@ -1057,12 +1117,30 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 	}
 
 	$dprv_subscription_expired = "No";
-	$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 86400;			// add 24-hour grace period (also allows for any unforeseen timezone issues)
+	//$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 86400;			// add 24-hour grace period (also allows for any unforeseen timezone issues)
+	$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 345600;			// add 4-day grace period (also allows for any unforeseen timezone issues)
 	if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
 	{
 		$dprv_subscription_expired = "Yes";
 	}
 
+	// code below changed at 0.78 to avoid empty domain
+	$dprv_blog_url = parse_url(get_option('home'));
+	$dprv_blog_host = $dprv_blog_url['host'];
+	$dprv_wp_host = "";		// default
+
+	$dprv_wp_url = parse_url(get_option('siteurl'));
+	$dprv_wp_host = $dprv_wp_url['host'];
+	if (trim($dprv_blog_host) == "")
+	{
+		$dprv_blog_host = $dprv_wp_host;
+	}
+	$content_file_names = array();
+	$content_file_fingerprints = array();
+	if (function_exists("hash"))
+	{
+		getContentFiles($rawContent, $dprv_blog_host, $content_file_names, $content_file_fingerprints);
+	}
 	$rawContent = htmlspecialchars($rawContent, ENT_QUOTES, 'UTF-8');
 	// Statement below inserted at 0.75 as vertical tabs not converted and cause a problem in XML .net server process
 	// TODO: there are probably other characters that will trip it up - review whole XML-encoding to create more systemic solution
@@ -1085,18 +1163,6 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 		$dprv_content_type = "Blog post";
 	}
 	
-	// code below changed at 0.78 to avoid empty domain
-	$dprv_blog_url = parse_url(get_option('home'));
-	$dprv_blog_host = $dprv_blog_url[host];
-	$dprv_wp_host = "";		// default
-
-	$dprv_wp_url = parse_url(get_option('siteurl'));
-	$dprv_wp_host = $dprv_wp_url[host];
-	if (trim($dprv_blog_host) == "")
-	{
-		$dprv_blog_host = $dprv_wp_host;
-	}
-
 	$postText = "<digiprove_content_request>";
 	$postText .= "<user_id>" . get_option('dprv_user_id') . "</user_id>";
 	$postText .= '<domain_name>' . $dprv_blog_host . '</domain_name>';
@@ -1105,7 +1171,7 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 		$postText .= '<alt_domain_name>' . $dprv_wp_host . '</alt_domain_name>';
 	}
 	$dprv_api_key = get_option('dprv_api_key');
-	if ($dprv_api_key != null & $dprv_api_key != "")
+	if ($dprv_api_key != null && $dprv_api_key != "")
 	{
 		$postText .= '<api_key>' . $dprv_api_key . '</api_key>';
 	}
@@ -1117,9 +1183,14 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 	}
 
 	$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
-    $postText .= '<content_type>' . $dprv_content_type . '</content_type>';
     $postText .= '<content_title>' . $title . '</content_title>';
-	
+
+	if (count($content_file_names) > 0)
+	{
+		$postText .= "<content_wrapper>";
+	}
+	$postText .= '<content_type>' . $dprv_content_type . '</content_type>';
+
 	// if digital fingerprint could not be calculated (PHP4) or if SaveContent selected (is subject to subscription type) and subscription not expired, send content as well as fingerprint
 	if ($raw_content_hash == "" || (get_option('save_content') == "SaveContent" && $dprv_subscription_expired != "Yes"))
 	{
@@ -1129,6 +1200,7 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 	{
 		$postText .= '<content_fingerprint>' . $raw_content_hash . '</content_fingerprint>';
 	}
+
 	$postText .= '<content_url>';
 	$permalink = get_bloginfo('url');
 	if ($post_id != -1)									// will be set to -1 if the value is unknown
@@ -1138,8 +1210,42 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 	}
 	$postText .= $permalink;
 	$postText .= '</content_url>';
-	$postText .= "<linkback>" . get_option('dprv_linkback') . "</linkback>";
 
+	if (count($content_file_names) > 0)
+	{
+		$postText .= "</content_wrapper>";
+	}
+
+	$file_count = count($content_file_names);
+	if ($dprv_subscription_expired == "Yes")
+	{
+		$notice = " (This post/page contained references to $file_count media files that according to your settings should be Digiproved, but your subscription expired on " . $dprv_subscription_expiry . ".)";
+		$file_count = 0;
+	}
+	else
+	{
+		if ($dprv_subscription_type == "Personal" && $file_count > 5)
+		{
+			$notice = " (This content contained references to $file_count media files that according to your settings should be Digiproved, but the Personal plan limits this to 5 - the first 5 were processed.)";
+			$file_count = 5;
+		}
+		if ($dprv_subscription_type == "Professional" && $file_count > 20)
+		{
+			$notice = " (This post/page contained references to $file_count media files that according to your settings should be Digiproved, but the Personal plan limits this to 20 - the first 20 were processed.)";
+			$file_count = 20;
+		}
+	}
+	for ($t = 0; $t < $file_count; $t++)
+	{
+		$log->lwrite("doing xml for file " . $t . ": " .  $content_file_names[$t]);
+		$postText .= "<content_wrapper>";
+		$postText .= '<content_type>File</content_type>';
+		$postText .= '<content_filename>' . $content_file_names[$t] . '</content_filename>';
+		$postText .= '<content_fingerprint>' . $content_file_fingerprints[$t] . '</content_fingerprint>';
+		$postText .= "</content_wrapper>";
+	}
+
+	$postText .= "<linkback>" . get_option('dprv_linkback') . "</linkback>";
 	if (get_option('dprv_obscure_url') == "Clear")
 	{
 		$postText .= '<obscure_certificate_url>No</obscure_certificate_url>';
@@ -1160,6 +1266,424 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash)
 	return $data;
 }
 
+function getContentFiles($content, $dprv_blog_host, &$content_file_names, &$content_file_fingerprints)
+{
+	global $dprv_mime_types;
+	$log = new Logging();  
+	$log->lwrite("getContentFiles starts");
+	$blog_url = site_url();
+	$blog_url_info = parse_url($blog_url);
+	$blog_host = $blog_url_info["host"];
+	$blog_path = $blog_url_info["path"];
+	$root_path = ABSPATH;
+	if ($blog_path != "" && strlen($root_path) > strlen($blog_path))
+	{
+		// strip off blog path to give rootpath corresponding to domain root
+		if ((strripos($root_path, $blog_path) + 1) == strlen($root_path) - strlen($blog_path))
+		{
+			$root_path = substr($root_path, 0, strlen($root_path) - strlen($blog_path));
+		}
+		else
+		{
+			$log->lwrite("What to do, ABSPATH and blog path don't have same endings");
+			$log->lwrite(strpos($root_path, $blog_path) . "!=" . strlen($root_path) . "-" .strlen($blog_path));
+		}
+	}
+	//$log->lwrite("root_path=$root_path");
+	//$log->lwrite("ABSPATH=" . ABSPATH);
+	//$log->lwrite("blog_url = $blog_url");
+	//$log->lwrite("blog_url_info[host] = " . $blog_url_info["host"]);
+	//$log->lwrite("blog_url_info[path] = " . $blog_url_info["path"]);
+
+	//$dprv_html_tags = unserialize(get_option('dprv_html_tags'));
+	$dprv_html_tags = get_option('dprv_html_tags');
+	if (!is_array($dprv_html_tags))
+	{
+		$log->lwrite("dprv_html_tags is not an array");
+		$dprv_html_tags = false;
+	}
+	$dprv_outside_media = get_option('dprv_outside_media');
+	$t = 0;
+	$pos = 0;
+	$delimit_chars = " \t\r\f\v\n/>";	//Space, tab, carriage-return, formfeed, vertical-tab, newline, / or >
+	$parse_all = false;
+	if ($dprv_html_tags["notag"]["selected"] == "True")
+	{
+		$parse_all = true;
+	}
+	$w=0;
+	while ($pos !== false)
+	{
+		//$log->lwrite("at start of big while loop, content begins with " . substr($content,0,30));
+		$w++;
+		if ($w>500)
+		{
+			$log->lwrite("breaking because of suspected endless loop (a)");
+			break;
+		}
+
+		if ($parse_all == true)
+		{
+			// scan the bit from here to next tag:
+			$pos = strpos($content, "<");
+			if ($pos === false)
+			{
+				$no_tag_content = $content;
+			}
+			else
+			{
+				if ($pos == 0)
+				{
+					$no_tag_content = "";
+				}
+				else
+				{
+					$no_tag_content = substr($content,0,$pos);
+				}
+			}
+			$r=0;
+			while ($no_tag_content != "")
+			{
+				//$log->lwrite("at start of notag while loop, no_tag_content begins with " . substr($no_tag_content,0,30));
+				$r++;
+				if ($r>300)
+				{
+					$log->lwrite("breaking because of suspected endless loop (b)");
+					break;
+				}
+				$pos2 = stripos($no_tag_content, "http://");
+				$pos3 = stripos($no_tag_content, "https://");
+				if ($pos2 !== false || $pos3 !== false)
+				{
+					if ($pos2 === false)
+					{
+						$pos1 = $pos3;
+					}
+					else
+					{
+						if ($pos3 === false)
+						{
+							$pos1 = $pos2;
+						}
+						else
+						{
+							$pos1 = min($pos2, $pos3);
+						}
+					}
+					if ($pos1 > 0 && ($no_tag_content[$pos1-1] == '"' || $no_tag_content[$pos1-1] == "'"))
+					{
+						$pos2 = strpos($no_tag_content, $no_tag_content[$pos1-1], $pos1+1);
+					}
+					else
+					{
+						$pos2 = str_findAny($no_tag_content, array(" ","\t","\r","\f","\v","\n","<",">"), $pos1+1);
+					}
+					if ($pos2 !== false)
+					{
+						$url = substr($no_tag_content,$pos1,$pos2-$pos1);
+						$no_tag_content = substr($no_tag_content,$pos2);
+					}
+					else
+					{
+						$url = substr($no_tag_content,$pos1);
+						$no_tag_content = "";
+					}
+
+					processUrl($url, $dprv_html_tags, "notag", $content_file_names, $content_file_fingerprints, $t, $root_path, $blog_url, $blog_host, $blog_path);
+				}
+				else
+				{
+					$no_tag_content = "";
+					break;
+				}
+			}
+		}
+		$tag = "";
+		$pos = strpos($content, "<");
+		if ($pos === false || $pos == strlen($content)-1)
+		{
+			break;
+		}
+		for ($pos2=$pos+1; $pos2<strlen($content); $pos2++)
+		{
+			if (strpos($delimit_chars, $content[$pos2]) !== false)
+			{
+				break;
+			}
+		}
+		if ($pos2 > strlen($content)-4)
+		{
+			break;
+		}
+		$tag = strtolower(substr($content, $pos+1,3));  // just for log message
+		$end_of_tag_pos = strpos($content, ">",$pos+1);				// end of this tag
+		//$log->lwrite("tag = $tag, starts at $pos and ends at $end_of_tag_pos");
+		if ($pos2 > 0 && $content[$pos2] != "/" && $content[$pos2] != ">" && $end_of_tag_pos !== false && $end_of_tag_pos > ($pos2+1))   // Only carry on with this tag if there is a modifier and the tag is closed
+		{
+			$tag = strtolower(substr($content, $pos+1, $pos2-$pos-1));
+
+			if (isset($dprv_html_tags[$tag]) && $dprv_html_tags[$tag]["selected"] != "False")	// If this tag is not on list of media types to be digiproved, skip
+			{
+				$modifiers = ltrim(substr($content, $pos2 + 1,$end_of_tag_pos-$pos2-1));
+				//$log->lwrite("modifiers = $modifiers");
+				$src_attribute = "src";
+				if ($tag == "a")
+				{
+					$src_attribute = "href";
+				}
+				$pos1 = stripos($modifiers, $src_attribute);
+				if ($pos1 !== false && $pos1 < (strlen($modifiers)-6))  
+				{
+					$modifiers = ltrim(substr($modifiers, $pos1+strlen($src_attribute)));
+					if (strpos($modifiers, "=") == 0 && strlen($modifiers) > 2)
+					{
+						$modifiers = ltrim(substr($modifiers,1));
+						if (strlen($modifiers) > 2 && ($modifiers[0] == "'" || $modifiers[0] == '"'))
+						{
+							$delimiter = $modifiers[0];
+							$modifiers = ltrim(substr($modifiers,1));
+							$pos1 = strpos($modifiers, $delimiter);
+							if ($pos1 !== false && $pos1 != 0)
+							{
+								$url = substr($modifiers, 0, $pos1);
+
+								processUrl($url, $dprv_html_tags, $tag, $content_file_names, $content_file_fingerprints, $t, $root_path, $blog_url, $blog_host, $blog_path);
+							}
+						}
+						else
+						{
+							$log->lwrite("ignoring - " . $tag . " tag - could not parse src/href part (2)");
+						}
+					}
+					else
+					{
+						$log->lwrite("ignoring - " . $tag . " tag - could not parse src/href part (1)");
+					}
+				}
+				else
+				{
+					$log->lwrite("ignoring - " . $tag . " tag - no src/href attribute");
+				}
+
+			}
+			else
+			{
+				$log->lwrite("ignoring - " . $tag . " tag - not selected");
+			}
+		}
+		else
+		{
+			$log->lwrite("ignoring $tag tag - no modifier");
+		}
+
+		if ($end_of_tag_pos !== false && $end_of_tag_pos < (strlen($content)-3))
+		{
+			$content = ltrim(substr($content,$end_of_tag_pos+1));
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+function str_findAny($haystack, $needles, $offset=0)
+{
+	for ($i=$offset; $i<strlen($haystack); $i++)
+	{
+		if (array_search($haystack[$i], $needles))
+		{
+			return $i;
+		}
+	}
+	return false;
+}
+
+function processUrl($url, $dprv_html_tags, $tag, &$content_file_names, &$content_file_fingerprints, &$t, $root_path, $blog_url, $blog_host, $blog_path)
+{
+	$log = new Logging();
+	$url = rtrim($url);
+	//$log->lwrite("tag is $tag processurl $url");
+	global $dprv_mime_types;
+	$dprv_outside_media = get_option('dprv_outside_media');
+	$url_info = parse_url($url);
+	$url_string = $url;
+	$blog_url_string = $blog_host . $blog_path;
+
+	if (!isset($url_info["host"]))
+	{
+		//$log->lwrite("url_info[host] is not set");
+		if (strpos($url, "/") == 0)
+		{
+			$full_path = addPaths($root_path, $url_info["path"]);
+		}
+		else
+		{
+			$full_path = addPaths(ABSPATH, $url_info["path"]);
+		}
+	}
+	else
+	{
+		if ($url_info["host"] != $blog_host)
+		{
+			// first check for partial matches
+			$partial_match = false;
+			if	(
+					$url_info["host"] == ("www." . $blog_host)
+					||
+					("www." . $url_info["host"]) == $blog_host
+					||
+					(strripos($url_info["host"], $blog_host) !== false && strripos($url_info["host"], $blog_host) === strlen($url_info["host"]) - strlen($blog_host))
+					||
+					(strripos($blog_host, $url_info["host"]) !== false && strripos($blog_host, $url_info["host"]) === strlen($blog_host) - strlen($url_info["host"]))
+				)
+			{
+				$log->lwrite("suspected match between " . $url_info["host"] . " and " . $blog_host);
+				$partial_match = true;
+				$url_info["host"] = $blog_host;		// use blog host value from now on
+			}
+			else
+			{
+				if ($dprv_outside_media != "Outside")
+				{
+					$log->lwrite("$url is not on this host");
+					return;
+				}
+				else
+				{
+					// what to doo?
+					return;  // don't handle this yet
+				}
+			}
+		}
+		$url_string = $url_info["host"] . $url_info["path"];
+		if (stripos($url_string, $blog_url_string) !== 0)
+		{
+			$log->lwrite("$url is not on this wp web-site");
+			return;
+		}
+
+		if (stripos($url_string, $blog_url_string) === 0 && isset($url_info["query"]) && strpos($url_info["query"], "attachment_id=") === 0)
+		{
+			$full_path = convert_attachment_to_file(substr($url_info["query"],14));
+		}
+		else
+		{
+			$full_path = addPaths($root_path, $url_info["path"]);
+		}
+	}
+
+	$file_name = basename($full_path);
+	$ext = pathinfo($file_name, PATHINFO_EXTENSION);
+	$file_selected = false;		// default value
+	$selected_reason = "";		// this variable used just for logging / testing
+	if ($dprv_html_tags[$tag]["incl_excl"] == "Include")
+	{
+		if ($dprv_html_tags[$tag]["All"] == "True")
+		{
+			$selected_reason .= "All filetypes included; ";
+			$file_selected = true;
+		}
+		else
+		{
+			foreach ($dprv_html_tags[$tag] as $key=>$value)
+			{
+				if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
+				{
+					if ($value == "True")
+					{
+						if (array_search($ext, $dprv_mime_types[$key]))
+						{
+							$selected_reason .= "$ext included in $key list; ";
+							$file_selected = true;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		$file_selected = true;		// default value if using Exclude
+		$selected_reason .= "$ext not excluded";
+		foreach ($dprv_html_tags[$tag] as $key=>$value)
+		{
+			if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
+			{
+				if ($value == "True")
+				{
+					if (array_search($ext, $dprv_mime_types[$key]))
+					{
+						$selected_reason .= "$ext excluded (in $key list)";
+						$file_selected = false;
+					}
+				}
+			}
+		}
+	}
+	if ($file_selected == true)
+	{
+		$file_data = @file_get_contents($full_path);
+		if ($file_data != false)
+		{
+			$file_fingerprint = strtoupper(hash("sha256", $file_data));
+			if (array_search($file_name,$content_file_names) === false || array_search($file_fingerprint,$content_file_fingerprints) === false)  // prevent duplicate references
+			{
+				$content_file_names[$t] = $file_name;
+				$content_file_fingerprints[$t] = strtoupper(hash("sha256", $file_data));
+				$log->lwrite("content_file_names[" . $t . "]=" . $content_file_names[$t] . " (from " . $tag . " tag), included because " . $selected_reason);
+				$t++;
+			}
+			else
+			{
+				$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag - encountered earlier)");
+			}
+		}
+		else
+		{
+			$error = error_get_last();
+			if ($error !== null)
+			{
+				$log->lwrite("Error " . $error["type"] . " " . $error["message"] . " at line " . $error["line"] . " trying to read $full_path");
+			}
+			else
+			{
+				$log->lwrite("error trying to read $full_path");
+			}
+		}
+	}
+	else
+	{
+		$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag) - $ext not a selected media type");
+	}
+
+}
+
+function addPaths($root, $path)
+{
+	if ($path[0] == "/" && $root[strlen($root)-1] == "/")
+	{
+		$path = substr($path,1);
+	}
+	return $root . $path;
+}
+
+function convert_attachment_to_file($attach_id)
+{
+	$id = "";
+	for ($i=0; $i<strlen($attach_id); $i++)
+	{
+		if (strpos("0123456789",$attach_id[$i]) !== false)
+		{
+			$id .= $attach_id[$i];
+		}
+		else
+		{
+			break;
+		}
+	}
+	return get_attached_file($id);
+}
 function dprv_getTag($xmlString, $tagName)
 {
 	$start_contents = stripos($xmlString, "<" . $tagName . ">") + strlen($tagName) + 2;
@@ -1175,7 +1699,7 @@ function dprv_getTag($xmlString, $tagName)
 function dprv_getRawContent($post_id, $contentString, &$raw_content_hash)
 {
 	$log = new Logging();
-	$log->lwrite("getRawContent starts, content=" . $contentString);
+	//$log->lwrite("getRawContent starts, content=" . $contentString);
 
 	$raw_content = trim($contentString);
 	$raw_content = dprv_normaliseContent($raw_content);
@@ -1185,6 +1709,8 @@ function dprv_getRawContent($post_id, $contentString, &$raw_content_hash)
 	{
 		$raw_content_hash = strtoupper(hash("sha256", $raw_content));
 	}
+	$log->lwrite("getRawContent finishes, strlen(raw_content)=" . strlen($raw_content) . ", hash=$raw_content_hash");
+
 	return $raw_content;
 }
 

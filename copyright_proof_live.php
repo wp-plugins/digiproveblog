@@ -6,6 +6,7 @@ function dprv_head()
 	$log->lwrite("dprv_wp_head starts");
 	$dprv_frustrate_copy = get_option('dprv_frustrate_copy');
 	$dprv_right_click_message = get_option('dprv_right_click_message');
+
 	if ($dprv_frustrate_copy == "Yes")
 	{
 		$dprv_home = get_settings('siteurl');
@@ -25,7 +26,7 @@ function dprv_head()
 		var justDisplayed = 0;
 		var oldonload = window.onload; 
 		function addLoadEvent(func)
-		{
+		{ 
 			if (typeof window.onload != 'function')
 			{ 
 				window.onload = func; 
@@ -33,7 +34,7 @@ function dprv_head()
 			else
 			{ 
 				window.onload = function()
-				{
+				{ 
 					if (oldonload)
 					{ 
 						oldonload(); 
@@ -48,10 +49,9 @@ function dprv_head()
 			disableRightClick();
 			// Prevent Control Key combinations (like CTRL A, CTRL U)
 			disableCtrlKeys();
-
 			disableSelection(document.body);
 		}
-		addLoadEvent(copy_frustrate);
+		addLoadEvent(copy_frustrate);  // Set on protection later
 		");
 	}
 
@@ -120,6 +120,7 @@ function dprv_display_content($content)
 	{
 		return $content;
 	}
+
 	// a Digiprove Notice is required to append to content
 	$dprv_notice = "";
 
@@ -176,7 +177,6 @@ function dprv_display_content($content)
 			$dprv_this_license = $dprv_post_info["license"];
 		}
 		
-		$log->lwrite("dprv_this_license=" . $dprv_this_license);
 
 		$dprv_number = "" . intval($dprv_this_license);
 		if ($dprv_number != $dprv_this_license && $dprv_post_info["using_default_license"] == false)	// Default license set to Yes trumps individual settings
@@ -216,7 +216,7 @@ function dprv_display_content($content)
 			}
 		}
 	}
-
+	$dprv_license_html = "";
 	if (count($dprv_post_info) > 0 && $dprv_post_info["digiprove_this_post"] == true && $dprv_post_info["certificate_id"] != null && $dprv_post_info["certificate_id"] != "" && $dprv_post_info["certificate_id"] != false)
 	{
 		$log->lwrite("there is a Digiprove cert in the meta-data");
@@ -242,7 +242,7 @@ function dprv_display_content($content)
 	}
 	$content .= $dprv_status_info;
 	$content .= $dprv_license_html;
-	$log->lwrite("content to be displayed:" . $content);
+	//$log->lwrite("content to be displayed:" . $content);
 	return $content;
 }
 
@@ -250,6 +250,7 @@ function dprv_footer()
 {
 	$log = new Logging();  
 	$log->lwrite("dprv_footer starts");
+	
 	if (get_option('dprv_footer') == "Yes")
 	{
 		echo ("All original content on these pages is fingerprinted and certified by <a href='http://www.digiprove.com' target='_blank'>Digiprove</a>");
@@ -269,7 +270,6 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		$dprv_notice = __('This content has been Digiproved', 'dprv_cp');
 	}
 	$dprv_notice = str_replace(" ", "&nbsp;", $dprv_notice);
-
 	if ($dprv_certificate_id === false || $dprv_certificate_url === false)
 	{
 		$DigiproveNotice = "\r\n&copy; " . Date("Y") . ' ' . __('and certified by Digiprove', 'dprv_cp');
@@ -278,13 +278,17 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 	{
 		$dprv_container = "span";
 		$dprv_boxmodel = "display:inline-block;";	// minimise width, enforce upper/lower margins, no line break
-		$dprv_container_pad_top = "2px";
+		$dprv_box_pad_top = " 3px";
+		$dprv_box_pad_right = " 3px";
+		$dprv_box_pad_bottom = " 3px";
+		$dprv_box_pad_left = " 3px";
 
 		if (($attributions != false && $attributions != "" && $all_original != "Yes") || ($licenseType != false && $licenseType != "" && $licenseType != "Not Specified"))
 		{
 			$dprv_container = "div";
 			$dprv_boxmodel = "display:table;";		// minimise width, enforce upper/lower margins, line break
-			$dprv_container_pad_top = "3px";
+			$dprv_box_pad_top = " 3px";
+			$dprv_box_pad_bottom = " 3px";
 		}
 
 		$dprv_notice_background = get_option('dprv_notice_background');
@@ -314,7 +318,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		{
 			if ($dprv_notice_border != false || $dprv_notice_border != "Gray")
 			{
-				$dprv_border_css .= 'border:1px solid ' . strtolower($dprv_notice_border) . ';';
+				$dprv_border_css = 'border:1px solid ' . strtolower($dprv_notice_border) . ';';
 			}
 		}
 
@@ -326,14 +330,9 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		$dprv_img_valign = "-3px";
 		$dprv_txt_valign = "1px";
 		$dprv_outside_font_size = "13px";
-		$dprv_leftpad = "24px";
-		$dprv_leftpad0 = "8px";
+		$dprv_notice_pad_left = "24px";
+		$dprv_notice_pad_left0 = "8px";
 		$notice_size = get_option('dprv_notice_size');
-		$extra_style = "";
-		if ($dprv_container == "div")
-		{
-			$extra_style = "padding-bottom:1px;";
-		}
 		if ($notice_size == "Small")
 		{
 			$dprv_font_size="10px";
@@ -348,11 +347,17 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 			$dprv_line_margin = "3px";
 			$dprv_img_valign = "0px";
 			$dprv_txt_valign = "3px";
-			$dprv_leftpad = "18px";
-			$dprv_leftpad0 = "6px";
-			$extra_style = "padding-top:" . $dprv_container_pad_top . ";padding-bottom:0px;";
+			$dprv_notice_pad_left = "18px";
+			$dprv_notice_pad_left0 = "6px";
+			$dprv_box_pad_top = " 2px";
+			$dprv_box_pad_bottom = " 2px";
 		}
-		$container_style = 'vertical-align:baseline; padding:3px; margin-top:2px; margin-bottom:2px; line-height:' . $dprv_line_height . ';float:none; font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_outside_font_size . ';' . $dprv_border_css . $background_css . $dprv_boxmodel . $extra_style;
+		if ($dprv_container == "div")
+		{
+			$dprv_box_pad_bottom = " 1px";
+		}
+		$container_style = 'vertical-align:baseline; padding:' . $dprv_box_pad_top . $dprv_box_pad_right . $dprv_box_pad_bottom . $dprv_box_pad_left . '; margin-top:2px; margin-bottom:2px; line-height:' . $dprv_line_height . ';float:none; font-family: Tahoma, MS Sans Serif; font-size:' . $dprv_outside_font_size . ';' . $dprv_border_css . $background_css . $dprv_boxmodel;
+		//$log->lwrite($container_style);
 		$DigiproveNotice = '<' . $dprv_container . ' id="dprv_cp_v' . DPRV_VERSION . '" lang="en" xml:lang="en" class="notranslate" style="' . $container_style . '" title="certified ' . $dprv_utc_date_and_time . ' by Digiprove certificate ' . $dprv_certificate_id . '" >';
 
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" style="height:' . $dprv_a_height . '; line-height: ' . $dprv_a_height . '; border:0px; padding:0px; margin:0px; float:none; display:inline; text-decoration: none; background:transparent none; line-height:normal; font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . ';">';
@@ -360,7 +365,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		$dprv_home = get_settings('siteurl');
 		$DigiproveNotice .= '<img src="' . $dprv_home. '/wp-content/plugins/digiproveblog/dp_seal_trans_16x16.png" style="' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" border="0" alt=""/>';
 
-		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-style:normal; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal; padding:0px; padding-left:' . $dprv_leftpad0 . '; vertical-align:' . $dprv_txt_valign . ';margin-bottom:' . $dprv_line_margin . '" ';
+		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-style:normal; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal; padding:0px; padding-left:' . $dprv_notice_pad_left0 . '; vertical-align:' . $dprv_txt_valign . ';margin-bottom:' . $dprv_line_margin . '" ';
 
 		if ($preview != true)
 		{
@@ -372,10 +377,10 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		{
 			$dprv_year = Date('Y');   // default is this year
 			// Extract year from date_and_time
-			$posB = stripos($utc_date_and_time, " UTC");
+			$posB = stripos($dprv_utc_date_and_time, " UTC");
 			if ($posB != false && $posB > 13)
 			{
-				$dprv_year = substr($utc_date_and_time, $posB-13, 4);  // This should work if HH:MM:SS always has length of 8
+				$dprv_year = substr($dprv_utc_date_and_time, $posB-13, 4);  // This should work if HH:MM:SS always has length of 8
 			}
 			if (trim($dprv_first_year) != "" && $dprv_year != $dprv_first_year)
 			{
@@ -389,8 +394,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		}
 		$DigiproveNotice .= '</span></a>';
 
-		$span_style = "font-family: Tahoma, MS Sans Serif; font-style:normal; display:block; font-size:" . $dprv_font_size . "; font-weight:normal; color:" . $dprv_notice_color . "; border:0px; float:none; text-align:left; text-decoration:none; letter-spacing:normal; line-height:" . $dprv_a_height . "; vertical-align:" . $dprv_txt_valign . "; padding:0px; padding-left:" . $dprv_leftpad . ";margin-bottom:" . $dprv_line_margin . ";";
-
+		$span_style = "font-family: Tahoma, MS Sans Serif; font-style:normal; display:block; font-size:" . $dprv_font_size . "; font-weight:normal; color:" . $dprv_notice_color . "; border:0px; float:none; text-align:left; text-decoration:none; letter-spacing:normal; line-height:" . $dprv_a_height . "; vertical-align:" . $dprv_txt_valign . "; padding:0px; padding-left:" . $dprv_notice_pad_left . ";margin-bottom:" . $dprv_line_margin . ";";
 		$mouseover = "";
 		if ($preview != true)
 		{
@@ -410,7 +414,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 				$DigiproveNotice .=  "Acknowledgements:&nbsp;" . htmlspecialchars(stripslashes(substr($attributions, 0, 37)), ENT_QUOTES, 'UTF-8') . " more...</div>";
 			}
 		}
-		$log->lwrite("licenseType = " . $licenseType . ", licenseCaption=" . $licenseCaption);
+		//$log->lwrite("licenseType = " . $licenseType . ", licenseCaption=" . $licenseCaption);
 		if ($licenseType != false && $licenseType != "" && $licenseType != "Not Specified")
 		{
 			$DigiproveNotice .= "<a title='" . __("Click to see details of license", "dprv_cp") . "' href=\"javascript:DisplayLicense('" . $dprv_post_id . "')\" style=\"" . $span_style . "\" " . $mouseover . "target='_self'>";

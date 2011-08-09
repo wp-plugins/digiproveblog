@@ -3,26 +3,25 @@
 
 function disableSelection(target)
 {
-/*		// MozUserSelect has a bug - Bug 561691 : sub-elements cannot be excepted from the rule
-		if (typeof target.style.MozUserSelect!='undefined')    // Firefox
-		{
-			target.style.MozUserSelect='none';
-			enableInputElements(target);
-		}
+/*	// MozUserSelect has a bug - Bug 561691 : sub-elements cannot be excepted from the rule
+	if (typeof target.style.MozUserSelect!='undefined')    // Firefox
+	{
+		target.style.MozUserSelect='none';
+		enableInputElements(target);
+	}
 */
-
-	if (typeof target.style.WebkitUserSelect!='undefined')    // Safari or Chrome
+	if (typeof target.style.WebkitUserSelect != 'undefined')    // Safari or Chrome
 	{
 		target.style.WebkitUserSelect='none';
 		enableInputElements(target);
 	}
 	else
 	{
-		if (typeof target.onselectstart!='undefined') //For IE, Chrome or Safari (but Chrome or Safari already picked up above)
+		if (typeof target.onselectstart != 'undefined') //For IE, Chrome or Safari (but Chrome or Safari already picked up above)
 		{
 			target.onselectstart=function()
 			{
-				if (event.srcElement.type != "text" && event.srcElement.type != "textarea" && event.srcElement.type != "password")
+				if (event.srcElement.type != "text" && event.srcElement.type != "textarea" && event.srcElement.type != "password")  // what about select and checkbox - seem to work ok having tested
 				{return false;}
 				else
 				{return true;}
@@ -30,7 +29,7 @@ function disableSelection(target)
 		}
 		else
 		{
-			if (window.sidebar)	// Firefox IE and Chrome and Safari (and Netscape?): IE, Chrome and Safari already picked up above
+			if (window.sidebar)	// Firefox and Opera [and Netscape?], also IE and Chrome and Safari , but IE, Chrome and Safari already picked up above
 			{
 				target.onmousedown=trapMouseDown;
 			}

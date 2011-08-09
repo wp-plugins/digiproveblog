@@ -12,6 +12,7 @@ function DisplayAdvanced()
 	document.getElementById("BasicTab").style.borderBottom="1px solid #666666";
 	document.getElementById("AdvancedTab").style.borderBottom="0px";
 	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
+	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
 	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
 	document.getElementById("BasicPart1").style.display="none";
 	document.getElementById("BasicPart2").style.display="none";
@@ -21,6 +22,7 @@ function DisplayAdvanced()
 	}	
 	document.getElementById("AdvancedPart1").style.display="";
 	document.getElementById("AdvancedPart2").style.display="";
+	document.getElementById("Content").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="none";
 	HideHelpText();
@@ -36,6 +38,7 @@ function DisplayLicenseTab()
 	document.getElementById("BasicTab").style.borderBottom="1px solid #666666";
 	document.getElementById("AdvancedTab").style.borderBottom="1px solid #666666";
 	document.getElementById("LicenseTab").style.borderBottom="0px";
+	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
 	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
 	document.getElementById("BasicPart1").style.display="none";
 	document.getElementById("BasicPart2").style.display="none";
@@ -45,10 +48,37 @@ function DisplayLicenseTab()
 	}	
 	document.getElementById("AdvancedPart1").style.display="none";
 	document.getElementById("AdvancedPart2").style.display="none";
+	document.getElementById("Content").style.display="none";
 	document.getElementById("License").style.display="";
 	document.getElementById("CopyProtect").style.display="none";
 	HideHelpText();
 }
+
+function DisplayContentTab()
+{
+	if (dprv_enrolled == "No")
+	{
+		return;
+	}
+	document.getElementById("BasicTab").style.borderBottom="1px solid #666666";
+	document.getElementById("AdvancedTab").style.borderBottom="1px solid #666666";
+	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
+	document.getElementById("ContentTab").style.borderBottom="0px";
+	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
+	document.getElementById("BasicPart1").style.display="none";
+	document.getElementById("BasicPart2").style.display="none";
+	if (document.getElementById("BasicPart3") != null)
+	{
+		document.getElementById("BasicPart3").style.display="none";
+	}	
+	document.getElementById("AdvancedPart1").style.display="none";
+	document.getElementById("AdvancedPart2").style.display="none";
+	document.getElementById("License").style.display="none";
+	document.getElementById("Content").style.display="";
+	document.getElementById("CopyProtect").style.display="none";
+	HideHelpText();
+}
+
 
 function DisplayCopyProtect()
 {
@@ -59,6 +89,7 @@ function DisplayCopyProtect()
 	document.getElementById("BasicTab").style.borderBottom="1px solid #666666";
 	document.getElementById("AdvancedTab").style.borderBottom="1px solid #666666";
 	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
+	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
 	document.getElementById("CopyProtectTab").style.borderBottom="0px";
 	document.getElementById("BasicPart1").style.display="none";
 	document.getElementById("BasicPart2").style.display="none";
@@ -68,6 +99,7 @@ function DisplayCopyProtect()
 	}	
 	document.getElementById("AdvancedPart1").style.display="none";
 	document.getElementById("AdvancedPart2").style.display="none";
+	document.getElementById("Content").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="";
 	HideHelpText();
@@ -81,6 +113,7 @@ function DisplayBasic()
 	document.getElementById("BasicTab").style.borderBottom="0px";
 	document.getElementById("AdvancedTab").style.borderBottom="1px solid #666666";
 	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
+	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
 	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
 	document.getElementById("BasicPart1").style.display="";
 	document.getElementById("BasicPart2").style.display="";
@@ -90,6 +123,7 @@ function DisplayBasic()
 	}
 	document.getElementById("AdvancedPart1").style.display="none";
 	document.getElementById("AdvancedPart2").style.display="none";
+	document.getElementById("Content").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="none";
 	HideHelpText();
@@ -156,7 +190,7 @@ function toggleCredentials()
 		document.getElementById("dprv_password_row2").style.display="none";
 		document.getElementById("dprv_password_row3").style.display="none";
 		document.getElementById("dprv_submit").value = dprv_literals["Update Settings"];
-		renewApiKey(document.getElementById("dprv_renew_api_key"));
+		renewApiKey();
 	}
 	else
 	{
@@ -285,12 +319,23 @@ function renewApiKey()	// Toggle display settings dependent on renew api key che
 	if (document.getElementById("dprv_renew_api_key").checked == true)
 	{
 		document.getElementById("dprv_input_api_key").checked = false;
+		document.getElementById("dprv_api_key").disabled = true;
 	}
 	else
 	{
 		if (document.getElementById("dprv_api_key").value == "")
 		{
-			document.getElementById("dprv_input_api_key").checked = true;
+			if (dprv_lastApiKey == "")
+			{
+				document.getElementById("dprv_input_api_key").checked = true;
+				document.getElementById("dprv_api_key").disabled = false;
+			}
+			else
+			{
+				document.getElementById("dprv_input_api_key").checked = false;
+				document.getElementById("dprv_api_key").value = dprv_lastApiKey;
+				document.getElementById("dprv_api_key").disabled = true;
+			}
 		}
 	}
 	toggleApiKey();
@@ -306,7 +351,15 @@ function inputApiKey()	// Toggle display settings dependent on renew api key che
 	{
 		if (document.getElementById("dprv_api_key").value == "")
 		{
-			document.getElementById("dprv_renew_api_key").checked = true;
+			if (dprv_lastApiKey == "")
+			{
+				document.getElementById("dprv_renew_api_key").checked = true;
+			}
+			else
+			{
+				document.getElementById("dprv_renew_api_key").checked = false;
+				document.getElementById("dprv_api_key").value = dprv_lastApiKey;
+			}
 		}
 	}
 	toggleApiKey();
@@ -331,26 +384,31 @@ function toggleApiKey()
 				if (!confirm("Do this only if the new API key was obtained from Digiprove, otherwise the plugin will stop working."))
 				{
 					document.getElementById("dprv_input_api_key").checked = false;
+					restoreApiKey();
 					return false;
 				}
 			}
 		}
 		if (document.getElementById("dprv_renew_api_key").checked == true)
 		{
-			document.getElementById("dprv_password_label").innerHTML = "Enter Password:";
-			document.getElementById("dprv_password_row1").style.display="";
-			document.getElementById("dprv_password_row2").style.display="";
-			if (document.getElementById("dprv_api_key").value != "")
+			if (document.getElementById("dprv_enrolled").value == "Yes")
 			{
 				document.getElementById("dprv_api_key_caption").innerHTML = "Current API Key:"
 				document.getElementById("dprv_api_key").disabled = true;
 				document.getElementById("dprv_api_key").style.backgroundColor = "#EEEEEE";
 				document.getElementById("dprv_api_key_row_2").style.display="";
+				if (document.getElementById("dprv_api_key").value != "" && dprv_lastApiKey != "")
+				{
+					document.getElementById("dprv_api_key").value = dprv_lastApiKey;
+				}
 			}
 			else
 			{
 				document.getElementById("dprv_api_key_row_2").style.display="none";
 			}
+			document.getElementById("dprv_password_label").innerHTML = "Enter Password:";
+			document.getElementById("dprv_password_row1").style.display="";
+			document.getElementById("dprv_password_row2").style.display="";
 			document.getElementById("dprv_password").focus();
 		}
 		else
@@ -375,6 +433,18 @@ function toggleApiKey()
 		}
 	}
 	return true;
+}
+
+function restoreApiKey()
+{
+	if (dprv_savedApiKey != "")
+	{
+		document.getElementById("dprv_api_key").value = dprv_savedApiKey;
+		document.getElementById("dprv_api_key_caption").innerHTML = "Current API Key:"
+		document.getElementById("dprv_api_key").disabled = true;
+		document.getElementById("dprv_api_key").style.backgroundColor = "#EEEEEE";
+		document.getElementById("dprv_api_key_row_2").style.display="";
+	}
 }
 
 function ShowPersonalDetailsText()
@@ -403,12 +473,12 @@ function ShowAPIText(domain_name, password_on_record)
 		}
 		else
 		{
-			dprv_api_text += ' If you are already registered with Digiprove, you can obtain your API key for this domain by ticking the &quot;Issue New API Key&quot; box above (you will be asked for your password).  API keys can also be obtained at the <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">Digiprove members&#39; website</a> (you will be asked to log in)';
+			dprv_api_text += ' If you are already registered with Digiprove, you can obtain your API key for this domain by ticking the &quot;Obtain New API Key&quot; box above (you will be asked for your password).  API keys can also be obtained at the <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">Digiprove members&#39; website</a> (you will be asked to log in)';
 		}
 	}
 	else
 	{
-		dprv_api_text += ' If you registered from this page this field will have been filled in automatically - there is no need to change it. If you are receiving error messages regarding your api key you can obtain a new one by ticking &quot;Issue New Api Key&quot; box (you will need to input your password) or it can also be done from the <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">Digiprove  members&#39; website</a> (you will be asked to log in)';
+		dprv_api_text += ' If you registered from this page this field will have been filled in automatically - there is no need to change it. If you are receiving error messages regarding your api key you can obtain a new one by ticking &quot;Obtain New Api Key&quot; box (you will need to input your password) or it can also be done from the <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">Digiprove  members&#39; website</a> (you will be asked to log in)';
 	}
 	DisplayHelpText(dprv_api_text);
 }
@@ -595,6 +665,110 @@ function ShowFooterText()
 // END OF FUNCTIONS FOR ADVANCED TAB
 
 
+// FUNCTIONS FOR CONTENT TAB:
+function ShowFingerprintText(hash_supported)
+{
+	var caution = ''
+	if (hash_supported=='No')
+	{
+		caution = ' <b><font color="red">Your version of PHP does not support this function.</b</font> Ask your provider to upgrade you to PHP 5.1.2 or later.'
+	}
+	DisplayHelpText('If you include media files (such as images, sounds, video, pdf etc.) within your posts or pages, you may instruct Digiprove to certify the digital fingerprints of the individual files, as well the html and text of the post itself.' + caution);
+}
+
+function ShowBetaText()
+{
+	DisplayHelpText('Note the media file Digiproving functions are in Beta form. We have tested them in a number of environments, but we are anxious for your feedback.  If you experience problems, firstly please advise us at support@digiprove.com, so we can fix the underlying problem. To get rid of problems, simply untick all of these boxes, or press &quot;Clear all&quot;.');
+}
+
+function toggleMedia(element)
+{
+	var targetId = element.id + '_ie_col';
+	if (element.checked == true)
+	{
+		if (dprv_subscription_type == "Basic" || dprv_subscription_type == "" || dprv_subscription_expired == "Yes" )
+		{
+			SubscribersOnly("Content File Fingerprinting");
+			return false;
+		}
+		document.getElementById(targetId).style.visibility = 'visible';
+	}
+	else
+	{
+		document.getElementById(targetId).style.visibility = 'hidden';
+	}
+	return true;
+}
+function toggleInclExcl(element)
+{
+	var pos = element.name.lastIndexOf("_ie");
+	var id_root = element.name.substr(0,pos);
+	var checkbox_0 = document.getElementById(id_root + "_types_0");
+	pos = checkbox_0.name.lastIndexOf("_");
+	if (checkbox_0.name.substr(pos+1) == "All")
+	{
+		if (element.value == "Include")
+		{
+			document.getElementById(id_root + "_labels_0").style.visibility="visible";
+			document.getElementById(id_root + "_types_0").style.visibility="visible";
+		}
+		else
+		{
+			document.getElementById(id_root + "_labels_0").style.visibility="hidden";
+			document.getElementById(id_root + "_types_0").style.visibility="hidden";
+		}
+		toggleMimeTypes(checkbox_0);
+	}
+}
+
+function toggleMimeTypes(element)
+{
+	var pos = element.id.lastIndexOf("_0");
+	var id_root = element.id.substr(0,pos);
+	var option_counter = 1;
+	var disabled = false;
+	if (element.checked == true && element.style.visibility != "hidden")
+	{
+		disabled = true;
+	}
+	while (option_counter != -1)
+	{
+		if (document.getElementById(id_root + '_' + option_counter))
+		{
+			document.getElementById(id_root + '_' + option_counter).disabled = disabled;
+			option_counter++;
+		}
+		else
+		{
+			option_counter = -1;
+			break;
+		}
+	}
+}
+function default_html_tags()
+{
+	if (dprv_subscription_type == "Basic" || dprv_subscription_type == "" || dprv_subscription_expired == "Yes" )
+	{
+		SubscribersOnly("Digiprove Files");
+		return;
+	}
+	document.getElementById("dprv_action").value = "DefaultHTMLTags";
+	document.getElementById("dprv_cp").submit();
+}
+function clear_html_tags()
+{
+	if (dprv_subscription_type == "Basic" || dprv_subscription_type == "" || dprv_subscription_expired == "Yes" )
+	{
+		SubscribersOnly("Digiprove Files");
+		return;
+	}
+	document.getElementById("dprv_action").value = "ClearHTMLTags";
+	document.getElementById("dprv_cp").submit();
+}
+
+// END OF FUNCTIONS FOR CONTENT TAB
+
+
 // FUNCTIONS FOR LICENSE TAB:
 
 function PreviewLicense()
@@ -646,7 +820,7 @@ function AddLicense()
 	document.getElementById('dprv_license_caption').style.display='none';
 	document.getElementById('dprv_license_abstract').style.display='none';
 	document.getElementById('dprv_license_url').style.display='none';
-	document.getElementById('License customization').style.display='none';
+	document.getElementById('License_customization').style.display='none';
 	document.getElementById('dprv_custom_license').style.display='';
 	document.getElementById('dprv_custom_license_caption').style.display='';
 	document.getElementById('dprv_custom_license_abstract').style.display='';
@@ -673,7 +847,7 @@ function AmendLicense()
 	document.getElementById('dprv_license_caption').style.display='none';
 	document.getElementById('dprv_license_abstract').style.display='none';
 	document.getElementById('dprv_license_url').style.display='none';
-	document.getElementById('License customization').style.display='none';
+	document.getElementById('License_customization').style.display='none';
 	document.getElementById('dprv_custom_license').style.display='';
 	document.getElementById('dprv_custom_license_caption').style.display='';
 	document.getElementById('dprv_custom_license_abstract').style.display='';
@@ -758,7 +932,7 @@ function LicenseActionAbandon()
 	document.getElementById('dprv_license_caption').style.display='';
 	document.getElementById('dprv_license_abstract').style.display='';
 	document.getElementById('dprv_license_url').style.display='';
-	document.getElementById('License customization').style.display='';
+	document.getElementById('License_customization').style.display='';
 	document.getElementById('dprv_custom_license').style.display='none';
 	document.getElementById('dprv_custom_license_caption').style.display='none';
 	document.getElementById('dprv_custom_license_abstract').style.display='none';
@@ -829,10 +1003,6 @@ function ShowFrustrateCopyText()
 // GENERIC (CROSS-TAB) FUNCTIONS:
 function SubmitSelected()
 {
-	if (document.getElementById("message") != null)
-	{
-		document.getElementById("message").innerHTML = "<p>Processing...</p>";
-	}
 	if (document.getElementById("dprv_enrolled").value == "No" && document.getElementById("dprv_register_yes").checked == true)
 	{
 		if (!confirm("Do you want to proceed with registration at www.digiprove.com?  You will receive an email with an activation link. If you do not want to do this now, press Cancel"))
@@ -842,7 +1012,15 @@ function SubmitSelected()
 			return false;
 		}
 	}
-	return ApiKeyChange();
+	if (ApiKeyChange())
+	{
+		if (document.getElementById("message") != null)
+		{
+			document.getElementById("message").innerHTML = "<p>Processing...</p>";
+		}
+		return true;
+	}
+	return false;
 }
 
 function SubscribersOnly(f)
@@ -868,11 +1046,18 @@ function PremiumOnly(f)
 {
 	if (dprv_subscription_type == "")
 	{
-		DisplayHelpText('The ' + f + ' function is available only to Digiprove subscribers. Please complete registration first.');
+		DisplayHelpText('The ' + f + ' function is available only to Digiprove subscribers at Professional level or above. Please complete registration first.');
 	}
 	else
 	{
-		DisplayHelpText('The ' + f + ' function is not available under your current plan (' + dprv_subscription_type + ').  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Upgrade your subscription plan</a>.');
+		if (dprv_subscription_type == "Personal")
+		{
+			DisplayHelpText('The ' + f + ' function is not available under your current plan (' + dprv_subscription_type + ').  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Upgrade your subscription plan</a>.');
+		}
+		else
+		{
+			DisplayHelpText('The ' + f + ' function is available to subscribers at Professional level and above - your current plan is &quot;' + dprv_subscription_type + '&quot;.  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Upgrade your subscription plan</a>.');
+		}
 	}
 }
 
