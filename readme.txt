@@ -6,8 +6,7 @@ Requires at least: 2.7
 Tested up to: 3.1.1
 Stable tag: 1.07
 
-Digitally certify your original content - proving authorship, deterring plagiarists, and protecting copyright.
-Copyright and Licensing of original content and include attributions for non-original content. 
+Digitally certify your original content - proving authorship & protecting copyright. Inserts a combined copyright and licensing notice in your posts. 
 
 == Description ==
 
