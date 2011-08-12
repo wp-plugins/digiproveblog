@@ -12,6 +12,16 @@ function dprv_postbox()
 
 function dprv_show_postbox($post_info)
 {
+	echo ('<script type="text/javascript">
+			//<![CDATA[
+				window.onerror = function(msg, url, linenumber)
+				{
+					var alert_string = "Javascript error " + msg + "\nin " + url + "\nat line " + linenumber + "; Please report this error to support@digiprove.com";
+					alert(alert_string);
+					return true;
+				}
+			//-->
+		</script>');
 
 	global $wpdb, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $post_id;
  	$log = new Logging();  
@@ -406,7 +416,7 @@ function dprv_parse_post ($data, $raw_data)
 		return $data;
 	}
 	//$log->lwrite("data[post_status] = " . $data['post_status']);
-	if ($data['post_status'] != "publish" && $data['post_status'] != "future")
+	if ($data['post_status'] != "publish" && $data['post_status'] != "private" && $data['post_status'] != "future")
 	{
 		if ($data['post_status'] == "draft" && $_POST['dprv_publish_dp_action'] == "Yes")
 		{
@@ -415,7 +425,7 @@ function dprv_parse_post ($data, $raw_data)
 		}
 		else
 		{
-			$log->lwrite("dprv_parse_post not starting because status (" . $data['post_status'] . ") is not publish or future");
+			$log->lwrite("dprv_parse_post not starting because status (" . $data['post_status'] . ") is not publish, private or future");
 			return $data;
 		}
 	}
@@ -584,6 +594,8 @@ function dprv_digiprove_post($dprv_post_id)
 	//                                  runpostie				when (script = options-general  && status = draft)
 	//															or   (script = options-general  && status = ? publish?)
 	//									post-quickpress-save	when (script = post				&& status = auto-draft)
+	//
+	// and with combinations of status = private
 
 	if ($script_name == "wp-cron")
 	{
@@ -591,9 +603,9 @@ function dprv_digiprove_post($dprv_post_id)
 		return;
 	}
 
-	if ($post_record->post_status != "publish" && $post_record->post_status != "future")
+	if ($post_record->post_status != "publish" && $post_record->post_status != "private"  && $post_record->post_status != "future")
 	{
-		$log->lwrite("dprv_digiprove_post not starting because status (" . $post_record->post_status . ") is not publish or future");
+		$log->lwrite("dprv_digiprove_post not starting because status (" . $post_record->post_status . ") is not publish, private or future");
 		return;
 	}
 
