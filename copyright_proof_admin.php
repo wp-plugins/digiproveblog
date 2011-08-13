@@ -22,17 +22,6 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 		$log->lwrite("dprv_admin_head returning early, no need for license or other info");
 		return;
 	}
-	echo ('<script type="text/javascript">
-			//<![CDATA[
-				window.onerror = function(msg, url, linenumber)
-				{
-					var alert_string = "Javascript error " + msg + "\nin " + url + "\nat line " + linenumber + "; Please report this error to support@digiprove.com";
-					alert(alert_string);
-					return true;
-				}
-			//-->
-		</script>');
-
 	populate_licenses();
 	populate_licenses_js();
 }
@@ -676,7 +665,6 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 							{
 								$new_post_types .= substr($key, 15) . ",";
 							}
-							
 						}
 					}
 					if ($new_post_types != "")
@@ -2471,7 +2459,6 @@ function cian_evaluator($something, $html = false, $tabs = "")
 			}
 			$return .= $tabs . "}" . $line;
 		}
-
 	}
 	if (is_bool($something))
 	{
