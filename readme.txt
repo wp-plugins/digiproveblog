@@ -6,7 +6,7 @@ Requires at least: 2.7
 Tested up to: 3.1.1
 Stable tag: 1.08
 
-Digitally certify your original content - proving authorship & protecting copyright. Inserts a combined copyright and licensing notice in your posts. 
+Digitally certify your original content - proving authorship & protecting copyright. Inserts a combined copyright & licensing notice in your posts. 
 
 == Description ==
 
@@ -139,6 +139,9 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 1.09 =
+* Removed error-handling code for javascript errors - was being triggered by bugs in other plugins and themes
+
 = 1.08 =
 * Added error-handling code for javascript errors
 * Handles privately published posts and pages (i.e. for logged-in users only)
@@ -157,7 +160,7 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 = 1.06 =
 * Removed non-standard valign attribute on notice
-* License display panel now works with themes and plugins that cause default target (for <a>) to be new tab/window
+* License display panel now works with themes and plugins that cause default target (for anchor tag) to be new tab/window
 * Copy-protect function now works even with themes that do not call wp_footer()
 * Optional footer message "Original content on these pages is fingerprinted and certified by Digiprove"
 * Option whether or not to display Digiprove notice only on single-post-pages

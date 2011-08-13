@@ -12,17 +12,6 @@ function dprv_postbox()
 
 function dprv_show_postbox($post_info)
 {
-	echo ('<script type="text/javascript">
-			//<![CDATA[
-				window.onerror = function(msg, url, linenumber)
-				{
-					var alert_string = "Javascript error " + msg + "\nin " + url + "\nat line " + linenumber + "; Please report this error to support@digiprove.com";
-					alert(alert_string);
-					return true;
-				}
-			//-->
-		</script>');
-
 	global $wpdb, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $post_id;
  	$log = new Logging();  
 	$log->lwrite("dprv_show_postbox starts");  
