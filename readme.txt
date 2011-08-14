@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.1.1
-Stable tag: 1.09
+Stable tag: 1.10
 
 Digitally certify your original content - proving authorship & protecting copyright. Inserts a combined copyright & licensing notice in your posts. 
 
@@ -139,6 +139,10 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 1.10 =
+* Removed error reporting statement which flagged notices and warnings from other plugins
+
+
 = 1.09 =
 * Removed error-handling code for javascript errors - was being triggered by bugs in other plugins and themes
 
