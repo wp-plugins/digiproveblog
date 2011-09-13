@@ -3,12 +3,12 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 1.10
+Version: 1.11
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
 */
-/*  Copyright 2008-2010  Digiprove (email : cian.kinsella@digiprove.com)
+/*  Copyright 2008-2011  Digiprove (email : cian.kinsella@digiprove.com)
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -23,7 +23,7 @@ License: GPL
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-// NOTE THIS IS THE PHP4-FRIENDLY VARIANT OF COPYRIGHT PROOF
+
 // Acknowledgement to Honza Odvarko, whose jscolor color-picker is used in this plug-in 
 // under the GNU Lesser General Public License (LGPL): www.gnu.org/copyleft/lesser.html
 
@@ -44,7 +44,7 @@ else
 
 
 // Declare and initialise global variables:
-define("DPRV_VERSION", "1.10");
+define("DPRV_VERSION", "1.11");
 define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
 define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
 define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
@@ -165,6 +165,7 @@ if (!function_exists("strpbrk"))
     }
 }
 
+
 // FROM HERE DOWN IS ALL FUNCTIONS:
 
 // ON-ACTIVATION FUNCTIONS:
@@ -221,7 +222,7 @@ function dprv_activate()
 	add_option('dprv_last_result', '');						// Contains result of Digiprove action
 	add_option('dprv_last_date','');
 	add_option('dprv_last_date_count','0');
-	update_option('dprv_event', '');
+	add_option('dprv_event', '');							// Place for error messages to be recorded, may be notified via API eventually
 	update_option('dprv_activation_event', '');
 	add_option('dprv_prefix');
 	create_dprv_license_table();

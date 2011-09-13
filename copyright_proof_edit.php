@@ -319,7 +319,7 @@ function dprv_add_digiprove_submit_button()
 	
 	if ($dprv_publish_text != __('Digiprove &amp; Submit for Review', 'dprv_cp'))    // At least for now, don't have Digiproving of contributor submissions
 	{
-		echo ('<input name="save" type="submit" class="button-primary" id="publish_dp" tabindex="5" onclick="return set_dprv_action()" value="' . $dprv_publish_text . '" style="float:right"/>');
+		echo ('<div style="width:100%; text-align:right;"><input name="save" type="submit" class="button-primary" id="publish_dp" tabindex="5" onclick="return set_dprv_action()" value="' . $dprv_publish_text . '"/></div>');
 		echo ('<script type="text/javascript">
 				function set_dprv_action()
 				{
@@ -418,8 +418,18 @@ function dprv_parse_post ($data, $raw_data)
 			return $data;
 		}
 	}
-	//$log->lwrite("data['post_type'] = " . $data['post_type']);
-	//if ($data['post_type'] != "post" && $data['post_type'] != "page")	
+
+	$my_arrays = debug_backtrace();
+	foreach ($my_arrays as $my_array)
+	{
+		$search_result = array_search("_fix_attachment_links", $my_array);
+		if ($search_result == "function")
+		{
+			$log->lwrite("dprv_parse_post not starting because called via _fix_attachment_links, means this already processed");
+			return;
+		}
+	}
+
 	$dprv_post_types = explode(',',get_option('dprv_post_types'));
 	if (array_search($data['post_type'], $dprv_post_types) === false)
 	{
@@ -548,7 +558,6 @@ function dprv_parse_post ($data, $raw_data)
 	return $data;
 }
 
-
 function dprv_digiprove_post($dprv_post_id)
 {
 	// This function executes after the post has been created/updated and we have a post id
@@ -598,7 +607,23 @@ function dprv_digiprove_post($dprv_post_id)
 		return;
 	}
 
-	//if ($post_record->post_type != "post" && $post_record->post_type != "page")  // TODO: && $post_record->post_type != "xxxxx"
+
+	// Doing this check because of situation where if an attachment is referred to within the content,
+	// action hook wp_insert_post gets fired twice with identical variables.
+	// 1st time: edit_post calls wp_update_post calls wp_insert_post triggers action hook wp_insert_post
+	// 2nd time: _fix_attachment_links calls wp_update_post calls wp_insert_post triggers action hook wp_insert_post
+
+	$my_arrays = debug_backtrace();
+	foreach ($my_arrays as $my_array)
+	{
+		$search_result = array_search("_fix_attachment_links", $my_array);
+		if ($search_result == "function")
+		{
+			$log->lwrite("dprv_digiprove_post not starting because called via _fix_attachment_links, means this already processed");
+			return;
+		}
+	}
+
 	$dprv_post_types = explode(',',get_option('dprv_post_types'));
 	if (array_search($post_record->post_type, $dprv_post_types) === false)
 	{
@@ -626,7 +651,6 @@ function dprv_digiprove_post($dprv_post_id)
 		return;
 	}
 
-
 	$dprv_digiprove_this_post = $_POST['dprv_this'];
 	if ($dprv_digiprove_this_post == "No")
 	{
@@ -651,7 +675,6 @@ function dprv_digiprove_post($dprv_post_id)
 				return;
 			}
 		}
-
 	}
 
 	$today_count = 0;	// default value
@@ -707,7 +730,7 @@ function dprv_digiprove_post($dprv_post_id)
 			return;
 		}
 		//$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
-		$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 86400;					// Add 24 hour grace period (also handles any unforeseen timezone issues)
+		$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 864000;					// Add 10-day grace period (also handles any unforeseen timezone issues)
 		if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
 		{
 			// NOTE - if changing the "Digiprove free daily limit" text, also modify  dprv_admin_footer() which relies on this exact text
@@ -716,12 +739,12 @@ function dprv_digiprove_post($dprv_post_id)
 		}
 	}
 
-
 	$log->lwrite("dprv_digiprove_post STARTS");
 
 	//update_option('dprv_last_result', '');
 	$newContent = stripslashes($content);
 	$notice = "";
+	
 	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $raw_content_hash, $dprv_subscription_type, $dprv_subscription_expiry, $dprv_last_time, $notice);
 	$log->lwrite("response: $certifyResponse");
 	if (strpos($certifyResponse, "Hashes are identical") === false)
@@ -737,6 +760,7 @@ function dprv_digiprove_post($dprv_post_id)
 				if ($admin_message == false)
 				{
 					$admin_message = $certifyResponse;
+					update_option('dprv_event',$certifyResponse);		// Save for later reporting to server
 				}
 				else
 				{
@@ -804,15 +828,18 @@ function dprv_digiprove_post($dprv_post_id)
 	else
 	{
 		// Doing this check because of weird situation where if an attachment is referred to within the content,
-		// wp_insert_post gets fired twice with apparently identical variables.  Thus the 2nd time (correctly) does
+		// action hook wp_insert_post gets fired twice with identical variables.
+		// 1st time: edit_post calls wp_update_post calls wp_insert_post triggers action hook wp_insert_post
+		// 2nd time: _fix_attachment_links calls wp_update_post calls wp_insert_post triggers action hook wp_insert_post
+		// If the 1st time Digiproved successfully the 2nd time (correctly) does
 		// not Digiprove becauses hashes are same, however, user does not see Digiprove Certificate ID message
 		// TODO: Check that this works across timezones (should do because time() gives utc)
-		$this_time = time();
-		$time_since_last = $this_time - $dprv_last_time;
-		if ($time_since_last > 2)		// only if last one occurred more than 2 seconds ago (arguably make this a bit longer)
-		{
+		//$this_time = time();
+		//$time_since_last = $this_time - $dprv_last_time;
+		//if ($time_since_last > 5)		// only if last one occurred more than 5 seconds ago
+		//{
 			update_option('dprv_last_result', __('Content unchanged since last edit', 'dprv_cp'));
-		}
+		//}
 	}
 
 	$log->lwrite("finishing dprv_digiprove_post " . $dprv_post_id);
@@ -1118,8 +1145,7 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 	}
 
 	$dprv_subscription_expired = "No";
-	//$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 86400;			// add 24-hour grace period (also allows for any unforeseen timezone issues)
-	$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 345600;			// add 4-day grace period (also allows for any unforeseen timezone issues)
+	$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 864000;			// add 10-day grace period (also allows for any unforeseen timezone issues)
 	if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
 	{
 		$dprv_subscription_expired = "Yes";
@@ -1140,7 +1166,7 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 	$content_file_fingerprints = array();
 	if (function_exists("hash"))
 	{
-		getContentFiles($rawContent, $dprv_blog_host, $content_file_names, $content_file_fingerprints);
+		getContentFiles($post_id, $rawContent, $dprv_blog_host, $content_file_names, $content_file_fingerprints);
 	}
 	$rawContent = htmlspecialchars($rawContent, ENT_QUOTES, 'UTF-8');
 	// Statement below inserted at 0.75 as vertical tabs not converted and cause a problem in XML .net server process
@@ -1179,12 +1205,16 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 	else
 	{
 		$dprv_password = htmlspecialchars(stripslashes(get_option('dprv_password')), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
+		if ($dprv_password == "")
+		{
+			return "Digiprove api key is missing - you can obtain a new key via Copyright Proof Settings";
+		}
 		$postText .= '<password>' . $dprv_password . '</password>';
 		$postText .= '<request_api_key>Yes</request_api_key>';
 	}
 
 	$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
-    $postText .= '<content_title>' . $title . '</content_title>';
+	$postText .= '<content_title>' . $title . '</content_title>';
 
 	if (count($content_file_names) > 0)
 	{
@@ -1220,8 +1250,11 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 	$file_count = count($content_file_names);
 	if ($dprv_subscription_expired == "Yes")
 	{
-		$notice = " (This post/page contained references to $file_count media files that according to your settings should be Digiproved, but your subscription expired on " . $dprv_subscription_expiry . ".)";
-		$file_count = 0;
+		if ($file_count > 0)
+		{
+			$notice = " (This post/page contained references to $file_count media files that according to your settings should be Digiproved, but your subscription expired on " . $dprv_subscription_expiry . ".)";
+			$file_count = 0;
+		}
 	}
 	else
 	{
@@ -1255,6 +1288,12 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 	{
 		$postText .= '<obscure_certificate_url>Yes</obscure_certificate_url>';
 	}
+	$dprv_event = get_option('dprv_event');
+	if ($dprv_event !== false && $dprv_event != "")
+	{
+		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
+		update_option('dprv_event', '');								// Clear it down
+	}
 	$postText .= '</digiprove_content_request>';
 	$log->lwrite("xml string = " . $postText);
 
@@ -1267,8 +1306,10 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 	return $data;
 }
 
-function getContentFiles($content, $dprv_blog_host, &$content_file_names, &$content_file_fingerprints)
+function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_names, &$content_file_fingerprints)
 {
+	//dprvErrors::set_handler();		// SETTING for this function - ensure NO return statement without restore_error_handler()
+	update_option('dprv_event', 'started getContentFiles');
 	global $dprv_mime_types;
 	$log = new Logging();  
 	$log->lwrite("getContentFiles starts");
@@ -1290,13 +1331,7 @@ function getContentFiles($content, $dprv_blog_host, &$content_file_names, &$cont
 			$log->lwrite(strpos($root_path, $blog_path) . "!=" . strlen($root_path) . "-" .strlen($blog_path));
 		}
 	}
-	//$log->lwrite("root_path=$root_path");
-	//$log->lwrite("ABSPATH=" . ABSPATH);
-	//$log->lwrite("blog_url = $blog_url");
-	//$log->lwrite("blog_url_info[host] = " . $blog_url_info["host"]);
-	//$log->lwrite("blog_url_info[path] = " . $blog_url_info["path"]);
 
-	//$dprv_html_tags = unserialize(get_option('dprv_html_tags'));
 	$dprv_html_tags = get_option('dprv_html_tags');
 	if (!is_array($dprv_html_tags))
 	{
@@ -1320,6 +1355,7 @@ function getContentFiles($content, $dprv_blog_host, &$content_file_names, &$cont
 		if ($w>500)
 		{
 			$log->lwrite("breaking because of suspected endless loop (a)");
+			update_option('dprv_event', 'post ' . $post_id . ' endless loop a');
 			break;
 		}
 
@@ -1350,6 +1386,7 @@ function getContentFiles($content, $dprv_blog_host, &$content_file_names, &$cont
 				if ($r>300)
 				{
 					$log->lwrite("breaking because of suspected endless loop (b)");
+					update_option('dprv_event', 'post ' . $post_id . ' endless loop b');
 					break;
 				}
 				$pos2 = stripos($no_tag_content, "http://");
@@ -1485,6 +1522,10 @@ function getContentFiles($content, $dprv_blog_host, &$content_file_names, &$cont
 		{
 			break;
 		}
+	}
+	if (get_option('dprv_event') == 'started getContentFiles')	// If ending normally,
+	{
+		update_option('dprv_event', '');						// clear event notice field
 	}
 }
 
