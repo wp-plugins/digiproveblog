@@ -1341,7 +1341,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 	// APPLIES ACROSS TABS:
 	$dprv_subscription_expired = "No";
-	$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 86400;			// add 24-hour grace period (Also handles any unforeseen timezone issues)
+	$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 864000;			// add 10-day grace period (Also handles any unforeseen timezone issues)
 	if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
 	{
 		$dprv_subscription_expired = "Yes";
@@ -2209,6 +2209,12 @@ function dprv_register_user($dprv_user_id, $dprv_password, $dprv_email_address, 
 		$postText .= '<email_certs>Yes</email_certs>';
 	}
     $postText .= '<subscription_plan>' . 'Basic' . '</subscription_plan>';
+	$dprv_event = get_option('dprv_event');
+	if ($dprv_event !== false && $dprv_event != "")
+	{
+		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
+		update_option('dprv_event', '');								// Clear it down
+	}
 	$postText .= '</digiprove_register_user>';
 	$log->lwrite("xml string = " . $postText);
 
@@ -2291,6 +2297,12 @@ function dprv_update_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_em
 	{
 		$postText .= '<email_certs>Yes</email_certs>';
 	}
+	$dprv_event = get_option('dprv_event');
+	if ($dprv_event !== false && $dprv_event != "")
+	{
+		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
+		update_option('dprv_event', '');								// Clear it down
+	}
 
 	$postText .= '</digiprove_update_user>';
 
@@ -2354,6 +2366,13 @@ function dprv_sync_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_rene
 		$postText .= '<request_api_key>Yes</request_api_key>';
 	}
 
+	$dprv_event = get_option('dprv_event');
+	if ($dprv_event !== false && $dprv_event != "")
+	{
+		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
+		update_option('dprv_event', '');								// Clear it down
+	}
+
 	$postText .= '</digiprove_sync_user>';
 
 	$log->lwrite("xml string = " . $postText);
@@ -2394,6 +2413,12 @@ function dprv_resend_activation_email($dprv_user_id, $dprv_email_address)
 	$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
 	$postText .= "<user_id>" . $dprv_user_id . "</user_id>";
 	$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
+	$dprv_event = get_option('dprv_event');
+	if ($dprv_event !== false && $dprv_event != "")
+	{
+		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
+		update_option('dprv_event', '');								// Clear it down
+	}
 	$postText .= '</send_activation_email>';
 
 	//$log->lwrite("xml string = " . $postText);

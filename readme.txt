@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.1.1
-Stable tag: 1.10
+Tested up to: 3.2.1
+Stable tag: 1.11
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -51,18 +51,6 @@ preserves your content independently of Wordpress.
 - Note: To get the Digiprove notice to appear on existing posts, you should open each one and press Update & Digiprove
 
 
-= When I try to upgrade the plugin, it fails (often with the message "Could not remove the old plugin") - what to do? =
-
-This is a frustrating thing that doesn't happen to everybody. It can happen with any plugin. Basically your host server operating system is preventing Wordpress from
-deleting the old plugin files or the directory in which they are contained.  Sometimes this is caused by the existence of temporary transient files created by the operating system,
-in which case waiting 10 minutes or more may solve the problem.  The short-term solution is to access your site via FTP and delete the plugin folder/directory.
-In the case of Copyright Proof the folder is (within your wordpress root directory) "/wp-content/plugins/digiproveblog". Then install the Copyright Proof plugin afresh -
-your existing settings will all be retained.
-
-The long term solution is to find the source of the problem - usually some permission settings somewhere on the server, maybe with the aid of your hosting company. Unfortunately
-because of the wide variety of environments that Wordpress can find itself in, there is no "one-size-fits-all" solution.
-
-
 = What's with the registration process?  =
 
 Copyright Proof uses the Digiprove service, which needs to have the name of the person claiming copyright, and a valid email address to which Digiprove content certificates will be sent.
@@ -81,6 +69,7 @@ establishments or charities, just write to us at support@digiprove.com with deta
 
 From Wordpress:
 - You can publish content from multiple domains
+- You can protect individual files and media as well as the blog post text
 - You can elect to have your valuable Digiprove Content Certificates emailed to you automatically
 - You can create a custom text to display in your Digiprove notice rather than using one of the standard texts
 - You can have a hyperlink from your certificate page on www.digiprove.com back to your Wordpress post (or page)
@@ -139,6 +128,15 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 1.11 =
+* Fixed button alignment problem in WP 3.2.1 
+* Introduced subscription expiry grace period of 10 days
+* Improved event logging
+* Now skips Digiprove API call if no api key or password
+* Minor improvement to processing speed of posts with attachments
+* Fixed IE alignment problem with themes that apply max-width to images
+* Removed spurious error message about media files for expired accounts
+
 = 1.10 =
 * Removed error reporting statement which flagged notices and warnings from other plugins
 
@@ -348,5 +346,9 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Minor bug-fixes
 
 == Upgrade Notice ==
+= 1.11 =
+Upgrade is recommended if the Digiprove/Copyright notice on your posts is badly aligned in Internet Explorer.
+There are some minor bug-fixes as well.
+
 = 1.10 =
 Strongly recommended upgrade - removes spurious and annoying error messages.
