@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.2.1
-Stable tag: 1.11
+Stable tag: 1.12
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -128,6 +128,9 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 1.12 =
+* Fixed issue where right-click copy protection was failing when another plugin made use of addLoadEvent function
+
 = 1.11 =
 * Fixed button alignment problem in WP 3.2.1 
 * Introduced subscription expiry grace period of 10 days
@@ -346,6 +349,9 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Minor bug-fixes
 
 == Upgrade Notice ==
+= 1.12 =
+Upgrade if right-click copy protect function is not working for you
+
 = 1.11 =
 Upgrade is recommended if the Digiprove/Copyright notice on your posts is badly aligned in Internet Explorer.
 There are some minor bug-fixes as well.
