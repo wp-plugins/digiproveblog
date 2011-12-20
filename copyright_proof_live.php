@@ -24,7 +24,7 @@ function dprv_head()
 		echo ("
 		var noRightClickMessage='" . $dprv_right_click_message . "';
 		var justDisplayed = 0;
-		var oldonload = window.onload;
+		//var oldonload = window.onload;
 		function addLoadEvent(func)
 		{ 
 			if (typeof window.onload != 'function')
@@ -33,7 +33,7 @@ function dprv_head()
 			}
 			else
 			{ 
-				oldonload = window.onload;
+				var oldonload = window.onload;
 				window.onload = function()
 				{ 
 					if (oldonload)

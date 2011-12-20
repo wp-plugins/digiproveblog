@@ -34,7 +34,8 @@
 		{
 			document.getElementById("Heading2").innerHTML = "Loading digiprove.com secure upgrade session";
 		}
-		document.Upgrade.action = getQuerystring("FormAction");
+		//document.Upgrade.action = getQuerystring("FormAction");
+		document.getElementById('Upgrade').action = getQuerystring("FormAction");
 		document.getElementById("UserId").value = getQuerystring("UserId");
 		document.getElementById("ApiKey").value = getQuerystring("ApiKey");
 		document.getElementById("Domain").value = getQuerystring("Domain");
