@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.2.1
-Stable tag: 1.13
+Tested up to: 3.3
+Stable tag: 1.14
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -128,6 +128,9 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 1.14 =
+* Fixed bug introduced by 1.13 - http failure
+
 = 1.13 =
 * Fixed issue where right-click copy protection was failing with Facebook js
 
@@ -352,6 +355,12 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Minor bug-fixes
 
 == Upgrade Notice ==
+= 1.14 =
+CRITICAL upgrade if you are on 1.13 - fixes http problem
+
+= 1.13 =
+Upgrade if right-click copy protect function is not working for you
+
 = 1.12 =
 Upgrade if right-click copy protect function is not working for you
 
