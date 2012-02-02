@@ -244,6 +244,7 @@ function EnableRegistrationInputs()
 		document.getElementById("dprv_input_api_key").disabled=false;
 		document.getElementById("dprv_password").disabled=false;
 		document.getElementById("dprv_pw_confirm").disabled=false;
+		document.getElementById("dprv_change_reg").style.display = "none";
 		return true;
 	}
 	return false;
