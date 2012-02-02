@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 1.14
+Version: 1.15
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -44,8 +44,8 @@ else
 
 // Declare and initialise global variables:
 global $dprv_port, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id, $dprv_mime_types;
-define("DPRV_VERSION", "1.14");
-define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
+define("DPRV_VERSION", "1.15");
+define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "api.digiprove.com"
 define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
 define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
 //error_reporting(E_ALL);                       // uncomment this for test purposes
@@ -82,6 +82,7 @@ add_filter('wp_insert_post_data', 'dprv_parse_post', 99, 2);
 add_filter('wp_insert_page_data', 'dprv_parse_post', 99, 2);
 add_action('wp_insert_post', 'dprv_digiprove_post');
 add_action('wp_insert_page', 'dprv_digiprove_post');
+add_filter('plugin_action_links', 'dprv_add_settings_link', 10, 2 );
 
 if (get_option('dprv_enrolled') == "Yes")
 {
@@ -551,6 +552,24 @@ function dprv_post_sync($pid)
 		return $wpdb->query($wpdb->prepare('DELETE FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = %d', $pid));
 	}
 	return true;
+}
+
+/**
+ * Add Settings link to plugins - code from GD Star Ratings
+ */
+function dprv_add_settings_link($links, $file)
+{
+	static $this_plugin;
+	if (!$this_plugin)
+	{
+		$this_plugin = plugin_basename(__FILE__);
+	}
+	if ($file == $this_plugin)
+	{
+		$settings_link = '<a href="options-general.php?page=copyright_proof_admin.php">'.__("Settings", "dprv_cp").'</a>';
+		array_push($links, $settings_link);
+	}
+	return $links;
 }
 
 class Logging

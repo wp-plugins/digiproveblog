@@ -25,7 +25,7 @@ function dprv_head()
 		var noRightClickMessage='" . $dprv_right_click_message . "';
 		var justDisplayed = 0;
 		//var oldonload = window.onload;
-		function addLoadEvent(func)
+		function dprv_addLoadEvent(func)
 		{ 
 			if (typeof window.onload != 'function')
 			{ 
@@ -52,7 +52,7 @@ function dprv_head()
 			disableCtrlKeys();
 			disableSelection(document.body);
 		}
-		addLoadEvent(copy_frustrate);  // Set on protection later
+		dprv_addLoadEvent(copy_frustrate);  // Set on protection later
 		");
 	}
 

@@ -319,7 +319,32 @@ function dprv_add_digiprove_submit_button()
 	
 	if ($dprv_publish_text != __('Digiprove &amp; Submit for Review', 'dprv_cp'))    // At least for now, don't have Digiproving of contributor submissions
 	{
-		echo ('<div style="width:100%; text-align:right;"><input name="save" type="submit" class="button-primary" id="publish_dp" tabindex="5" onclick="return set_dprv_action()" value="' . $dprv_publish_text . '"/></div>');
+		$today_count = 0;	// default value
+		if (get_option('dprv_last_date') == date("Ymd"))
+		{
+			$today_count = intval(get_option('dprv_last_date_count'));
+		}
+		$dprv_subscription_type = get_option('dprv_subscription_type');
+		$today_limit = dprv_daily_limit($dprv_subscription_type);
+		$color = "";
+		if ($today_limit != -1)
+		{
+			if (($today_limit - $today_count) == 1)
+			{
+				$color = "color:orange;";
+			}
+			if (($today_limit - $today_count) < 1)
+			{
+				$color = "color:red;";
+			}
+		}
+		echo ('<div style="width:100%; text-align:right;"><span style="font-size:10px; float:left;' . $color . '">' . __('Digiproved today', 'dprv_cp') . ': ' . $today_count);
+		if ($today_limit != -1)
+		{
+			echo ('/' . $today_limit);
+		}
+		echo ('</span><input name="save" type="submit" class="button-primary" id="publish_dp" style="float:right" tabindex="5" onclick="return set_dprv_action()" value="' . $dprv_publish_text . '"/></div>');
+
 		echo ('<script type="text/javascript">
 				function set_dprv_action()
 				{
@@ -681,6 +706,7 @@ function dprv_digiprove_post($dprv_post_id)
 	if (get_option('dprv_last_date') != date("Ymd"))
 	{
 		update_option('dprv_last_date', date("Ymd"));
+		update_option('dprv_last_date_count', 0);
 	}
 	else
 	{
@@ -688,28 +714,30 @@ function dprv_digiprove_post($dprv_post_id)
 	}
 
 	$today_count += 1;
-	update_option('dprv_last_date_count', $today_count);
+	//update_option('dprv_last_date_count', $today_count);
 
 	$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
 	$dprv_subscription_type = get_option('dprv_subscription_type');
-	if ($today_count > 30)
+	$today_limit = dprv_daily_limit($dprv_subscription_type);
+	if ($today_count > 5)
 	{
-		$today_limit = 30;
+/*
+		$today_limit = 5;//30;
 		switch ($dprv_subscription_type)
 		{
 			case "Personal":
 			{
-				$today_limit = 60;
+				$today_limit = 20;//60;
 				break;
 			}
 			case "Professional":
 			{
-				$today_limit = 250;
+				$today_limit = 100;//250;
 				break;
 			}
 			case "Corporate Light":
 			{
-				$today_limit = 1000;
+				$today_limit = 500;//1000;
 				break;
 			}
 			case "Corporate":
@@ -722,7 +750,7 @@ function dprv_digiprove_post($dprv_post_id)
 				break;
 			}
 		}
-
+*/
 		if ($today_count > $today_limit && $today_limit != -1)
 		{
 			// NOTE - if changing the "Digiprove daily limit" text, also modify  dprv_admin_footer() which relies on this exact text
@@ -788,6 +816,7 @@ function dprv_digiprove_post($dprv_post_id)
 				}
 				// End of API key code
 
+				update_option('dprv_last_date_count', $today_count);
 
 				$dprv_subscription_type = dprv_getTag($certifyResponse, "subscription_type");
 				if ($dprv_subscription_type != null && $dprv_subscription_type != false && $dprv_subscription_type != "")
@@ -844,6 +873,38 @@ function dprv_digiprove_post($dprv_post_id)
 
 	$log->lwrite("finishing dprv_digiprove_post " . $dprv_post_id);
 	return;
+}
+function dprv_daily_limit($dprv_subscription_type)
+{
+	$today_limit = 5;//30;
+	switch ($dprv_subscription_type)
+	{
+		case "Personal":
+		{
+			$today_limit = 20;//60;
+			break;
+		}
+		case "Professional":
+		{
+			$today_limit = 100;//250;
+			break;
+		}
+		case "Corporate Light":
+		{
+			$today_limit = 500;//1000;
+			break;
+		}
+		case "Corporate":
+		{
+			$today_limit = -1;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+	return $today_limit;
 }
 
 function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date_and_time, &$dprv_digital_fingerprint, &$dprv_certificate_url, &$dprv_copyright_year)
@@ -1121,7 +1182,7 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 
 function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subscription_type, $dprv_subscription_expiry, &$dprv_last_time,&$notice)
 {
-	$log = new Logging();  
+	$log = new Logging();
 	global $wp_version, $wpdb;
 
 	$log->lwrite("dprv_certify starts");
@@ -1164,7 +1225,8 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 	}
 	$content_file_names = array();
 	$content_file_fingerprints = array();
-	if (function_exists("hash"))
+	//if (function_exists("hash"))
+	if (function_exists("hash") && $dprv_subscription_type != "Basic")		// Scan for files if permitted
 	{
 		getContentFiles($post_id, $rawContent, $dprv_blog_host, $content_file_names, $content_file_fingerprints);
 	}
@@ -1265,7 +1327,7 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 		}
 		if ($dprv_subscription_type == "Professional" && $file_count > 20)
 		{
-			$notice = " (This post/page contained references to $file_count media files that according to your settings should be Digiproved, but the Personal plan limits this to 20 - the first 20 were processed.)";
+			$notice = " (This post/page contained references to $file_count media files that according to your settings should be Digiproved, but the Professional plan limits this to 20 - the first 20 were processed.)";
 			$file_count = 20;
 		}
 	}
@@ -1333,10 +1395,32 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 	}
 
 	$dprv_html_tags = get_option('dprv_html_tags');
-	if (!is_array($dprv_html_tags))
+
+	if (is_array($dprv_html_tags))
 	{
-		$log->lwrite("dprv_html_tags is not an array");
-		$dprv_html_tags = false;
+		$needScan = false;
+		foreach ($dprv_html_tags as $key=>$value)
+		{
+			//$log->lwrite("key=$key");
+			//$log->lwrite("value=$value");
+			if ($dprv_html_tags[$key]["selected"] == "True")
+			{
+				$needScan = true;
+			}
+		}
+		if ($needScan === false)
+		{
+			$log->lwrite("getContentFiles: no tags selected, return without parsing");
+			update_option('dprv_event', '');						// clear event notice field
+			return;
+		}
+	}
+	else
+	{
+		$log->lwrite("getContentFiles: dprv_html_tags is not an array");
+		update_option('dprv_event', '');						// clear event notice field
+		return;
+		//$dprv_html_tags = false;
 	}
 	$dprv_outside_media = get_option('dprv_outside_media');
 	$t = 0;
@@ -1672,7 +1756,8 @@ function processUrl($url, $dprv_html_tags, $tag, &$content_file_names, &$content
 			if (array_search($file_name,$content_file_names) === false || array_search($file_fingerprint,$content_file_fingerprints) === false)  // prevent duplicate references
 			{
 				$content_file_names[$t] = $file_name;
-				$content_file_fingerprints[$t] = strtoupper(hash("sha256", $file_data));
+				//$content_file_fingerprints[$t] = strtoupper(hash("sha256", $file_data));
+				$content_file_fingerprints[$t] = $file_fingerprint;
 				$log->lwrite("content_file_names[" . $t . "]=" . $content_file_names[$t] . " (from " . $tag . " tag), included because " . $selected_reason);
 				$t++;
 			}
