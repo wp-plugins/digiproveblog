@@ -9,8 +9,8 @@ function dprv_head()
 
 	if ($dprv_frustrate_copy == "Yes")
 	{
-		$dprv_home = get_settings('siteurl');
-		echo ("<script type='text/javascript' src='" . $dprv_home . "/wp-content/plugins/digiproveblog/frustrate_copy.js?v=".DPRV_VERSION."'></script>");
+		//$dprv_home = get_settings('siteurl');
+		echo ("<script type='text/javascript' src='" . WP_PLUGIN_URL . "/digiproveblog/frustrate_copy.js?v=".DPRV_VERSION."'></script>");
 	}
 
 	echo ("
@@ -44,7 +44,7 @@ function dprv_head()
 				} 
 			} 
 		} 
-		function copy_frustrate()
+		function dprv_copy_frustrate()
 		{
 			// Prevent Right-Clicking (entire page)
 			disableRightClick();
@@ -52,11 +52,27 @@ function dprv_head()
 			disableCtrlKeys();
 			disableSelection(document.body);
 		}
-		dprv_addLoadEvent(copy_frustrate);  // Set on protection later
-		");
+
+		// Set up dprv_copy_frustrate to run after load
+		if (window.addEventListener)
+		{
+			window.addEventListener('load', dprv_copy_frustrate, false);	// For modern browsers
+		}
+		else
+		{
+			if (window.attachEvent)
+			{
+				window.attachEvent('onload', dprv_copy_frustrate);			// For older versions of IE
+			}
+			else
+			{
+				dprv_addLoadEvent(dprv_copy_frustrate);						// Do it the old way (should never get here)
+			}
+		}");
 	}
 
 	echo ("
+
 		function DisplayAttributions(attribution_text)
 		{
 			document.getElementById(\"dprv_attribution\").innerHTML = attribution_text;
@@ -363,8 +379,8 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" style="height:' . $dprv_a_height . '; line-height: ' . $dprv_a_height . '; border:0px; padding:0px; margin:0px; float:none; display:inline; text-decoration: none; background:transparent none; line-height:normal; font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . ';">';
 		
-		$dprv_home = get_settings('siteurl');
-		$DigiproveNotice .= '<img src="' . $dprv_home. '/wp-content/plugins/digiproveblog/dp_seal_trans_16x16.png" style="max-width:none !important;' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" border="0" alt=""/>';
+		//$dprv_home = get_settings('siteurl');
+		$DigiproveNotice .= '<img src="' . WP_PLUGIN_URL . '/digiproveblog/dp_seal_trans_16x16.png" style="max-width:none !important;' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" border="0" alt=""/>';
 
 		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-style:normal; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal; padding:0px; padding-left:' . $dprv_notice_pad_left0 . '; vertical-align:' . $dprv_txt_valign . ';margin-bottom:' . $dprv_line_margin . '" ';
 

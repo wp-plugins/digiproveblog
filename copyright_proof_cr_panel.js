@@ -71,7 +71,7 @@ function ToggleCustom()
 		document.getElementById('dprv_license_abstract').style.display="";
 		document.getElementById('dprv_license_url_link').style.display="none";
 		document.getElementById('dprv_license_url_input').style.display="";
-		document.getElementById('dprv_license_input').focus();
+		//document.getElementById('dprv_license_input').focus();
 	}
 	else
 	{
@@ -91,7 +91,7 @@ function ToggleCustom()
 		{
 			document.getElementById('dprv_this_license_label').style.display="none";
 			document.getElementById('dprv_license_type').style.display="";
-			document.getElementById('dprv_license_type').focus();
+			//document.getElementById('dprv_license_type').focus();
 		}
 	}
 }

@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.3
-Stable tag: 1.15
+Tested up to: 3.3.1
+Stable tag: 1.16
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -128,6 +128,12 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 1.16 =
+* Copy-protect functions now work even with themes that use the body onload event
+* Handles situation where plugins are installed in a directory other than wp-content
+* Removed confusing scroll-down of main post-edit page
+* Prevents inappropriate browser auto-completes (was leading to api key problems)
+
 = 1.15 =
 * Performance improvement in finding and fingerprinting files
 * Now shows counter of remaining transaction allowance for today

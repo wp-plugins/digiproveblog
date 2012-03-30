@@ -1394,10 +1394,10 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_tabs_enabled = '; color:#AAAAAA';
 		$dprv_tab_title = ' title="You need to register before using this tab"';
 	}
-	$dprv_home = get_settings('siteurl');
+	//$dprv_home = get_settings('siteurl');
 	print('
 			<div class="wrap" style="padding-top:4px">
-				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="' . $dprv_home. '/wp-content/plugins/digiproveblog/digiprove_logo_278x69.png" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2>  
+				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="' . WP_PLUGIN_URL . '/digiproveblog/digiprove_logo_278x69.png" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2>  
 				<form id="dprv_cp" name="dprv_AnyOldThing" action="'.get_bloginfo('wpurl').'/wp-admin/options-general.php?page=copyright_proof_admin.php" method="post" onsubmit="return SubmitSelected();">
 					<input type="hidden" name="dprv_cp_action" value="dprv_cp_update_settings" />
 						<fieldset class="options">
@@ -1509,7 +1509,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 											print('	<tr><td style="height:6px"></td></tr>
 													<tr id="dprv_user_id_row1">
 														<td style="vertical-align:top"><label for="dprv_user_id" id="dprv_user_id_labelA">'.__('Digiprove User Id: ', 'dprv_cp').'</label><label for="dprv_user_id" id="dprv_user_id_labelB" style="display:none">'.__('Desired Digiprove User Id: ', 'dprv_cp').'</label></td>
-														<td><input name="dprv_user_id" id="dprv_user_id" type="text" value="'.htmlspecialchars(stripslashes($dprv_user_id)).'" onblur="javascript:ScheduleRestorePassword()" onchange="return UserIdChanged();" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
+														<td><input name="dprv_user_id" id="dprv_user_id" type="text" autocomplete="off" value="'.htmlspecialchars(stripslashes($dprv_user_id)).'" onblur="javascript:ScheduleRestorePassword()" onchange="return UserIdChanged();" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
 														<td class="description" id="dprv_email_warning"></td>
 													</tr>
 													<tr id="dprv_user_id_row2"><td style="height:6px"></td></tr>
@@ -1524,18 +1524,18 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													</tr>
 													<tr id="dprv_api_key_row_2"' . $dprv_display_api_row2 . '>
 														<td id="dprv_api_key_caption"></td>
-														<td><input name="dprv_api_key" id="dprv_api_key" type="text" value="'.htmlspecialchars(stripslashes($dprv_api_key)).'" style="margin-left:0px;width:190px"' . $dprv_reg_disabled . '/></td>
+														<td><input name="dprv_api_key" id="dprv_api_key" type="text" autocomplete="off" value="'.htmlspecialchars(stripslashes($dprv_api_key)).'" style="margin-left:0px;width:190px"' . $dprv_reg_disabled . '/></td>
 														<td></td>
 													</tr>
 													<tr id="dprv_password_row1"' . $dprv_display_password_rows . '>
 														<td><label for="dprv_password" id="dprv_password_label">'.__('Select a password: ', 'dprv_cp').'</label></td>
-														<td><input name="dprv_password" id="dprv_password" type="password" value="'.htmlspecialchars(stripslashes($dprv_password)).'" onchange="javascript:SavePassword()" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
+														<td><input name="dprv_password" id="dprv_password" type="password" autocomplete="off" value="'.htmlspecialchars(stripslashes($dprv_password)).'" onchange="javascript:SavePassword()" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
 														<td style="padding-left:5px" class="description" ><a href="javascript:ShowPasswordText()">' .__('Security note', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr id="dprv_password_row2"' . $dprv_display_password_rows . '><td style="height:6px"></td></tr>
 													<tr id="dprv_password_row3"' . $dprv_display_password_rows . '>
 														<td></td>
-														<td><input name="dprv_pw_confirm" id="dprv_pw_confirm" type="password" value="'.htmlspecialchars(stripslashes($dprv_pw_confirm)).'" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
+														<td><input name="dprv_pw_confirm" id="dprv_pw_confirm" type="password" autocomplete="off" value="'.htmlspecialchars(stripslashes($dprv_pw_confirm)).'" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
 														<td class="description">'.__('type the password again.', 'dprv_cp').'</td>
 													</tr>
 													<tr><td style="height:6px"></td>
@@ -1834,7 +1834,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														<td><select name="dprv_license" id="dprv_license" onchange="PreviewLicense()" style="width:300px">'
 																	. dprv_options_html($dprv_licenseIds, $dprv_licenseTypes, "", $dprv_license, "0", __("None","dprv_cp"), $currentMatch) .
 															'</select>
-															<input type="text" id="dprv_custom_license" name="dprv_custom_license" style="display:none; width:300px" />
+															<input type="text" id="dprv_custom_license" name="dprv_custom_license" autocomplete="off" style="display:none; width:300px" />
 														</td>
 														<td id="License_customization"' . $sub_enabled_title . '>
 															<input type="button"' . $sub_enabled_color . ' value="' . __('Add', 'dprv_cp') . '" onclick="AddLicense();" />&nbsp;&nbsp;
@@ -1955,9 +1955,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				</form>' );
 
 	
-	$jsfile = $dprv_home.'/wp-content/plugins/digiproveblog/jscolor.js?v='.DPRV_VERSION;
+	$jsfile = WP_PLUGIN_URL . '/digiproveblog/jscolor.js?v='.DPRV_VERSION;
 	print('<script type="text/javascript" src="' . $jsfile . '"></script>');
-	$jsfile = $dprv_home.'/wp-content/plugins/digiproveblog/copyright_proof_settings.js?v='.DPRV_VERSION;
+	$jsfile =  WP_PLUGIN_URL . '/digiproveblog/copyright_proof_settings.js?v='.DPRV_VERSION;
 	print('<script type="text/javascript" src="' . $jsfile . '"></script>');
 
 	print('<script type="text/javascript">
@@ -1974,7 +1974,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			var dprv_subscription_expiry = "' . $dprv_subscription_expiry . '";
 			var dprv_subscription_expired = "' . $dprv_subscription_expired . '";
 			var dprv_upgrade_link = "' . $dprv_upgrade_link . '";
-			var dprv_home = "' . $dprv_home . '";
+			var dprv_plugin_url = "' . WP_PLUGIN_URL . '";
 			var dprv_last_result = "' . $dprv_last_result . '";
 			var dprv_lastUserId = document.getElementById(\'dprv_user_id\').value;
 			var dprv_lastApiKey = document.getElementById(\'dprv_api_key\').value;

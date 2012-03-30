@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 1.15
+Version: 1.16
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -44,8 +44,8 @@ else
 
 // Declare and initialise global variables:
 global $dprv_port, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id, $dprv_mime_types;
-define("DPRV_VERSION", "1.15");
-define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "api.digiprove.com"
+define("DPRV_VERSION", "1.16");
+define("DPRV_HOST", "www.digiprove.com");       // -> should be set to "www.digiprove.com"
 define("DPRV_SSL", "Yes");                      // -> should be set to "Yes"
 define("DPRV_Log", "No");                       // Set this to "Yes" to generate local log-file (needs write permissions)
 //error_reporting(E_ALL);                       // uncomment this for test purposes
@@ -422,7 +422,7 @@ function dprv_init()
 
 		if ($script_name != "options-general" || strpos($_SERVER['QUERY_STRING'], "copyright_proof_admin.php") === false)
 		{
-			echo "<div id='dprv_reminder' class='updated fade'><p>" . DPRV_REMINDER . "</p></div>";
+			echo "<div id='dprv_reminder' class='updated fade' style='color:red'><p>" . DPRV_REMINDER . "</p></div>";
 			//echo "<div id='dprv_reminder' class='updated fade'><p><strong>".__("Copyright Proof is almost ready.", "dprv_cp")."</strong> ".__("You must <a href=\"options-general.php?page=copyright_proof_admin.php\"><b>Configure Copyright Proof and Register</b></a> to get it working</p></div>", "dprv_cp");
 		}
 	}
@@ -534,7 +534,9 @@ function createUpgradeLink()
 		$protocol = "https://";
 	}
 	//$dprv_upgrade_link = get_settings('siteurl') . '/wp-content/plugins/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&UserId='  . get_option('dprv_user_id') . '&ApiKey=' . get_option('dprv_api_key') . '&Domain=' . $dprv_blog_host . '&UserAgent=Copyright Proof ' . DPRV_VERSION;
-	$dprv_upgrade_link = get_settings('siteurl') . '/wp-content/plugins/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
+	//$dprv_upgrade_link = get_settings('siteurl') . '/wp-content/plugins/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
+	$dprv_upgrade_link = WP_PLUGIN_URL . '/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
+
 	return $dprv_upgrade_link;
 }
 
