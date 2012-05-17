@@ -1,29 +1,29 @@
 //<![CDATA[
 
 // FUNCTIONS TO SUPPORT THE COPYRIGHT/OWNERSHIP PANEL IN EDIT/NEW POST
-function TogglePanel()
+function dprv_TogglePanel()
 {
 	if (document.getElementById('dprv_this_yes').checked == true)
 	{
 		//document.getElementById('dprv_notice_preview').style.display = "";
 		document.getElementById('dprv_copyright_panel_body').style.display = "";
-		if (document.getElementById('publish_dp'))
+		if (document.getElementById('publish_dp_div'))
 		{
-			document.getElementById('publish_dp').style.display="";
+			document.getElementById('publish_dp_div').style.display="";
 		}
 	}
 	else
 	{
 		//document.getElementById('dprv_notice_preview').style.display = "none";
 		document.getElementById('dprv_copyright_panel_body').style.display = "none";
-		if (document.getElementById('publish_dp'))
+		if (document.getElementById('publish_dp_div'))
 		{
-			document.getElementById('publish_dp').style.display="none";
+			document.getElementById('publish_dp_div').style.display="none";
 		}
 	}
 }
 
-function ToggleAttributions()
+function dprv_ToggleAttributions()
 {
 	if (document.getElementById('dprv_all_original_yes').checked == true)
 	{
@@ -37,7 +37,7 @@ function ToggleAttributions()
 	}
 }
 
-function ToggleDefault()
+function dprv_ToggleDefault()
 {
 	if (document.getElementById('dprv_default_license').checked == true)
 	{
@@ -47,8 +47,8 @@ function ToggleDefault()
 		document.getElementById('dprv_license_type').value = dprv_defaultLicenseId;
 		document.getElementById('dprv_license_input').style.display="none";
 		document.getElementById('dprv_this_license_label').innerHTML = dprv_default_licenseType;
-		ToggleCustom();
-		SetLicense();
+		dprv_ToggleCustom();
+		dprv_SetLicense();
 	}
 	else
 	{
@@ -57,7 +57,7 @@ function ToggleDefault()
 	}
 }
 
-function ToggleCustom()
+function dprv_ToggleCustom()
 {
 	if (document.getElementById('dprv_custom_license').checked == true)
 	{
@@ -96,20 +96,20 @@ function ToggleCustom()
 	}
 }
 
-function LicenseChanged()
+function dprv_LicenseChanged()
 {
 	if (document.getElementById('dprv_license_type').value != dprv_defaultLicenseId)
 	{
 		document.getElementById('dprv_default_license').checked = false;
 	}
-	SetLicense();
+	dprv_SetLicense();
 }
 
-function SetLicense()
+function dprv_SetLicense()
 {
 	if (document.getElementById('dprv_license_type').value == 0)
 	{
-		document.getElementById('dprv_this_license_label').innerHTML = "None";
+		document.getElementById('dprv_this_license_label').innerHTML = dprv_literals["None"];
 		document.getElementById('dprv_license_caption_label').innerHTML = "";
 		document.getElementById('dprv_license_abstract_label').innerHTML = "";
 		document.getElementById('dprv_license_url_link').href = "";
@@ -135,5 +135,14 @@ function SetLicense()
 			}
 		}
 	}
+}
+function dprv_DisplayFiles()
+{
+	document.getElementById('dprv_files_panel').style.display='block';
+	document.getElementById('dprv_files_panel').style.zIndex='2';
+}
+function dprv_HideFiles()
+{
+	document.getElementById('dprv_files_panel').style.display='none';
 }
 //]]>

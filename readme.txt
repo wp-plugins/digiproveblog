@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.3.1
-Stable tag: 1.16
+Tested up to: 3.3.2
+Stable tag: 2.00
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -128,6 +128,19 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 2.00 =
+* Refactored to use Digiprove official SDK
+* Bit faster on publish or update - removes some unnecessary content parsing
+* Prevents collapsed borders in digiprove notice
+* Is more resistant to incompatibilities with other plugins and themes
+* Is language-independent
+* Incorporates Dutch version (Thanks to Eddy and Fran Vijfeijken)
+* Eliminated duplicate code generating dprv_blog_host and dprv_wp_host variables
+* Now copes with database prefix change
+* Improved error detection
+* Bug with quotes and doublequotes in right-click message is fixed
+* Detects and handles change of Wordpress db prefix
+
 = 1.16 =
 * Copy-protect functions now work even with themes that use the body onload event
 * Handles situation where plugins are installed in a directory other than wp-content
@@ -144,7 +157,7 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Fixed bug introduced by 1.13 - http failure
 
 = 1.13 =
-* Fixed issue where right-click copy protection was failing with Facebook js
+* Fixed issue where right-click copy protection was failing in combination with Facebook plugin
 
 = 1.12 =
 * Fixed issue where right-click copy protection was failing when another plugin made use of addLoadEvent function
@@ -367,6 +380,9 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Minor bug-fixes
 
 == Upgrade Notice ==
+= 1.2 =
+Significant functional and stability enhancements
+
 = 1.15 =
 Recommended
 
