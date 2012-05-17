@@ -1,8 +1,48 @@
 //<![CDATA[ 
 // FUNCTIONS
 
-function disableSelection(target)
+function dprv_disableSelection(target)
 {
+	function enableInputElements(target)
+	{
+		var inputElements = target.getElementsByTagName("input");
+		for (var i=0; i<inputElements.length; i++)
+		{
+			enableSelection(inputElements[i]);
+		}
+		inputElements = target.getElementsByTagName("textarea");
+		for (var i=0; i<inputElements.length; i++)
+		{
+			enableSelection(inputElements[i]);
+		}
+	}
+	function enableSelection(target)
+	{
+		if (typeof target.style.WebkitUserSelect!='undefined')    // Safari
+		{
+			target.style.WebkitUserSelect='text';
+		}
+	}
+
+	function trapMouseDown(e)
+	{
+		var element
+		if (!e) var e = window.event
+		if (e.target) element = e.target
+		else if (e.srcElement) element = e.srcElement
+		if (element.nodeType == 3) // defeat Safari bug
+		element = element.parentNode
+		var tagname=element.tagName.toUpperCase();
+		if (tagname == "INPUT" || tagname == "TEXTAREA")
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 /*	// MozUserSelect has a bug - Bug 561691 : sub-elements cannot be excepted from the rule
 	if (typeof target.style.MozUserSelect!='undefined')    // Firefox
 	{
@@ -41,53 +81,43 @@ function disableSelection(target)
 	}
 }
 
-function enableInputElements(target)
-{
-	var inputElements = target.getElementsByTagName("input");
-	for (var i=0; i<inputElements.length; i++)
-	{
-		enableSelection(inputElements[i]);
-	}
-	inputElements = target.getElementsByTagName("textarea");
-	for (var i=0; i<inputElements.length; i++)
-	{
-		enableSelection(inputElements[i]);
-	}
-}
-
-function enableSelection(target)
-{
-	if (typeof target.style.WebkitUserSelect!='undefined')    // Safari
-	{
-		target.style.WebkitUserSelect='text';
-	}
-}
-
-function trapMouseDown(e)
-{
-	var element
-	if (!e) var e = window.event
-	if (e.target) element = e.target
-	else if (e.srcElement) element = e.srcElement
-	if (element.nodeType == 3) // defeat Safari bug
-	element = element.parentNode
-	var tagname=element.tagName.toUpperCase();
-	if (tagname == "INPUT" || tagname == "TEXTAREA")
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
 
 
 // FUNCTIONS TO PREVENT RIGHT-CLICK:
 
-function disableRightClick()
+function dprv_no_right_click_message()
 {
+	function htmlspecialchars_decode(encodedString)
+	{
+		var decodedString = encodedString.replace('&amp;', '&');
+		return decodedString.replace('&quot;', '"').replace('&#039;', '\'').replace('&lt;', '<').replace('&gt;','>');
+	}
+	if (dprv_justDisplayed == 0)
+	{
+		if (dprv_noRightClickMessage != "")
+		{
+			alert(htmlspecialchars_decode(dprv_noRightClickMessage));
+			dprv_justDisplayed = 1;
+			setTimeout("dprv_justDisplayed = 0;", 50);
+		}
+	}
+}
+
+function dprv_disableRightClick()
+{
+	function clickNS(e)
+	{
+		if	(document.layers||(document.getElementById&&!document.all))
+		{
+			if (e.which==2||e.which==3)	// Was it a right-click? 
+			{
+				dprv_no_right_click_message();
+				return false;
+			}
+		}
+		return true;
+	}
+
 	if (document.layers)
 	{
 		document.captureEvents(Event.MOUSEDOWN);
@@ -97,45 +127,16 @@ function disableRightClick()
 	{
 		document.onmouseup=clickNS;
 	}
-	document.oncontextmenu=new Function("displayMessage();return false")
+	document.oncontextmenu=new Function("dprv_no_right_click_message();return false");
 }
 
-function clickNS(e)
-{
-	if	(document.layers||(document.getElementById&&!document.all))
-	{
-		if (e.which==2||e.which==3)	// Was it a right-click? 
-		{
-			displayMessage();
-			return false;
-		}
-	}
-	return true;
-}
 
-function displayMessage()
-{
-	if (justDisplayed == 0)
-	{
-		if (noRightClickMessage != "")
-		{
-			alert(htmlspecialchars_decode(noRightClickMessage));
-			justDisplayed = 1;
-			setTimeout("justDisplayed = 0;", 50);
-		}
-	}
-}
 
-function htmlspecialchars_decode(encodedString)
-{
-	var decodedString = encodedString.replace('&amp;', '&');
-	return decodedString.replace('&quot;', '"').replace('&#039;', '\'').replace('&lt;', '<').replace('&gt;','>');
-}
 
 
 
 // FUNCTIONS TO DISABLE CERTAIN CTRL KEY COMBINATIONS:
-function disableCtrlKeys()
+function dprv_disableCtrlKeys()
 {
 	//alert("disableCtrlKeys starts");
 	// onkeypress is not triggered in safari with a ctrl/key combination
@@ -143,6 +144,45 @@ function disableCtrlKeys()
 	// onkeypress in IE gives different keyCode values (seems to be low numbers for ctrl/key and +32 for others) than onkeydown
 	// Set code to suppress ctrl/a and ctrl/u
 	//alert(navigator.userAgent);
+	function trapCtrlKeyCombination(ev)
+	{
+			var key;
+			var isCtrl;
+			//ev=ev||event;
+			// TODO - change this test to checking whether undefined or not to avoid javascript warning message
+			if(window.event)	// This is true in IE and Safari  - Note ev.which also exists in Safari, Opera and Chrome
+			{
+				key = window.event.keyCode;
+				if (key == 17)    // this bit can be removed after testing
+				{
+					return true;
+				}
+				if(window.event.ctrlKey)
+						isCtrl = true;
+				else
+						isCtrl = false;
+
+			}
+			else
+			{
+				key = ev.which;     //firefox
+				if(ev.ctrlKey)
+						isCtrl = true;
+				else
+						isCtrl = false;
+			}
+
+			if(isCtrl)
+			{
+					if (String.fromCharCode(key).toLowerCase() == 'a' || String.fromCharCode(key).toLowerCase() == 'u')
+					{
+						void(0);  // CANCEL LAST EVENT
+						return false;
+					}
+			}
+			return true;
+	}
+
 	if ((navigator.userAgent.indexOf('Safari') != -1) || navigator.userAgent.indexOf('MSIE') != -1)
 	{
 		document.onkeydown=trapCtrlKeyCombination;	// IE or Safari or Chrome
@@ -154,43 +194,5 @@ function disableCtrlKeys()
 	}
 }
 
-function trapCtrlKeyCombination(ev)
-{
-        var key;
-        var isCtrl;
-		//ev=ev||event;
-		// TODO - change this test to checking whether undefined or not to avoid javascript warning message
-        if(window.event)	// This is true in IE and Safari  - Note ev.which also exists in Safari, Opera and Chrome
-        {
-			key = window.event.keyCode;
-			if (key == 17)    // this bit can be removed after testing
-			{
-				return true;
-			}
-			if(window.event.ctrlKey)
-					isCtrl = true;
-			else
-					isCtrl = false;
-
-		}
-        else
-        {
-			key = ev.which;     //firefox
-			if(ev.ctrlKey)
-					isCtrl = true;
-			else
-					isCtrl = false;
-        }
-
-        if(isCtrl)
-        {
-				if (String.fromCharCode(key).toLowerCase() == 'a' || String.fromCharCode(key).toLowerCase() == 'u')
-				{
-					void(0);  // CANCEL LAST EVENT
-					return false;
-				}
-		}
-        return true;
-}
 
 //]]>

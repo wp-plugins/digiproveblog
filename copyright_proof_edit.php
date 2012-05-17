@@ -1,6 +1,8 @@
 <?php
 // FUNCTIONS CALLED WHEN CREATING, OR EDITING POSTS OR PAGES
 
+include_once('copyright_proof_integrity.php');						// Functions for Integrity Checking
+
 function dprv_postbox()
 {
 	$dprv_post_types = explode(',',get_option('dprv_post_types'));
@@ -13,8 +15,17 @@ function dprv_postbox()
 function dprv_show_postbox($post_info)
 {
 	global $wpdb, $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $post_id;
- 	$log = new Logging();  
-	$log->lwrite("dprv_show_postbox starts");  
+ 	$log = new DPLog();  
+	$log->lwrite("dprv_show_postbox starts");
+	print('<script type="text/javascript">
+			//<![CDATA[
+			');
+	print ('
+			var dprv_literals = new Array();
+			dprv_literals["None"] = \'' . __("None", "dprv_cp") . '\';
+			//]]>
+			</script>
+			');
 	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
 	$posDot = strrpos($script_name,'.');
 	if ($posDot != false)
@@ -48,7 +59,7 @@ function dprv_show_postbox($post_info)
 			}
 		}
 	}
-	$dprv_last_digiprove_info = "Last Digiproved: Never";
+	$dprv_last_digiprove_info = __("Last Digiproved:", "dprv_cp") . " " . __("Never", "dprv_cp");
 	if (stripos($post_info->post_content, "Digiprove_Start") !== false)
 	{
 		$dprv_last_digiprove_info = "";		// Don't display anything rather than go parsing the notice
@@ -65,6 +76,7 @@ function dprv_show_postbox($post_info)
 		$log->lwrite("not new post, global post_id = " . $post_id);
 		
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
+		//$sql="SELECT * FROM " .$wpdb->prefix . "dprv_posts WHERE id = " . $post_id;
 		$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
@@ -128,7 +140,24 @@ function dprv_show_postbox($post_info)
 			}
 			if ($dprv_post_info["certificate_id"] != null && $dprv_post_info["certificate_id"] != "")
 			{
-				$dprv_last_digiprove_info = "Last Digiproved on " . $dprv_post_info["cert_utc_date_and_time"] . ", certificate " . $dprv_post_info["certificate_id"];
+				$dprv_last_digiprove_info = __("Last Digiproved:", "dprv_cp") . " " . $dprv_post_info["cert_utc_date_and_time"] . ", " . __("certificate", "dprv_cp") . " " . $dprv_post_info["certificate_id"];
+/*
+				$dprv_last_digiprove_info .= " fingerprint=" . $dprv_post_info["digital_fingerprint"];
+				$digital_fingerprint = "";
+				$content = $post_info->post_content;
+				$rawContent = dprv_getRawContent($content, $digital_fingerprint);
+				if ($digital_fingerprint != "")
+				{
+					if ($digital_fingerprint == $dprv_post_info["digital_fingerprint"])
+					{
+						$dprv_last_digiprove_info .= "<br/>" . __("STATUS:", "dprv_cp") . " <span style=\"color:green; font-weight:bold\">HTML Verified OK - No Tamper Evident</span>";
+					}
+					else
+					{
+						$dprv_last_digiprove_info .= "<br/>" . __("STATUS:", "dprv_cp") . " <span style=\"color:red; font-weight:bold\">HTML Tamper Warning</span>";
+					}
+				}
+*/
 			}
 		}
 	}
@@ -186,24 +215,67 @@ function dprv_show_postbox($post_info)
 		}
 	}
 	$a = "<table style='padding:6px;  padding-top:0px; width:100%'><tbody>";
-	$a .= "<tr><td style='width:160px; height:30px'>Digiprove this " . $post_type_label . "</td><td style='width:300px'><input type='radio' id='dprv_this_yes' name='dprv_this' value='Yes'" . $dprv_this_yes_checked . " onclick='TogglePanel()'/>" . __("Yes", "dprv_cp") . "&nbsp;&nbsp;&nbsp;&nbsp;<input type='radio' id='dprv_this_no' name='dprv_this' value='No'" . $dprv_this_no_checked . " onclick='TogglePanel()'/>" . __("No", "dprv_cp") . "</td><td colspan='2'>" . $dprv_last_digiprove_info . "</td></tr>";
-	$a .= "</tbody></table>";
+	$a .= "<tr><td style='width:190px; height:30px'>" . sprintf(__("Digiprove this %s", "dprv_cp"), $post_type_label) . ":</td>";
+	$a .= "<td style='width:280px'><input type='radio' id='dprv_this_yes' name='dprv_this' value='Yes'" . $dprv_this_yes_checked . " onclick='dprv_TogglePanel()'/>" . __("Yes", "dprv_cp") . "&nbsp;&nbsp;&nbsp;&nbsp;<input type='radio' id='dprv_this_no' name='dprv_this' value='No'" . $dprv_this_no_checked . " onclick='dprv_TogglePanel()'/>" . __("No", "dprv_cp") . "</td>";
+	$a .= "<td colspan='2'>" . $dprv_last_digiprove_info;
+	/*
+	if (strpos($dprv_last_digiprove_info, "Never") === false)
+	{
+		$dprv_blog_url = parse_url(get_option('home'));
+		$dprv_blog_host = $dprv_blog_url['host'];
+		$dprv_wp_host = "";		// default
+
+		$dprv_wp_url = parse_url(get_option('siteurl'));
+		$dprv_wp_host = $dprv_wp_url['host'];
+		if (trim($dprv_blog_host) == "")
+		{
+			$dprv_blog_host = $dprv_wp_host;
+		}
+		$credentials = array("user_id" => get_option('dprv_user_id'), "domain_name" => $dprv_blog_host, "api_key" => get_option('dprv_api_key'), "password" => get_option('dprv_password'));
+		$user_agent = "Copyright Proof " . DPRV_VERSION;
+		$verify_result = digiprove::verify($error_message, $credentials, $dprv_post_info["certificate_id"], $post_info->post_content, $digiproved_content, null, $user_agent);
+		if ($error_message != "")
+		{
+			$a .= "<br/>" . __("Encountered a problem while trying to verify content:","dprv_cp") . " " . $error_message;
+		}
+		else
+		{
+			if (intval($verify_result["result_code"]) > 209)
+			{
+				$a .= "<br/><span style='color:red'>" . $verify_result["result"];
+				if ($verify_result["notes"] != "")
+				{
+					$a .= "; " . $verify_result["notes"];
+				}
+				$a .= "</span>";
+			}
+			else
+			{
+				$a .= "<br/>" . $verify_result["result"];
+			}
+		}
+		$a .= "<br/>" . cian_eval($verify_result);
+	}
+	*/
+	$a .= "</td></tr></tbody></table>";
 
 	$a .= "<table id='dprv_copyright_panel_body' style='padding:6px; padding-top:0px; width:100%'><tbody>";
-	$a .= "<tr><td style='width:160px;'>Is content all yours?</td><td style='width:300px'><input type='radio' id='dprv_all_original_yes' name='dprv_all_original' value='Yes'" . $dprv_all_original_yes_checked . " onclick='ToggleAttributions()'/>" . __("Yes", "dprv_cp") . "&nbsp;&nbsp;&nbsp;&nbsp;<input type='radio' id='dprv_all_original_no' name='dprv_all_original' value='No'" . $dprv_all_original_no_checked . " onclick='ToggleAttributions()'/>" . __("No", "dprv_cp") . "</td><td style='width:110px'></td><td style='min-width:110px'></td></tr>";
+	$a .= "<tr><td style='width:190px;'>" . __("Is content all yours?", "dprv_cp") . "</td>";
+	$a .= "<td style='width:280px'><input type='radio' id='dprv_all_original_yes' name='dprv_all_original' value='Yes'" . $dprv_all_original_yes_checked . " onclick='dprv_ToggleAttributions()'/>" . __("Yes", "dprv_cp") . "&nbsp;&nbsp;&nbsp;&nbsp;<input type='radio' id='dprv_all_original_no' name='dprv_all_original' value='No'" . $dprv_all_original_no_checked . " onclick='dprv_ToggleAttributions()'/>" . __("No", "dprv_cp") . "</td>";
+	$a .= "<td style='width:140px'></td><td style='min-width:110px'></td></tr>";
 	$a .= "<tr id='dprv_attributions_0' style='display:" . $dprv_attributionDisplay . "'><td style='height:6px'></td></tr>";
 	$a .= "<tr id='dprv_attributions_1' style='display:" . $dprv_attributionDisplay . "'><td valign='top'>" . __("Acknowledgements / Attributions", "dprv_cp") . "</td><td colspan='3'><textarea id='dprv_attributions' name='dprv_attributions' rows='1' style='width:100%'>" . htmlspecialchars(stripslashes($dprv_this_attributions), ENT_QUOTES, 'UTF-8') . "</textarea></td></tr>";
 	
 	$a .= "<tr><td style='height:6px'></td></tr>";
-	$a .= "<tr><td style='height:25px'>" . __("License Type", "dprv_cp") . "</td><td>";
+	$a .= "<tr><td style='height:25px'>" . __("License Type", "dprv_cp") . ":</td><td>";
 	$a .= "<span id='dprv_this_license_label' style='display:" . $labelDisplay . "'>" . htmlspecialchars(stripslashes($dprv_this_license_type), ENT_QUOTES, 'UTF-8') . "</span>";
-	$a .= "<select id='dprv_license_type' name='dprv_license_type' style='width:280px;display:" . $selectDisplay . "' onchange='LicenseChanged();'>";
+	$a .= "<select id='dprv_license_type' name='dprv_license_type' style='width:280px;display:" . $selectDisplay . "' onchange='dprv_LicenseChanged();'>";
 	$selected="";
 	if ($dprv_this_license =="0")
 	{
 			$selected=" selected='selected'";
 	}
-	$a .= "<option value='0'" . $selected . ">None</option>";
+	$a .= "<option value='0'" . $selected . ">" . __("None", "dprv_cp") . "</option>";
 	for ($i=0;$i<count($dprv_licenseIds);$i++)
 	{
 		$selected="";
@@ -216,11 +288,11 @@ function dprv_show_postbox($post_info)
 	$a .= "</select>";
 	$a .= "<input type='text' id='dprv_license_input' name='dprv_license_input' value='" .  htmlspecialchars(stripslashes($dprv_this_license_type), ENT_QUOTES, 'UTF-8') . "' style='width:280px; display:" . $inputDisplay . "' /></td>";
 	$a .= "<td>";
-	$a .= "<input type='checkbox' id='dprv_default_license' name='dprv_default_license' onclick='ToggleDefault();'" . $default_checked . "/>&nbsp;" . __("Use Default", "dprv_cp") . "</td><td>";
-	$a .= "<input type='checkbox' id='dprv_custom_license' name='dprv_custom_license' onclick='ToggleCustom();'" . $custom_checked . "/>&nbsp;" . __("Custom&nbsp;for&nbsp;this&nbsp;post", "dprv_cp");
+	$a .= "<input type='checkbox' id='dprv_default_license' name='dprv_default_license' onclick='dprv_ToggleDefault();'" . $default_checked . "/>&nbsp;" . __("Use Default", "dprv_cp") . "</td><td>";
+	$a .= "<input type='checkbox' id='dprv_custom_license' name='dprv_custom_license' onclick='dprv_ToggleCustom();'" . $custom_checked . "/>&nbsp;" . __("Custom&nbsp;for&nbsp;this&nbsp;post", "dprv_cp");
 	$a .= "</td></tr>";
 	$a .= "<tr><td style='height:6px'></td></tr>";
-	$a .= "<tr><td>" . __("License Caption", "dprv_cp") . "</td>";
+	$a .= "<tr><td>" . __("License Caption", "dprv_cp") . ":</td>";
 	$a .= "<td colspan='3'>";
 	$a .= "<select id='dprv_license_caption' name='dprv_license_caption' style='width:200px; display:" . $inputDisplay . "'>";
 	$selected = "";
@@ -241,13 +313,13 @@ function dprv_show_postbox($post_info)
 	
 	
 	$a .= "<tr><td style='height:6px'></td></tr>";
-	$a .= "<tr><td valign='top'>" . __("License Abstract", "dprv_cp") . "</td>";
+	$a .= "<tr><td valign='top'>" . __("License Abstract", "dprv_cp") . ":</td>";
 	$a .= "<td colspan='3'>";
 	$a .= "<textarea id='dprv_license_abstract' name='dprv_license_abstract' rows='2' style='width:100%; display:" . $inputDisplay . "'>" . htmlspecialchars(stripslashes($dprv_this_license_abstract), ENT_QUOTES, 'UTF-8') . "</textarea>"; 	
 	$a .= "<span id='dprv_license_abstract_label' style='width:100%; display:" . $other_labelDisplay . "'>" . htmlspecialchars(stripslashes($dprv_this_license_abstract), ENT_QUOTES, 'UTF-8') . "</span>";
 	$a .= "</td></tr>";
 	$a .= "<tr><td style='height:6px'></td></tr>";
-	$a .= "<tr><td>" . __("License URL", "dprv_cp") . "</td><td colspan='3'>";
+	$a .= "<tr><td>" . __("License URL", "dprv_cp") . ":</td><td colspan='3'>";
 	$a .= "<input id='dprv_license_url_input' name='dprv_license_url_input' value='" . htmlspecialchars(stripslashes($dprv_this_license_url), ENT_QUOTES, 'UTF-8') . "' style='width:100%;display:" . $inputDisplay . "'/>";
 	$a .= "<a id='dprv_license_url_link' name='dprv_license_url_link' href='" . $dprv_this_license_url . "' target='_blank' style='display:" . $other_labelDisplay . "'>" . htmlspecialchars(stripslashes($dprv_this_license_url), ENT_QUOTES, 'UTF-8') . "</a>";
 	$a .= "</td></tr>";
@@ -262,15 +334,246 @@ function dprv_show_postbox($post_info)
 	echo ("<script type='text/javascript'>
 				<!--
 				// These functions all contained in copyright_proof_cr_panel.js (loaded just above)
-				TogglePanel();
-				ToggleAttributions();
-				ToggleDefault();
-				SetLicense();
-				ToggleCustom();
+				dprv_TogglePanel();
+				dprv_ToggleAttributions();
+				dprv_ToggleDefault();
+				dprv_SetLicense();
+				dprv_ToggleCustom();
 				//-->
 			</script>");
 	return $post_info;
 }
+
+function dprv_verify_box()
+{
+	global $wpdb, $post, $post_id;
+	$log = new DPLog();  
+	$dprv_post_types = explode(',',get_option('dprv_post_types'));
+	if (array_search($post->post_type, $dprv_post_types) === false)
+	{
+		return;
+	}
+	$post_type_label = $post->post_type; //default value
+	if ($post->post_type == "page")
+	{
+		$can_publish = current_user_can("publish_pages");
+		$post_type_label = __("page", "dprv_cp"); 
+	}
+	else
+	{
+		$can_publish = current_user_can("publish_posts");
+		if ($post->post_type == "post")
+		{
+			$post_type_label = __("post", "dprv_cp"); 
+		}
+	}
+	if (!isset($post_id))
+	{
+		$log->lwrite("post id not set, using post");
+		$dprv_post_id = $post->ID;
+	}
+	else
+	{
+		$dprv_post_id = $post_id;
+	}
+
+	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+	//$wpdb->show_errors();
+	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
+	{
+		$dprv_verify_text = "default";
+		if (in_array( $post->post_status, array('publish', 'future', 'private')) && 0 != $post->ID && (get_option('dprv_html_integrity') == "Yes" || get_option('dprv_files_integrity') == "Yes"))
+		{
+			echo ('<div class="misc-pub-section" style="height:auto; overflow:auto;border-top-color:#DFDFDF">');
+			if (($dprv_post_info["certificate_id"] != null && $dprv_post_info["certificate_id"] != "") || ($dprv_post_info["last_time_updated"] != null && $dprv_post_info["last_fingerprint"] != ""))
+			{
+				echo ('<div style="margin-bottom:7px; width:85%; text-align:center;font-style:italic; font-weight:bold;border-bottom: 1px solid #FFFFFF; float:left">' . __('Digiprove Integrity Check', 'dprv_cp') . '</div><div style="width:14%; padding-left:0px; float:right"><a href="javascript:alert(\'' . __('In Digiprove Integrity-checking panel, hold mouse over message for further information', 'dprv_cp') . '\')" title="' . __('In Digiprove Integrity-checking panel, hold mouse over message for further information', 'dprv_cp') . '">' . __("hint", "dprv_cp") . '</a></div>');
+
+				$dprv_last_update_timestamp = "";
+				$dprv_last_digital_fingerprint = "";
+				if ($dprv_post_info["last_time_updated"] != null)
+				{
+					$log->lwrite("dprv_post_info[last_time_updated] = " . $dprv_post_info["last_time_updated"]);
+					$dprv_last_digital_fingerprint = $dprv_post_info["last_fingerprint"];
+					$dprv_last_update_timestamp = $dprv_post_info["last_time_updated"];
+				}
+				else
+				{
+					$log->lwrite("dprv_post_info[last_time_updated] == null");
+					$dprv_last_digital_fingerprint = $dprv_post_info["digital_fingerprint"];
+					if ($dprv_post_info["last_time_digiproved"] != null)
+					{
+						$dprv_last_update_timestamp = $dprv_post_info["last_time_digiproved"];
+					}
+					else
+					{
+						$dprv_last_update_timestamp = strtotime($dprv_post_info["cert_utc_date_and_time"]);
+					}
+				}
+				//$log->lwrite("last modified time: " . $dprv_last_update_time . ", = timestamp: " . $dprv_last_update_timestamp . ", = " . date("Y-m-d h:i:s T", $dprv_last_update_timestamp));
+
+				echo ('<div style="width:46%;float:left;border-right:1px solid #DFDFDF"><div style="text-align:center;font-style:italic;font-weight:bold">HTML</div>');
+ 				$digital_fingerprint = "";
+				$content = $post->post_content;
+				$content = dprv_getRawContent($content, $digital_fingerprint);
+				if ($digital_fingerprint != "")
+				{
+					if (get_option('dprv_html_integrity') == "Yes")
+					{
+						if ($digital_fingerprint == $dprv_post_info["digital_fingerprint"])
+						{
+							$dprv_integrity_message = "<div style=\"color:green\" title=\"" . sprintf(__("The HTML in this %s has not been altered since last Digiprove certification", "dprv_cp"), $post_type_label) . "\">" . __("HTML Verified OK", "dprv_cp") . "</div>";
+						}
+						else
+						{
+							if ($digital_fingerprint == $dprv_post_info["last_fingerprint"])
+							{
+								$dprv_integrity_message = "<div style=\"color:green\" title=\"" . sprintf(__("The HTML in this %s has not been altered from outside Wordpress", "dprv_cp"), $post_type_label) . "\">" . __("HTML Verified OK", "dprv_cp") . "</div> " . __("(but last update was not Digiproved)", "dprv_cp");
+							}
+							else
+							{
+								$dprv_integrity_message = "<div style=\"color:red; font-weight:bold;\" title=\"" . sprintf(__("The HTML in this %s appears to have been changed from outside Wordpress", "dprv_cp"), $post_type_label) . "\">" . __("HTML Tamper Alert", "dprv_cp") . "</div>";
+								
+								// if last wp modified time was more than 5 seconds after last update noted by this plugin
+								// make the discrepancy a warning rather than a Red Tamper Alert (could be that this plugin was deactivated for a period)
+								$dprv_wp_last_modified_time = strtotime($post->post_modified_gmt . " GMT");
+								if (($dprv_wp_last_modified_time - $dprv_last_update_timestamp) > 5)
+								{
+									$dprv_integrity_message = "<div style=\"color:orange; font-weight:bold;\" title=\"" . sprintf(__("The HTML in this %s has been changed without Digiprove integrity checking - check whether it is correct", "dprv_cp"), $post_type_label) . "\">" . __("HTML Change Warning", "dprv_cp") . "</div>";
+								}
+							}
+						}
+						echo ($dprv_integrity_message);
+					}
+					else
+					{
+						echo ('<div title="' . __('Your settings indicate no HTML integrity checking', 'dprv_cp') . '">' . __("Integrity not checked", "dprv_cp") . '</div>');
+					}
+				}
+				else
+				{
+					echo ('<div title="' . __('Cannot calculate digital fingerprint of your content; try upgrading PHP', 'dprv_cp') . '">' . __("Integrity not checked", "dprv_cp") . '</div>');
+				}
+				echo '</div><div style="width:51%;float:right;padding-left:5px"><div style="font-style:italic; font-weight:bold; text-align:center">' . __("Files", "dprv_cp") . '</div>';
+
+				if (function_exists("hash"))
+				{					
+					if (get_option('dprv_files_integrity') == "Yes")
+					{
+						if ($dprv_post_info["last_time_digiproved"] != null && $dprv_post_info["last_time_digiproved"] == $dprv_post_info["last_time_updated"] )
+						{
+							global $dprv_blog_host;
+							// TODO: make this a global or a define
+							//$dprv_blog_url = parse_url(get_option('home'));
+							//$dprv_blog_host = $dprv_blog_url['host'];
+							//$dprv_wp_host = "";		// default
+
+							//$dprv_wp_url = parse_url(get_option('siteurl'));
+							//$dprv_wp_host = $dprv_wp_url['host'];
+							//if (trim($dprv_blog_host) == "")
+							//{
+							//	$dprv_blog_host = $dprv_wp_host;
+							//}
+							$dprv_integrity_message = __("File Integrity Unknown", "dprv_cp");
+
+							dprv_getContentFiles($dprv_post_id, $content, $content_files, $content_file_names, 50, $file_count, false);
+							if ($file_count > 0)
+							{
+								$log->lwrite("file count = " . $file_count . ", count(content_files) = " . count($content_files) . ", count(content_file_names) = " . count($content_file_names));
+								//if (Digiprove::parseContentFiles($error_message, $content_files, $content_file_names, $content_file_fingerprints, $content_file_table))
+								if (Digiprove::parseContentFiles($error_message, $content_files, $content_file_table))
+								{
+									$log->lwrite("file count = " . $file_count . ", count(content_file_table) = " . count($content_file_table));
+									if (dprv_verifyContentFiles($error_message, $dprv_post_id, $content_file_table, $match_results))
+									{
+										$log->lwrite("file count = " . $file_count . ", count(match_results) = " . count($match_results));
+										$file_integrity_detail = "";
+										if (is_array($match_results))
+										{
+											$comma = "";
+											foreach ($match_results as $filename=>$status)
+											{
+
+												$file_integrity_detail .= $comma . $filename . ": " . $status;
+												$comma = ", \n";
+											}
+										}
+										$dprv_integrity_message = sprintf(__("%s files Verified OK", "dprv_cp"), $file_count);
+										echo ("<div style=\"color:green; float:left\" title=\"" . $file_integrity_detail . "\">" . $dprv_integrity_message . "</div>");
+									}
+									else
+									{
+										$dprv_integrity_message = sprintf(__("%s files - Tamper Warning", "dprv_cp"), $file_count);
+										echo ("<div style=\"color:red; font-weight:bold;\" title=\"" . $error_message . "\" onmouseover=\"dprv_DisplayFiles()\" onmouseout=\"dprv_HideFiles()\">" . $dprv_integrity_message . "</div>");
+										echo ('<table style="position: absolute; display: none; font-family: Tahoma,MS Sans Serif; font-style: normal; font-size: 11px; font-weight: normal; color: rgb(99, 99, 99); border: 1px solid rgb(187, 187, 187); float: none; max-width: 640px; text-decoration: none; letter-spacing: normal; line-height: 16px; vertical-align: 1px; padding: 0px; background: none repeat scroll 0% 0% rgb(255, 255, 255); z-index: 2;" id="dprv_files_panel"><tbody>');
+
+										foreach ($match_results as $filename=>$status)
+										{
+											//$dprv_integrity_message = $filename . ": " . $status;
+											if ($status == __("Matched", "dprv_cp"))
+											{
+												echo ("<tr><td style=\"vertical-align:top\">" . $filename . "</td><td style=\"vertical-align:top\">" . $status . "</td></tr>");
+											}
+											else
+											{
+												echo ("<tr style=\"color:red; vertical-align:top\"><td>" . $filename . "</td><td style=\"vertical-align:top\">" . $status . "</td></tr>");
+											}
+										}
+										echo ('</tbody></table>');
+									}
+								}
+								else
+								{
+									//echo (__("File Integrity not checked") . ": " . $error_message);
+									echo ('<div title="' . $error_message . '">' . __("Integrity not checked", "dprv_cp") . '</div>');
+								}
+							}
+							else
+							{
+								//echo (__("# files: ") . $file_count . ", content(" . strlen($content) . ") begins with <xmp>" . substr($content,0,40) . "</xmp>");
+								echo ('<div title="' . __('Either no files referenced from your content, or none that your settings indicate should be Digiproved', 'dprv_cp') . '">' . __("Integrity not checked", "dprv_cp") . '</div>');
+							}
+						}
+						else
+						{
+							//echo (__("File Integrity checking skipped, has been updated since last Digiprove"));
+							echo ('<div title="' . __('This content has been updated since last Digiprove certification, so cannot check file integrity', 'dprv_cp') . '">' . __("Integrity not checked", "dprv_cp") . '</div>');
+						}
+					}
+					else
+					{
+						echo ('<div title="' . __('Your settings indicate no file integrity checking', 'dprv_cp') . '">' . __("Integrity not checked", "dprv_cp") . '</div>');
+					}
+				}
+				else
+				{
+					echo ('<div title="' . __('Cannot calculate digital fingerprints of your files; try upgrading PHP', 'dprv_cp') . '">' . __("Integrity not checked", "dprv_cp") . '</div>');
+				}
+				echo '</div>';	// end of Files column
+			}
+			if ($can_publish && $dprv_post_info["last_time_updated"] == $dprv_post_info["last_time_digiproved"])
+			{
+				$dprv_verify_text = __('Check Certification Online', 'dprv_cp');
+				echo ('<div style="text-align:center">');
+				echo ('<input name="dprv_verify_action" type="hidden" id="dprv_verify_action" value="No" />');
+				echo ('<input type="submit" class="preview button" value="' . $dprv_verify_text . '" tabindex="6" onclick="return set_dprv_verify()" style="float:none; margin-top:7px"/>');
+				echo ('<script type="text/javascript">
+						function set_dprv_verify()
+						{
+							document.getElementById("dprv_verify_action").value = "Yes";
+							document.getElementById("publish").click();
+							return false;
+						}
+					</script>');
+				echo ('</div>');
+			}
+			echo ('</div>');
+		}
+	}		
+}
+
 
 function dprv_add_digiprove_submit_button()
 {
@@ -319,6 +622,7 @@ function dprv_add_digiprove_submit_button()
 	
 	if ($dprv_publish_text != __('Digiprove &amp; Submit for Review', 'dprv_cp'))    // At least for now, don't have Digiproving of contributor submissions
 	{
+
 		$today_count = 0;	// default value
 		if (get_option('dprv_last_date') == date("Ymd"))
 		{
@@ -338,13 +642,13 @@ function dprv_add_digiprove_submit_button()
 				$color = "color:red;";
 			}
 		}
-		echo ('<div style="width:100%; text-align:right;"><span style="font-size:10px; float:left;' . $color . '">' . __('Digiproved today', 'dprv_cp') . ': ' . $today_count);
+		echo ('<div id="publish_dp_div" style="height: 28px;width:100%; text-align:right;"><span style="font-size:10px;float:left;' . $color . '">' . __('Digiproved today', 'dprv_cp') . ': ' . $today_count);
 		if ($today_limit != -1)
 		{
 			echo ('/' . $today_limit);
 		}
 		echo ('</span><input name="save" type="submit" class="button-primary" id="publish_dp" style="float:right" tabindex="5" onclick="return set_dprv_action()" value="' . $dprv_publish_text . '"/></div>');
-
+		
 		echo ('<script type="text/javascript">
 				function set_dprv_action()
 				{
@@ -354,15 +658,9 @@ function dprv_add_digiprove_submit_button()
 				}
 				function renameButton(newval)
 				{
-					if (newval == "Schedule")
-					{
-						document.getElementById("publish_dp").value = "' . __('Digiprove & Schedule', 'dprv_cp') . '";
-					}
-					else
-					{
-						document.getElementById("publish_dp").value = newval + "' . __(' & Digiprove', 'dprv_cp') . '";
-					}
+					document.getElementById("publish_dp").value = newval + "' . __(' & Digiprove', 'dprv_cp') . '";
 				}
+
 				// TODO: Find a less clunky way to do this
 				// Trace JS code which changes value of publish element (i.e. when user chooses a future publication
 				if (navigator.userAgent.indexOf("MSIE") == -1)
@@ -416,7 +714,7 @@ function dprv_parse_post ($data, $raw_data)
 {
 	//global $wpdb, $dprv_digiprove_this_post, $post_id, $post_ID;
 	global $wpdb, $dprv_digiprove_this_post;
-	$log = new Logging();  
+	$log = new DPLog();  
 	$log->lwrite("dprv_parse_post starts"); 
 	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
 	$posDot = strrpos($script_name,'.');
@@ -486,25 +784,32 @@ function dprv_parse_post ($data, $raw_data)
 	{
 		$log->lwrite("dprv_parse_post not starting - digiprove_this_post set to No for post Id " . $dprv_post_id);
 		if ($dprv_post_id != -1)
-		{
+		{  
 			$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+			//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 			//$wpdb->show_errors();
 			$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-			$log->lwrite("count(dprv_post_info) = " . count($dprv_post_info));
+			//$log->lwrite("count(dprv_post_info) = " . count($dprv_post_info));	// array will contain one element for each column of row
+
 			if (count($dprv_post_info) == 0)
 			{
-				// create record
+				// create record 
+				//if (false === $wpdb->insert($wpdb->prefix . "dprv_posts", array('digiprove_this_post'=>false, 'this_all_original'=>true, 'using_default_license'=>true, 'id'=>$dprv_post_id), array('%f','%f')))
 				if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>false, 'this_all_original'=>true, 'using_default_license'=>true, 'id'=>$dprv_post_id), array('%f','%f')))
 				{
-					update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id);
+					//update_option('dprv_event', date("Ymd") . ': error ' . $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id);
+					$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id;
+					dprv_record_event($dprv_this_event);
 				}
 			}
 			else
 			{
-				//$wpdb->show_errors();
 				if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%f', '%f'))
+				//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%f', '%f'))
 				{
-					update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id);
+					//update_option('dprv_event', date("Ymd") . ': error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id);
+					$dprv_this_event = 'error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id;
+					dprv_record_event($dprv_this_event);
 				}
 
 			}
@@ -528,7 +833,7 @@ function dprv_parse_post ($data, $raw_data)
 	if ($dprv_publish_dp_action == "No")
 	{
 		$log->lwrite("dprv_parse_post ending after writing copyright panel details but before the Digiproving bit - user selected publish/update without Digiprove for post Id " . $dprv_post_id);
-		update_option('dprv_last_result', '');
+		//update_option('dprv_last_result', '');
 		return $data;
 	}
 
@@ -540,6 +845,7 @@ function dprv_parse_post ($data, $raw_data)
 	{
 		$dprv_new_certificate_id = false;
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+		//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
@@ -551,7 +857,7 @@ function dprv_parse_post ($data, $raw_data)
 		// If (as expected) nothing yet on db, record the information from the notice into the db 
 		if ($dprv_new_certificate_id == false || $dprv_new_certificate_id == "")
 		{
-			$dprv_event = get_option('dprv_event');
+			//$dprv_event = get_option('dprv_event');
 			if (count($dprv_post_info) > 0)
 			{
 				if ($dprv_post_info["first_year"] == null)
@@ -564,16 +870,22 @@ function dprv_parse_post ($data, $raw_data)
 				}
 				//$wpdb->show_errors();
 				if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year)), array('id'=>$dprv_post_id)))
+				//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year)), array('id'=>$dprv_post_id)))
 				{
-					update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' writing old notice ' . $dprv_post_id . ' to db');
+					//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' writing old notice ' . $dprv_post_id . ' to db');
+					$dprv_this_event = 'error ' . $wpdb->last_error . ' writing old notice ' . $dprv_post_id . ' to db';
+					dprv_record_event($dprv_this_event);
 				}
 			}
 			else
 			{	
 				//$wpdb->show_errors();
-				if (false === $wpdb->insert(get_option('dprv_prefix') . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year))))
+				if (false === $wpdb->insert(get_option('dprv_prefix') . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id,   'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year))))
+				//if (false === $wpdb->insert($wpdb->prefix . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year))))
 				{
-					update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting old notice to db');
+					//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting old notice to db');
+					$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting old notice to db';
+					dprv_record_event($dprv_this_event);
 				}
 			}
 		}
@@ -586,10 +898,11 @@ function dprv_parse_post ($data, $raw_data)
 function dprv_digiprove_post($dprv_post_id)
 {
 	// This function executes after the post has been created/updated and we have a post id
-	// So we can read copyright options (or default if none there) and Digiprove content if appropriate
-	// Also record details of Digiprove action
+	// So we can read copyright options (or default if none there)
+	// Digiprove content if appropriate and record details of Digiprove action
+	// Otherwise record dingerprint and timestamp of html content for integrity checking 
 	
-	$log = new Logging();  
+	$log = new DPLog();  
 	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
 	$posDot = strrpos($script_name,'.');
 	if ($posDot != false)
@@ -632,7 +945,6 @@ function dprv_digiprove_post($dprv_post_id)
 		return;
 	}
 
-
 	// Doing this check because of situation where if an attachment is referred to within the content,
 	// action hook wp_insert_post gets fired twice with identical variables.
 	// 1st time: edit_post calls wp_update_post calls wp_insert_post triggers action hook wp_insert_post
@@ -649,6 +961,7 @@ function dprv_digiprove_post($dprv_post_id)
 		}
 	}
 
+	$content = trim($post_record->post_content);
 	$dprv_post_types = explode(',',get_option('dprv_post_types'));
 	if (array_search($post_record->post_type, $dprv_post_types) === false)
 	{
@@ -661,18 +974,14 @@ function dprv_digiprove_post($dprv_post_id)
 		$log->lwrite("dprv_digiprove_post not starting because user not registered yet");
 		return;
 	}
-	$content = trim($post_record->post_content);
-	if (strlen(trim($content)) == 0)
-	{
-		$log->lwrite("dprv_digiprove_post not starting because content is empty");
-		return;
-	}
 
+	// TODO: Change this to not return, but just skip Digiproving part
 	$dprv_publish_dp_action = $_POST['dprv_publish_dp_action'];
 	if ($dprv_publish_dp_action == "No")
 	{
 		$log->lwrite("dprv_digiprove_post not starting - user selected publish/update without Digiprove for post Id " . $dprv_post_id);
-		update_option('dprv_last_result', '');
+		dprv_record_non_dp_action($dprv_post_id, $content);
+		// Test whether commenting out below causes spurious messages, if so, restore		//update_option('dprv_last_result', '');
 		return;
 	}
 
@@ -680,7 +989,9 @@ function dprv_digiprove_post($dprv_post_id)
 	if ($dprv_digiprove_this_post == "No")
 	{
 		$log->lwrite("dprv_digiprove_post not starting - digiprove_this_post set to No for post Id " . $dprv_post_id);
-		update_option('dprv_last_result', '');
+		dprv_record_non_dp_action($dprv_post_id, $content);
+		// Test whether commenting out below causes spurious messages, if so, restore
+		//update_option('dprv_last_result', '');
 		return;
 	}
 
@@ -689,6 +1000,7 @@ function dprv_digiprove_post($dprv_post_id)
 		$log->lwrite("dprv_digiprove_this_post = " . $dprv_digiprove_this_post);
 		global $wpdb;
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+		//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
@@ -696,10 +1008,20 @@ function dprv_digiprove_post($dprv_post_id)
 			if ($dprv_post_info["digiprove_this_post"] == false)
 			{
 				$log->lwrite("dprv_digiprove_post not starting - recorded value for digiprove_this_post set to false for post Id " . $dprv_post_id);
-				update_option('dprv_last_result', '');
+				// Test whether commenting out below causes spurious messages, if so, restore
+				//update_option('dprv_last_result', '');
 				return;
 			}
 		}
+	}
+
+//	$content = trim($post_record->post_content);
+	if (strlen(trim($content)) == 0)
+	{
+		$log->lwrite("dprv_digiprove_post not starting because content is empty");
+		update_option('dprv_last_result', __('Content is empty', 'dprv_cp'));
+		update_option('dprv_pending_message', __('Content is empty', 'dprv_cp'));
+		return;
 	}
 
 	$today_count = 0;	// default value
@@ -707,6 +1029,7 @@ function dprv_digiprove_post($dprv_post_id)
 	{
 		update_option('dprv_last_date', date("Ymd"));
 		update_option('dprv_last_date_count', 0);
+
 	}
 	else
 	{
@@ -719,50 +1042,27 @@ function dprv_digiprove_post($dprv_post_id)
 	$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
 	$dprv_subscription_type = get_option('dprv_subscription_type');
 	$today_limit = dprv_daily_limit($dprv_subscription_type);
+
 	if ($today_count > 5)
 	{
-/*
-		$today_limit = 5;//30;
-		switch ($dprv_subscription_type)
-		{
-			case "Personal":
-			{
-				$today_limit = 20;//60;
-				break;
-			}
-			case "Professional":
-			{
-				$today_limit = 100;//250;
-				break;
-			}
-			case "Corporate Light":
-			{
-				$today_limit = 500;//1000;
-				break;
-			}
-			case "Corporate":
-			{
-				$today_limit = -1;
-				break;
-			}
-			default:
-			{
-				break;
-			}
-		}
-*/
 		if ($today_count > $today_limit && $today_limit != -1)
 		{
 			// NOTE - if changing the "Digiprove daily limit" text, also modify  dprv_admin_footer() which relies on this exact text
-			update_option('dprv_last_result', "Digiprove daily limit (" . $today_limit . ") for " . get_option('dprv_subscription_type') . " accounts already reached, you can <a href='" . 	createUpgradeLink() . "&Action=Upgrade' target='_blank'>upgrade to increase this limit</a>.");
+			$dprv_last_result = sprintf(__('Digiprove daily limit (%1$s) for %2$s accounts already reached. ', 'dprv_cp'), $today_limit, $dprv_subscription_type);
+			$dprv_last_result .= sprintf(__('You can %s upgrade to increase this limit.%s', 'dprv_cp'), '<a href="' . 	dprv_createUpgradeLink() . '&Action=Upgrade" target="_blank">', '</a>.');
+			update_option('dprv_last_result', $dprv_last_result);
+			update_option('dprv_pending_message', $dprv_last_result);
 			return;
 		}
-		//$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
+
 		$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 864000;					// Add 10-day grace period (also handles any unforeseen timezone issues)
 		if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
 		{
 			// NOTE - if changing the "Digiprove free daily limit" text, also modify  dprv_admin_footer() which relies on this exact text
-			update_option('dprv_last_result', "Digiprove free daily limit (30) already reached, and your Digiprove account expired on " . $dprv_subscription_expiry . ". You can <a href='" . 	createUpgradeLink() . "&Action=Renew' target='_blank'>renew your account here</a>");
+			$dprv_last_result = sprintf(__('Digiprove free daily limit (5) already reached, and your Digiprove account expired on $s. ', 'dprv_cp'), $dprv_subscription_expiry);
+			$dprv_last_result .= sprintf(__('You can %s renew your account here.%s', 'dprv_cp'), '<a href="' . 	dprv_createUpgradeLink() . '&Action=Renew" target="_blank">', '</a>');
+			update_option('dprv_last_result', $dprv_last_result);
+			update_option('dprv_pending_message', $dprv_last_result);
 			return;
 		}
 	}
@@ -773,125 +1073,120 @@ function dprv_digiprove_post($dprv_post_id)
 	$newContent = stripslashes($content);
 	$notice = "";
 	
-	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $raw_content_hash, $dprv_subscription_type, $dprv_subscription_expiry, $dprv_last_time, $notice);
-	$log->lwrite("response: $certifyResponse");
-	if (strpos($certifyResponse, "Hashes are identical") === false)
+	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $digital_fingerprint, $content_file_names, $dprv_subscription_type, $dprv_subscription_expiry, $dprv_last_time, $notice);
+	
+	if (!is_array($certifyResponse))
 	{
-		if (strpos($certifyResponse, "Raw content is empty") === false)
+		// Could be "Content unchanged since last edit", "Content is empty", or
+		// One of these error messages from Digiprove:
+		// User xxxxxxxx@xxxxxxxxx invalid user id -  contact support@digiprove.com for help
+		$log->lwrite("response: $certifyResponse");
+		update_option('dprv_last_result', $certifyResponse);
+		update_option('dprv_pending_message', $certifyResponse);
+		if (strpos($certifyResponse, __("Content unchanged since last edit", "dprv_cp")) === false 
+			&& strpos($certifyResponse, __("Content is empty", "dprv_cp")) === false)
 		{
-			$pos = stripos($certifyResponse, "<result_code>0");
-			if ($pos === false)
+			// Arguably don't bother user with this error condition, just pass to server in due course?
+			update_option('dprv_last_result', $certifyResponse);
+			update_option('dprv_pending_message', $certifyResponse);		// Ensure administrator sees
+			if (strpos($certifyResponse, "contact support@digiprove.com") === false)
 			{
-				$log->lwrite("Digiproving failed, response:");
-				$log->lwrite($certifyResponse);
-				$admin_message = dprv_getTag($certifyResponse,"result");
-				if ($admin_message == false)
-				{
-					$admin_message = $certifyResponse;
-					update_option('dprv_event',$certifyResponse);		// Save for later reporting to server
-				}
-				else
-				{
-					$admin_message = 'Note: ' . $admin_message;
-				}
-				update_option('dprv_last_result', $admin_message);
+				//update_option('dprv_event', $certifyResponse);					// Save for later reporting to server
+				$dprv_this_event = $certifyResponse;
+				dprv_record_event($dprv_this_event);
 			}
-			else
+		}
+		return;
+	}
+	if (isset($certifyResponse['result_code']))	// if there is an intelligible response we can assume that any dprv_event has been reported, it can be cleared
+	{
+		update_option('dprv_event','');
+	}
+	if (!isset($certifyResponse['result_code']) || $certifyResponse['result_code'] != '0')
+	{
+		$admin_message = 'Note: ' . $certifyResponse['result'];
+		$log->lwrite("Digiproving failed, response: " . $certifyResponse['result']);
+		update_option('dprv_last_result', $admin_message);
+		update_option('dprv_pending_message', $admin_message);
+	}
+	else
+	{
+		// This code is to replace password with a new API key, eventually we'll eliminate passwords from db
+		if (isset($certifyResponse['api_key']) && $certifyResponse['api_key'] != "")
+		{
+			$dprv_api_key = $certifyResponse['api_key'];
+			if (strlen($dprv_api_key) > 0)
 			{
-				// This code is to replace password with a new API key, eventually we'll eliminate passwords from db
-				$dprv_api_key = dprv_getTag($certifyResponse, "api_key");
-				if ($dprv_api_key != false  && $dprv_api_key != "")
-				{
-					update_option('dprv_api_key', $dprv_api_key);
-					delete_option('dprv_password');
-				}
-				else
-				{
-					// If there was a working api key, delete any recorded password from the options db
-					$dprv_api_key = get_option('dprv_api_key');
-					if ($dprv_api_key != false && $dprv_api_key != "")
-					{
-						delete_option('dprv_password');
-					}
-				}
-				// End of API key code
-
-				update_option('dprv_last_date_count', $today_count);
-
-				$dprv_subscription_type = dprv_getTag($certifyResponse, "subscription_type");
-				if ($dprv_subscription_type != null && $dprv_subscription_type != false && $dprv_subscription_type != "")
-				{
-					update_option('dprv_subscription_type', $dprv_subscription_type);
-					$dprv_subscription_expiry = dprv_getTag($certifyResponse, "subscription_expiry");
-					if ($dprv_subscription_expiry != null && $dprv_subscription_expiry != false && $dprv_subscription_expiry != "")
-					{
-						update_option('dprv_subscription_expiry', $dprv_subscription_expiry);
-					}
-					else
-					{
-						update_option('dprv_subscription_expiry', '');
-					}
-				}
-
-				dprv_record_dp_action($dprv_post_id, $certifyResponse, $post_record->post_status, $raw_content_hash);
-
-				// Surely the following bit is unnecessary?  Check and delete:			
-				if (get_option('dprv_enrolled') != "Yes")
-				{
-					update_option('dprv_enrolled', 'Yes');
-				}
-				// end of unnecessary bit
-
-				$log->lwrite("Digiproving completed successfully");
-
-				update_option('dprv_last_result', __('Digiprove certificate id:', 'dprv_cp') . ' ' . dprv_getTag($certifyResponse, "certificate_id") . ' ' . $notice);
+				update_option('dprv_api_key', $dprv_api_key);
+				delete_option('dprv_password');
 			}
 		}
 		else
 		{
-			// The only real content was the last Digiprove certificate; remove it
-			update_option('dprv_last_result', __('Content is empty', 'dprv_cp'));
-			return;		
+			// If there was a working api key, delete any recorded password from the options db
+			$dprv_api_key = get_option('dprv_api_key');
+			if ($dprv_api_key != false && $dprv_api_key != "")
+			{
+				delete_option('dprv_password');
+			}
 		}
-	}
-	else
-	{
-		// Doing this check because of weird situation where if an attachment is referred to within the content,
-		// action hook wp_insert_post gets fired twice with identical variables.
-		// 1st time: edit_post calls wp_update_post calls wp_insert_post triggers action hook wp_insert_post
-		// 2nd time: _fix_attachment_links calls wp_update_post calls wp_insert_post triggers action hook wp_insert_post
-		// If the 1st time Digiproved successfully the 2nd time (correctly) does
-		// not Digiprove becauses hashes are same, however, user does not see Digiprove Certificate ID message
-		// TODO: Check that this works across timezones (should do because time() gives utc)
-		//$this_time = time();
-		//$time_since_last = $this_time - $dprv_last_time;
-		//if ($time_since_last > 5)		// only if last one occurred more than 5 seconds ago
-		//{
-			update_option('dprv_last_result', __('Content unchanged since last edit', 'dprv_cp'));
-		//}
+		// End of API key code
+
+		if (isset($certifyResponse['subscription_type']) && $certifyResponse['subscription_type'] != "")
+		{
+			$dprv_subscription_type = $certifyResponse['subscription_type'];
+			update_option('dprv_subscription_type', $dprv_subscription_type);
+			if (isset($certifyResponse['subscription_expiry']) && $certifyResponse['subscription_expiry'] != "")
+			{
+				$dprv_subscription_expiry = $certifyResponse['subscription_expiry'];
+				update_option('dprv_subscription_expiry', $dprv_subscription_expiry);
+			}
+			else
+			{
+				update_option('dprv_subscription_expiry', '');
+			}
+		}
+
+		dprv_record_dp_action($dprv_post_id, $certifyResponse, $post_record->post_status, $digital_fingerprint);
+
+		// If this is first Digiprove action after enrollment record this fact
+		// TODO - insert this code in user synchronisation stuff - Need to test?
+		if (get_option('dprv_enrolled') != "Yes")
+		{
+			update_option('dprv_enrolled', 'Yes');
+		}
+		update_option('dprv_last_date_count', $today_count);
+
+		$log->lwrite("Digiproving completed successfully");
+
+		//update_option('dprv_last_result', __('Digiprove certificate id', 'dprv_cp') . ': ' . $certifyResponse['certificate_id'] . ' ' . $notice);
+		$admin_message = __('Digiprove certificate id', 'dprv_cp') . ': ' . $certifyResponse['certificate_id'] . ' ' . $notice;
+		update_option('dprv_last_result', $admin_message);
+		update_option('dprv_pending_message', $admin_message);
 	}
 
 	$log->lwrite("finishing dprv_digiprove_post " . $dprv_post_id);
 	return;
 }
+
 function dprv_daily_limit($dprv_subscription_type)
 {
-	$today_limit = 5;//30;
+	$today_limit = 5;
 	switch ($dprv_subscription_type)
 	{
 		case "Personal":
 		{
-			$today_limit = 20;//60;
+			$today_limit = 20;
 			break;
 		}
 		case "Professional":
 		{
-			$today_limit = 100;//250;
+			$today_limit = 100;
 			break;
 		}
 		case "Corporate Light":
 		{
-			$today_limit = 500;//1000;
+			$today_limit = 500;
 			break;
 		}
 		case "Corporate":
@@ -909,7 +1204,7 @@ function dprv_daily_limit($dprv_subscription_type)
 
 function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date_and_time, &$dprv_digital_fingerprint, &$dprv_certificate_url, &$dprv_copyright_year)
 {
-	$log = new Logging();  
+	$log = new DPLog();  
 	//$log->lwrite("dprv_strip_old_notice starts");
 	$certificate_info = "";
 	$start_Digiprove = strpos($content, "<!--Digiprove_Start-->");
@@ -1062,7 +1357,7 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 function dprv_record_copyright_details($dprv_post_id)
 {
 	global $wpdb;
-	$log = new Logging();
+	$log = new DPLog();
 	$log->lwrite("dprv_record_copyright_details starts");
 
 	if ($_POST['dprv_this'] == "Yes")
@@ -1107,42 +1402,54 @@ function dprv_record_copyright_details($dprv_post_id)
 	}
 
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 	//$wpdb->show_errors();
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
 		//$wpdb->show_errors();
 		if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license, 'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url), array('id'=>$dprv_post_id)))
+		//if (false === $wpdb->update($wpdb->prefix .             "dprv_posts", array('digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license, 'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url), array('id'=>$dprv_post_id)))
 		{
-			update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating copyright details for ' . $dprv_post_id);
+			//update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating copyright details for ' . $dprv_post_id);
+			$dprv_this_event = 'error ' . $wpdb->last_error . ' updating copyright details for ' . $dprv_post_id;
+			dprv_record_event($dprv_this_event);
 		}
 	}
 	else
 	{
 		//$wpdb->show_errors();
 		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license,  'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url)))
+		//if (false === $wpdb->insert($wpdb->prefix . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license,  'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url)))
 		{
-			update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id);
+			//update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id);
+			$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id;
+			dprv_record_event($dprv_this_event);
 		}
 
 	}
 }
 
-function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_status, $raw_content_hash)
+function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_status, $digital_fingerprint)
 {
 	global $wpdb;
-	$log = new Logging();  
+	$log = new DPLog();  
 	$log->lwrite("dprv_record_dp_action starts. post id = " . $dprv_post_id);
-	$dprv_certificate_id = dprv_getTag($certifyResponse, "certificate_id");
-	$dprv_certificate_url = dprv_getTag($certifyResponse, "certificate_url");
-	$dprv_utc_date_and_time = dprv_getTag($certifyResponse, "utc_date_and_time");
 
-	$dprv_digital_fingerprint = dprv_getTag($certifyResponse, "digital_fingerprint");
-	// If this is PHP 5.1.2 or later, we already have digital fingerprint, use this if not supplied by server
-	if ($dprv_digital_fingerprint === false || $dprv_digital_fingerprint == "")
+	$dprv_certificate_id = $certifyResponse['certificate_id'];
+	$dprv_certificate_url = $certifyResponse['certificate_url'];
+	$dprv_utc_date_and_time = $certifyResponse['utc_date_and_time'];
+	$dprv_time_recorded = time();
+	if (isset($certifyResponse['digital_fingerprint']) && $certifyResponse['digital_fingerprint'] != "")
 	{
-		$dprv_digital_fingerprint = $raw_content_hash;
+		$dprv_digital_fingerprint = $certifyResponse['digital_fingerprint'];
 	}
+	else
+	{
+		// If this is PHP 5.1.2 or later, we already have digital fingerprint, use this if not supplied by server
+		$dprv_digital_fingerprint = $digital_fingerprint;
+	}
+
 	$posA = strpos($dprv_utc_date_and_time, " 20");	// crude way of finding year
 	$dprv_year_certified = 2010;  // default
 	if ($posA != false)
@@ -1151,7 +1458,8 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 	}
 
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-	$dprv_event = get_option('dprv_event');
+	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+	//$dprv_event = get_option('dprv_event');
 	//$wpdb->show_errors();
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
@@ -1165,44 +1473,117 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 			$dprv_year_certified = intval($dprv_post_info["first_year"]);
 		}
 		//$wpdb->show_errors();
-		if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified), array('id'=>$dprv_post_id)))
+		//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified, 'last_time_digiproved'=>$dprv_time_recorded, 'last_fingerprint'=>$dprv_digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
+		if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified, 'last_time_digiproved'=>$dprv_time_recorded, 'last_fingerprint'=>$dprv_digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
 		{
-			update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' updating dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
+			//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' updating dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
+			$dprv_this_event = 'error ' . $wpdb->last_error . ' updating dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			dprv_record_event($dprv_this_event);
+
+		}
+		//$wpdb->show_errors();
+		//$sql="DELETE FROM ". $wpdb->prefix . "dprv_post_content_files WHERE post_id = " . $dprv_post_id;
+		$sql="DELETE FROM ". get_option('dprv_prefix') . "dprv_post_content_files WHERE post_id = " . $dprv_post_id;
+		if (false === $wpdb->query($sql))
+		{
+			//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' deleting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status);
+			$dprv_this_event = 'error ' . $wpdb->last_error . ' deleting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			dprv_record_event($dprv_this_event);
 		}
 	}
 	else
 	{
 		//$wpdb->show_errors();
-		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'this_all_original'=>true,'using_default_license'=>true, 'certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified)))
+		//if (false === $wpdb->insert($wpdb->prefix . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'this_all_original'=>true,'using_default_license'=>true, 'certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified, 'last_time_digiproved'=>$dprv_time_recorded, 'last_fingerprint'=>$dprv_digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded)))
+		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'this_all_original'=>true,'using_default_license'=>true, 'certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified, 'last_time_digiproved'=>$dprv_time_recorded, 'last_fingerprint'=>$dprv_digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded)))
 		{
-			update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
+			//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
+			$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			dprv_record_event($dprv_this_event);
+		}
+	}
+	if (isset($certifyResponse['content_files']))
+	{
+		if (count($certifyResponse['content_files']) > 0)
+		{
+			foreach($certifyResponse['content_files'] as $filename => $file_fingerprint)
+			{
+				//$wpdb->show_errors();
+				//if (false === $wpdb->insert($wpdb->prefix . "dprv_post_content_files", array('post_id'=>$dprv_post_id, 'filename'=>$filename, 'digital_fingerprint'=>$file_fingerprint)))
+				if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_post_content_files", array('post_id'=>$dprv_post_id, 'filename'=>$filename, 'digital_fingerprint'=>$file_fingerprint)))
+				{
+					//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status);
+					$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+					dprv_record_event($dprv_this_event);
+					break;
+				}
+			}
 		}
 	}
 }
 
-function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subscription_type, $dprv_subscription_expiry, &$dprv_last_time,&$notice)
+function dprv_record_non_dp_action($dprv_post_id, $content)
 {
-	$log = new Logging();
-	global $wp_version, $wpdb;
+	global $wpdb;
+	$log = new DPLog();  
+	$log->lwrite("dprv_record_non_dp_action starts. post id = " . $dprv_post_id);
+	$rawContent = dprv_getRawContent($content, $digital_fingerprint);
+	if ($rawContent == "")
+	{
+		return __("Content is empty", "dprv_cp");
+	}
+
+	$dprv_time_recorded = time();
+
+	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
+	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+
+	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
+	{
+		//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
+		if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
+		{
+			$dprv_this_event = 'error ' . $wpdb->last_error . ' updating non_dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			dprv_record_event($dprv_this_event);
+		}
+	}
+	else
+	{
+		//if (false === $wpdb->insert($wpdb->prefix . "dprv_posts", array('id'=>$dprv_post_id, 'last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded)))
+		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded)))
+		{
+			$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting non_dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			dprv_record_event($dprv_this_event);
+		}
+	}
+}
+
+
+function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$content_file_names, $dprv_subscription_type, $dprv_subscription_expiry, &$dprv_last_time,&$notice)
+{
+	$log = new DPLog();  
+	global $wp_version, $wpdb, $dprv_blog_host, $dprv_wp_host;
 
 	$log->lwrite("dprv_certify starts");
 
-	$rawContent = dprv_getRawContent($post_id, $content, $raw_content_hash);
-
-	if ($raw_content_hash != "")
+	$rawContent = dprv_getRawContent($content, $digital_fingerprint);
+	if ($rawContent == "")
 	{
+		return __("Content is empty", "dprv_cp");
+	}
+
+	if ($digital_fingerprint != "")
+	{
+		//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $post_id;
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
 		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0 && $raw_content_hash == $dprv_post_info["digital_fingerprint"])
+		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0 && $digital_fingerprint == $dprv_post_info["digital_fingerprint"])
 		{
 			$dprv_last_time = strtotime($dprv_post_info["cert_utc_date_and_time"]);
-			return " Hashes are identical";	// Content has not changed, do not Digiprove again - stick with earlier certification
+			return __("Content unchanged since last edit", "dprv_cp");	// Content has not changed, do not Digiprove again - stick with earlier certification
 		}
-	}
-	if ($rawContent == "")
-	{
-		return " Raw content is empty";
 	}
 
 	$dprv_subscription_expired = "No";
@@ -1213,168 +1594,325 @@ function dprv_certify($post_id, $title, $content, &$raw_content_hash, $dprv_subs
 	}
 
 	// code below changed at 0.78 to avoid empty domain
-	$dprv_blog_url = parse_url(get_option('home'));
-	$dprv_blog_host = $dprv_blog_url['host'];
-	$dprv_wp_host = "";		// default
-
-	$dprv_wp_url = parse_url(get_option('siteurl'));
-	$dprv_wp_host = $dprv_wp_url['host'];
-	if (trim($dprv_blog_host) == "")
+	//$dprv_blog_url = parse_url(get_option('home'));
+	//$dprv_blog_host = $dprv_blog_url['host'];
+	//$dprv_wp_host = "";		// default
+	//$dprv_wp_url = parse_url(get_option('siteurl'));
+	//$dprv_wp_host = $dprv_wp_url['host'];
+	//if (trim($dprv_blog_host) == "")
+	//{
+	//	$dprv_blog_host = $dprv_wp_host;
+	//}
+	$max_file_count = 0;
+	if ($dprv_subscription_expired != "Yes")
 	{
-		$dprv_blog_host = $dprv_wp_host;
+		switch ($dprv_subscription_type)
+		{
+			case "Personal":
+			{
+				$max_file_count = 5;
+				break;
+			}
+			case "Professional":
+			{
+				$max_file_count = 20;
+				break;
+			}
+			case "Corporate Light":
+			{
+				$max_file_count = 100;
+				break;
+			}
+			case "Corporate":
+			{
+				$max_file_count = 999;
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
 	}
+	$content_files = array();
 	$content_file_names = array();
-	$content_file_fingerprints = array();
-	//if (function_exists("hash"))
-	if (function_exists("hash") && $dprv_subscription_type != "Basic")		// Scan for files if permitted
+	$file_count = 0;							// Initialise just to avoid a notice message, not essential
+	if (function_exists("hash") && ($max_file_count > 0 || $dprv_subscription_expired == "Yes"))		// Scan for files if permitted (or for advisory notice if subscription expired)
 	{
-		getContentFiles($post_id, $rawContent, $dprv_blog_host, $content_file_names, $content_file_fingerprints);
+		dprv_getContentFiles($post_id, $rawContent, $content_files, $content_file_names, $max_file_count, $file_count);
 	}
-	$rawContent = htmlspecialchars($rawContent, ENT_QUOTES, 'UTF-8');
-	// Statement below inserted at 0.75 as vertical tabs not converted and cause a problem in XML .net server process
-	// TODO: there are probably other characters that will trip it up - review whole XML-encoding to create more systemic solution
-	$rawContent = str_replace("\v", " ", $rawContent);			// vertical tab           11 0013 0x0b
-	$rawContent = str_replace(chr(1), '&#x1;', $rawContent);	// soh - start of header   1 0001 0x01
-	$rawContent = str_replace(chr(22), ' ', $rawContent);		// SYN - Synchronous Idle 22  026 0x16
-
-	// Prepare title for XML transmission
-	if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
+	if ($file_count > $max_file_count)
 	{
-		$title = html_entity_decode($title, ENT_QUOTES, 'UTF-8');   // first go back to basic string (have seen WLW-sourced titles with html-encoding embedded)
+		if ($dprv_subscription_expired == "Yes")
+		{
+				$notice = sprintf(__('(This post/page contained references to %1$s media files that according to your settings should be Digiproved, but your subscription expired on %2$s.)', 'dprv_cp'), $file_count, $dprv_subscription_expiry);
+		}
+		else
+		{
+			$notice = sprintf(__('(This content contained references to %1$s media files that according to your settings should be Digiproved, but the %2$s plan limits this to %3$s  - the first %3$s were processed.)', 'dprv_cp'), $file_count, $dprv_subscription_type, $max_file_count);
+		}
 	}
-	$title = htmlspecialchars(stripslashes($title), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
 
 	$dprv_content_type = get_option('dprv_content_type');
-	// following instruction inserted at 0.75 to prevent problems with unescaped character '&' causing server-side XML parsing error
-	$dprv_content_type = htmlspecialchars(stripslashes($dprv_content_type), ENT_QUOTES, 'UTF-8');
 	if (trim($dprv_content_type) == "")
 	{
 		$dprv_content_type = "Blog post";
 	}
-	
-	$postText = "<digiprove_content_request>";
-	$postText .= "<user_id>" . get_option('dprv_user_id') . "</user_id>";
-	$postText .= '<domain_name>' . $dprv_blog_host . '</domain_name>';
+
+	//$credentials = array("user_id" => get_option('dprv_user_id'), "domain_name" => $dprv_blog_host, "api_key" => get_option('dprv_api_key'), "password" => get_option('dprv_password'));
+	$credentials = array("user_id" => get_option('dprv_user_id'), "domain_name" => $dprv_blog_host, "api_key" => get_option('dprv_api_key'));
 	if ($dprv_blog_host != $dprv_wp_host)
 	{
-		$postText .= '<alt_domain_name>' . $dprv_wp_host . '</alt_domain_name>';
+		$credentials['alt_domain_name'] = $dprv_wp_host;
 	}
-	$dprv_api_key = get_option('dprv_api_key');
-	if ($dprv_api_key != null && $dprv_api_key != "")
+	$dprv_event = get_option('dprv_event');
+	if ($dprv_event !== false && $dprv_event != "")
 	{
-		$postText .= '<api_key>' . $dprv_api_key . '</api_key>';
-	}
-	else
-	{
-		$dprv_password = htmlspecialchars(stripslashes(get_option('dprv_password')), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
-		if ($dprv_password == "")
-		{
-			return "Digiprove api key is missing - you can obtain a new key via Copyright Proof Settings";
-		}
-		$postText .= '<password>' . $dprv_password . '</password>';
-		$postText .= '<request_api_key>Yes</request_api_key>';
+		$credentials['dprv_event'] = $dprv_event;
 	}
 
-	$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
-	$postText .= '<content_title>' . $title . '</content_title>';
-
-	if (count($content_file_names) > 0)
-	{
-		$postText .= "<content_wrapper>";
-	}
-	$postText .= '<content_type>' . $dprv_content_type . '</content_type>';
-
-	// if digital fingerprint could not be calculated (PHP4) or if SaveContent selected (is subject to subscription type) and subscription not expired, send content as well as fingerprint
-	if ($raw_content_hash == "" || (get_option('save_content') == "SaveContent" && $dprv_subscription_expired != "Yes"))
-	{
-		$postText .= '<content_data>' . $rawContent . '</content_data>';
-	}
-	else
-	{
-		$postText .= '<content_fingerprint>' . $raw_content_hash . '</content_fingerprint>';
-	}
-
-	$postText .= '<content_url>';
+	$user_agent = "Copyright Proof " . DPRV_VERSION;
 	$permalink = get_bloginfo('url');
 	if ($post_id != -1)									// will be set to -1 if the value is unknown
 	{
 		// Note - Decided not to implement soft permalinks as can end up with broken links if user changes scheme
 		$permalink = get_bloginfo('url') . "/?p=" . $post_id;
 	}
-	$postText .= $permalink;
-	$postText .= '</content_url>';
 
-	if (count($content_file_names) > 0)
+	$obscure_url = false;
+	if (get_option('dprv_obscure_url') != "Clear")
 	{
-		$postText .= "</content_wrapper>";
+		$obscure_url = true;
 	}
-
-	$file_count = count($content_file_names);
-	if ($dprv_subscription_expired == "Yes")
+	$linkback_flag = false;
+	if (get_option('dprv_linkback') == "Linkback")
 	{
-		if ($file_count > 0)
-		{
-			$notice = " (This post/page contained references to $file_count media files that according to your settings should be Digiproved, but your subscription expired on " . $dprv_subscription_expiry . ".)";
-			$file_count = 0;
-		}
+		$linkback_flag = true;
 	}
-	else
+	$email_certs_flag = false;
+	if (get_option('dprv_email_certs') == "Yes")
 	{
-		if ($dprv_subscription_type == "Personal" && $file_count > 5)
-		{
-			$notice = " (This content contained references to $file_count media files that according to your settings should be Digiproved, but the Personal plan limits this to 5 - the first 5 were processed.)";
-			$file_count = 5;
-		}
-		if ($dprv_subscription_type == "Professional" && $file_count > 20)
-		{
-			$notice = " (This post/page contained references to $file_count media files that according to your settings should be Digiproved, but the Professional plan limits this to 20 - the first 20 were processed.)";
-			$file_count = 20;
-		}
+		$email_certs_flag = true;
 	}
-	for ($t = 0; $t < $file_count; $t++)
+	$save_content_flag = false;
+	if (get_option('dprv_save_content') == "SaveContent")
 	{
-		$log->lwrite("doing xml for file " . $t . ": " .  $content_file_names[$t]);
-		$postText .= "<content_wrapper>";
-		$postText .= '<content_type>File</content_type>';
-		$postText .= '<content_filename>' . $content_file_names[$t] . '</content_filename>';
-		$postText .= '<content_fingerprint>' . $content_file_fingerprints[$t] . '</content_fingerprint>';
-		$postText .= "</content_wrapper>";
+		$save_content_flag = true;
 	}
-
-	$postText .= "<linkback>" . get_option('dprv_linkback') . "</linkback>";
-	if (get_option('dprv_obscure_url') == "Clear")
+	$metadata = array("content_title"=>$title);
+	$return_value = Digiprove::certify($error_message, $credentials, $rawContent, $digiproved_content, $content_files, $dprv_content_type, $metadata, null, $user_agent, $permalink, $linkback_flag, $obscure_url, false, $email_certs_flag, $save_content_flag);
+	if (!$return_value)
 	{
-		$postText .= '<obscure_certificate_url>No</obscure_certificate_url>';
+		return $error_message;
 	}
-	else
-	{
-		$postText .= '<obscure_certificate_url>Yes</obscure_certificate_url>';
-	}
-	$dprv_event = get_option('dprv_event');
-	if ($dprv_event !== false && $dprv_event != "")
-	{
-		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
-		update_option('dprv_event', '');								// Clear it down
-	}
-	$postText .= '</digiprove_content_request>';
-	$log->lwrite("xml string = " . $postText);
-
-	$data = dprv_http_post($postText, DPRV_HOST, "/secure/service.asmx/", "DigiproveContent");
-	$pos = strpos($data, "Error:");
-	if ($pos === false)
-	{
-		$log->lwrite("Returning successfully from dprv_certify");
-	}
-	return $data;
+	return $return_value;
 }
 
-function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_names, &$content_file_fingerprints)
+function dprv_getContentFiles($post_id, $content, &$content_files, &$content_file_names, $max_file_count, &$file_count, $alltags = false)
 {
-	//dprvErrors::set_handler();		// SETTING for this function - ensure NO return statement without restore_error_handler()
-	update_option('dprv_event', 'started getContentFiles');
+	function str_findAny($haystack, $needles, $offset=0)
+	{
+		for ($i=$offset; $i<strlen($haystack); $i++)
+		{
+			if (array_search($haystack[$i], $needles))
+			{
+				return $i;
+			}
+		}
+		return false;
+	}
+	function processUrl($url, $dprv_html_tags, $tag, &$content_files, &$content_file_names, &$t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, &$file_count)
+	{
+		$log = new DPLog();
+		$url = rtrim($url);
+		//$log->lwrite("tag is $tag processurl $url");
+		if (!is_array($content_files))
+		{
+			$content_files = array();
+		}
+		$log->lwrite ("processURL for $url, count of content_files = " . count($content_files));
+		global $dprv_mime_types;
+		$dprv_outside_media = get_option('dprv_outside_media');
+		$url_info = parse_url($url);
+		$url_string = $url;
+		$blog_url_string = $blog_host . $blog_path;
+
+		if (!isset($url_info["host"]))
+		{
+			//$log->lwrite("url_info[host] is not set");
+			if (strpos($url, "/") == 0)
+			{
+				$full_path = addPaths($root_path, $url_info["path"]);
+			}
+			else
+			{
+				$full_path = addPaths(ABSPATH, $url_info["path"]);
+			}
+		}
+		else
+		{
+			if ($url_info["host"] != $blog_host)
+			{
+				// first check for partial matches
+				$partial_match = false;
+				if	(
+						$url_info["host"] == ("www." . $blog_host)
+						||
+						("www." . $url_info["host"]) == $blog_host
+						||
+						(strripos($url_info["host"], $blog_host) !== false && strripos($url_info["host"], $blog_host) === strlen($url_info["host"]) - strlen($blog_host))
+						||
+						(strripos($blog_host, $url_info["host"]) !== false && strripos($blog_host, $url_info["host"]) === strlen($blog_host) - strlen($url_info["host"]))
+					)
+				{
+					$log->lwrite("suspected match between " . $url_info["host"] . " and " . $blog_host);
+					$partial_match = true;
+					$url_info["host"] = $blog_host;		// use blog host value from now on
+				}
+				else
+				{
+					if ($dprv_outside_media != "Outside")
+					{
+						$log->lwrite("$url is not on this host");
+						return;
+					}
+					else
+					{
+						// what to doo?
+						return;  // don't handle this yet
+					}
+				}
+			}
+			$url_string = $url_info["host"] . $url_info["path"];
+			if (stripos($url_string, $blog_url_string) !== 0)
+			{
+				$log->lwrite("$url is not on this wp web-site");
+				return;
+			}
+
+			if (stripos($url_string, $blog_url_string) === 0 && isset($url_info["query"]) && strpos($url_info["query"], "attachment_id=") === 0)
+			{
+				$full_path = convert_attachment_to_file(substr($url_info["query"],14));
+			}
+			else
+			{
+				$full_path = addPaths($root_path, $url_info["path"]);
+			}
+		}
+
+		$file_name = basename($full_path);
+		$ext = pathinfo($file_name, PATHINFO_EXTENSION);
+		$file_selected = false;		// default value
+		$selected_reason = "";		// this variable used just for logging / testing
+		if ($dprv_html_tags[$tag]["incl_excl"] == "Include")
+		{
+			if ($dprv_html_tags[$tag]["All"] == "True")
+			{
+				$selected_reason .= "All filetypes included; ";
+				$file_selected = true;
+			}
+			else
+			{
+				foreach ($dprv_html_tags[$tag] as $key=>$value)
+				{
+					if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
+					{
+						if ($value == "True")
+						{
+							if (array_search($ext, $dprv_mime_types[$key]))
+							{
+								$selected_reason .= "$ext included in $key list; ";
+								$file_selected = true;
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			$file_selected = true;		// default value if using Exclude
+			$selected_reason .= "$ext not excluded";
+			foreach ($dprv_html_tags[$tag] as $key=>$value)
+			{
+				if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
+				{
+					if ($value == "True")
+					{
+						if (array_search($ext, $dprv_mime_types[$key]))
+						{
+							$selected_reason .= "$ext excluded (in $key list)";
+							$file_selected = false;
+						}
+					}
+				}
+			}
+		}
+		if ($file_selected == true)
+		{
+			if (file_exists($full_path))
+			{
+				if (array_search($full_path, $content_files) === false)		// prevent duplicate references
+				{
+					if($t < $max_file_count)
+					{
+						$content_file_names[$t] = $file_name;
+						$content_files[$t] = $full_path;
+						$log->lwrite("content_file_names[" . $t . "]=" . $content_file_names[$t] . " (from " . $tag . " tag), included because " . $selected_reason);
+						$t++;
+					}
+					$file_count++;
+				}
+				else
+				{
+					$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag - encountered earlier)");
+				}
+			}
+			else
+			{
+				$log->lwrite("File does not exist: $full_path");
+			}
+		}
+		else
+		{
+			$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag) - $ext not a selected media type");
+		}
+	}
+
+	function addPaths($root, $path)
+	{
+		if ($path[0] == "/" && $root[strlen($root)-1] == "/")
+		{
+			$path = substr($path,1);
+		}
+		return $root . $path;
+	}
+
+	function convert_attachment_to_file($attach_id)
+	{
+		$id = "";
+		for ($i=0; $i<strlen($attach_id); $i++)
+		{
+			if (strpos("0123456789",$attach_id[$i]) !== false)
+			{
+				$id .= $attach_id[$i];
+			}
+			else
+			{
+				break;
+			}
+		}
+		return get_attached_file($id);
+	}
+	$start_marker = 'started dprv_getContentFiles';
+	// TODO - make endless loop check on time rather than loop count:
+	$start_time = time();
+	$dprv_event = dprv_record_event ($start_marker);		// record temporary marker (will remove later if normal exit)
 	global $dprv_mime_types;
-	$log = new Logging();  
-	$log->lwrite("getContentFiles starts");
+	$log = new DPLog();  
+	$log->lwrite("dprv_getContentFiles starts:");
+
+	$file_count = 0;
 	$blog_url = site_url();
 	$blog_url_info = parse_url($blog_url);
 	$blog_host = $blog_url_info["host"];
@@ -1389,7 +1927,9 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 		}
 		else
 		{
-			$log->lwrite("What to do, ABSPATH and blog path don't have same endings");
+			$this_event = 'ABSPATH ' . ABSPATH . ' and blog path ' . $blog_path . ' do not have same endings';
+			$log->lwrite($this_event);
+			$dprv_event = dprv_record_event($this_event, $dprv_event);
 			$log->lwrite(strpos($root_path, $blog_path) . "!=" . strlen($root_path) . "-" .strlen($blog_path));
 		}
 	}
@@ -1398,36 +1938,38 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 
 	if (is_array($dprv_html_tags))
 	{
-		$needScan = false;
-		foreach ($dprv_html_tags as $key=>$value)
+		if ($alltags == false)
 		{
-			//$log->lwrite("key=$key");
-			//$log->lwrite("value=$value");
-			if ($dprv_html_tags[$key]["selected"] == "True")
+			$needScan = false;
+			foreach ($dprv_html_tags as $key=>$value)
 			{
-				$needScan = true;
+				if ($dprv_html_tags[$key]["selected"] == "True")
+				{
+					$needScan = true;
+				}
 			}
-		}
-		if ($needScan === false)
-		{
-			$log->lwrite("getContentFiles: no tags selected, return without parsing");
-			update_option('dprv_event', '');						// clear event notice field
-			return;
+			if ($needScan === false)
+			{
+				$log->lwrite("getContentFiles: no tags selected, return without parsing");
+				dprv_unrecord_event($start_marker, $dprv_event);						// remove start marker from dprv event
+				return;
+			}
 		}
 	}
 	else
 	{
 		$log->lwrite("getContentFiles: dprv_html_tags is not an array");
-		update_option('dprv_event', '');						// clear event notice field
+		dprv_unrecord_event($start_marker, $dprv_event);						// remove start marker from dprv event
 		return;
-		//$dprv_html_tags = false;
 	}
+
 	$dprv_outside_media = get_option('dprv_outside_media');
 	$t = 0;
 	$pos = 0;
 	$delimit_chars = " \t\r\f\v\n/>";	//Space, tab, carriage-return, formfeed, vertical-tab, newline, / or >
+
 	$parse_all = false;
-	if ($dprv_html_tags["notag"]["selected"] == "True")
+	if ($dprv_html_tags["notag"]["selected"] == "True" || $alltags == true)
 	{
 		$parse_all = true;
 	}
@@ -1438,8 +1980,9 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 		$w++;
 		if ($w>500)
 		{
-			$log->lwrite("breaking because of suspected endless loop (a)");
-			update_option('dprv_event', 'post ' . $post_id . ' endless loop a');
+			$this_event = 'post ' . $post_id . ' suspected endless loop (a)';
+			$log->lwrite($this_event);
+			$dprv_event = dprv_record_event($this_event, $dprv_event);
 			break;
 		}
 
@@ -1469,8 +2012,9 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 				$r++;
 				if ($r>300)
 				{
-					$log->lwrite("breaking because of suspected endless loop (b)");
-					update_option('dprv_event', 'post ' . $post_id . ' endless loop b');
+					$this_event = 'post ' . $post_id . ' suspected endless loop (b)';
+					$log->lwrite($this_event);
+					$dprv_event = dprv_record_event($this_event, $dprv_event);
 					break;
 				}
 				$pos2 = stripos($no_tag_content, "http://");
@@ -1510,8 +2054,7 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 						$url = substr($no_tag_content,$pos1);
 						$no_tag_content = "";
 					}
-
-					processUrl($url, $dprv_html_tags, "notag", $content_file_names, $content_file_fingerprints, $t, $root_path, $blog_url, $blog_host, $blog_path);
+					processUrl($url, $dprv_html_tags, "notag", $content_files, $content_file_names, $t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, $file_count);
 				}
 				else
 				{
@@ -1544,7 +2087,7 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 		{
 			$tag = strtolower(substr($content, $pos+1, $pos2-$pos-1));
 
-			if (isset($dprv_html_tags[$tag]) && $dprv_html_tags[$tag]["selected"] != "False")	// If this tag is not on list of media types to be digiproved, skip
+			if ($alltags == true || (isset($dprv_html_tags[$tag]) && $dprv_html_tags[$tag]["selected"] != "False"))	// If this tag is not on list of media types to be digiproved, skip
 			{
 				$modifiers = ltrim(substr($content, $pos2 + 1,$end_of_tag_pos-$pos2-1));
 				//$log->lwrite("modifiers = $modifiers");
@@ -1568,8 +2111,7 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 							if ($pos1 !== false && $pos1 != 0)
 							{
 								$url = substr($modifiers, 0, $pos1);
-
-								processUrl($url, $dprv_html_tags, $tag, $content_file_names, $content_file_fingerprints, $t, $root_path, $blog_url, $blog_host, $blog_path);
+								processUrl($url, $dprv_html_tags, $tag, $content_files, $content_file_names, $t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, $file_count);
 							}
 						}
 						else
@@ -1607,210 +2149,17 @@ function getContentFiles($post_id, $content, $dprv_blog_host, &$content_file_nam
 			break;
 		}
 	}
-	if (get_option('dprv_event') == 'started getContentFiles')	// If ending normally,
-	{
-		update_option('dprv_event', '');						// clear event notice field
-	}
-}
-
-function str_findAny($haystack, $needles, $offset=0)
-{
-	for ($i=$offset; $i<strlen($haystack); $i++)
-	{
-		if (array_search($haystack[$i], $needles))
-		{
-			return $i;
-		}
-	}
-	return false;
-}
-
-function processUrl($url, $dprv_html_tags, $tag, &$content_file_names, &$content_file_fingerprints, &$t, $root_path, $blog_url, $blog_host, $blog_path)
-{
-	$log = new Logging();
-	$url = rtrim($url);
-	//$log->lwrite("tag is $tag processurl $url");
-	global $dprv_mime_types;
-	$dprv_outside_media = get_option('dprv_outside_media');
-	$url_info = parse_url($url);
-	$url_string = $url;
-	$blog_url_string = $blog_host . $blog_path;
-
-	if (!isset($url_info["host"]))
-	{
-		//$log->lwrite("url_info[host] is not set");
-		if (strpos($url, "/") == 0)
-		{
-			$full_path = addPaths($root_path, $url_info["path"]);
-		}
-		else
-		{
-			$full_path = addPaths(ABSPATH, $url_info["path"]);
-		}
-	}
-	else
-	{
-		if ($url_info["host"] != $blog_host)
-		{
-			// first check for partial matches
-			$partial_match = false;
-			if	(
-					$url_info["host"] == ("www." . $blog_host)
-					||
-					("www." . $url_info["host"]) == $blog_host
-					||
-					(strripos($url_info["host"], $blog_host) !== false && strripos($url_info["host"], $blog_host) === strlen($url_info["host"]) - strlen($blog_host))
-					||
-					(strripos($blog_host, $url_info["host"]) !== false && strripos($blog_host, $url_info["host"]) === strlen($blog_host) - strlen($url_info["host"]))
-				)
-			{
-				$log->lwrite("suspected match between " . $url_info["host"] . " and " . $blog_host);
-				$partial_match = true;
-				$url_info["host"] = $blog_host;		// use blog host value from now on
-			}
-			else
-			{
-				if ($dprv_outside_media != "Outside")
-				{
-					$log->lwrite("$url is not on this host");
-					return;
-				}
-				else
-				{
-					// what to doo?
-					return;  // don't handle this yet
-				}
-			}
-		}
-		$url_string = $url_info["host"] . $url_info["path"];
-		if (stripos($url_string, $blog_url_string) !== 0)
-		{
-			$log->lwrite("$url is not on this wp web-site");
-			return;
-		}
-
-		if (stripos($url_string, $blog_url_string) === 0 && isset($url_info["query"]) && strpos($url_info["query"], "attachment_id=") === 0)
-		{
-			$full_path = convert_attachment_to_file(substr($url_info["query"],14));
-		}
-		else
-		{
-			$full_path = addPaths($root_path, $url_info["path"]);
-		}
-	}
-
-	$file_name = basename($full_path);
-	$ext = pathinfo($file_name, PATHINFO_EXTENSION);
-	$file_selected = false;		// default value
-	$selected_reason = "";		// this variable used just for logging / testing
-	if ($dprv_html_tags[$tag]["incl_excl"] == "Include")
-	{
-		if ($dprv_html_tags[$tag]["All"] == "True")
-		{
-			$selected_reason .= "All filetypes included; ";
-			$file_selected = true;
-		}
-		else
-		{
-			foreach ($dprv_html_tags[$tag] as $key=>$value)
-			{
-				if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
-				{
-					if ($value == "True")
-					{
-						if (array_search($ext, $dprv_mime_types[$key]))
-						{
-							$selected_reason .= "$ext included in $key list; ";
-							$file_selected = true;
-						}
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		$file_selected = true;		// default value if using Exclude
-		$selected_reason .= "$ext not excluded";
-		foreach ($dprv_html_tags[$tag] as $key=>$value)
-		{
-			if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
-			{
-				if ($value == "True")
-				{
-					if (array_search($ext, $dprv_mime_types[$key]))
-					{
-						$selected_reason .= "$ext excluded (in $key list)";
-						$file_selected = false;
-					}
-				}
-			}
-		}
-	}
-	if ($file_selected == true)
-	{
-		$file_data = @file_get_contents($full_path);
-		if ($file_data != false)
-		{
-			$file_fingerprint = strtoupper(hash("sha256", $file_data));
-			if (array_search($file_name,$content_file_names) === false || array_search($file_fingerprint,$content_file_fingerprints) === false)  // prevent duplicate references
-			{
-				$content_file_names[$t] = $file_name;
-				//$content_file_fingerprints[$t] = strtoupper(hash("sha256", $file_data));
-				$content_file_fingerprints[$t] = $file_fingerprint;
-				$log->lwrite("content_file_names[" . $t . "]=" . $content_file_names[$t] . " (from " . $tag . " tag), included because " . $selected_reason);
-				$t++;
-			}
-			else
-			{
-				$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag - encountered earlier)");
-			}
-		}
-		else
-		{
-			$error = error_get_last();
-			if ($error !== null)
-			{
-				$log->lwrite("Error " . $error["type"] . " " . $error["message"] . " at line " . $error["line"] . " trying to read $full_path");
-			}
-			else
-			{
-				$log->lwrite("error trying to read $full_path");
-			}
-		}
-	}
-	else
-	{
-		$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag) - $ext not a selected media type");
-	}
+	dprv_unrecord_event($start_marker, $dprv_event);						// remove start marker from dprv event
+	//if (get_option('dprv_event') == 'started dprv_getContentFiles')	// If ending normally,
+	//{
+	//	update_option('dprv_event', '');						// clear event notice field
+	//}
+	$log->lwrite('unrecord_event just ran');
 
 }
 
-function addPaths($root, $path)
-{
-	if ($path[0] == "/" && $root[strlen($root)-1] == "/")
-	{
-		$path = substr($path,1);
-	}
-	return $root . $path;
-}
 
-function convert_attachment_to_file($attach_id)
-{
-	$id = "";
-	for ($i=0; $i<strlen($attach_id); $i++)
-	{
-		if (strpos("0123456789",$attach_id[$i]) !== false)
-		{
-			$id .= $attach_id[$i];
-		}
-		else
-		{
-			break;
-		}
-	}
-	return get_attached_file($id);
-}
+
 function dprv_getTag($xmlString, $tagName)
 {
 	$start_contents = stripos($xmlString, "<" . $tagName . ">") + strlen($tagName) + 2;
@@ -1823,20 +2172,20 @@ function dprv_getTag($xmlString, $tagName)
 }
 
 // Extract raw content to be Digiproved, ignoring previous Digiprove embedded certs and rationalise to ignore effects of Wordpress formatting
-function dprv_getRawContent($post_id, $contentString, &$raw_content_hash)
+function dprv_getRawContent($contentString, &$digital_fingerprint)
 {
-	$log = new Logging();
+	$log = new DPLog();
 	//$log->lwrite("getRawContent starts, content=" . $contentString);
 
 	$raw_content = trim($contentString);
 	$raw_content = dprv_normaliseContent($raw_content);
-	$raw_content_hash = "";
+	$digital_fingerprint = "";
 
 	if (function_exists("hash"))					// Before 5.1.2, the hash() function did not exist, calling it gives a fatal error
 	{
-		$raw_content_hash = strtoupper(hash("sha256", $raw_content));
+		$digital_fingerprint = strtoupper(hash("sha256", $raw_content));
 	}
-	$log->lwrite("getRawContent finishes, strlen(raw_content)=" . strlen($raw_content) . ", hash=$raw_content_hash");
+	$log->lwrite("getRawContent finishes, strlen(raw_content)=" . strlen($raw_content) . ", hash=$digital_fingerprint");
 
 	return $raw_content;
 }
@@ -1844,7 +2193,7 @@ function dprv_getRawContent($post_id, $contentString, &$raw_content_hash)
 
 function dprv_normaliseContent($contentString)
 {
-	$log = new Logging();  
+	$log = new DPLog();  
 	$contentString = htmlspecialchars_decode($contentString, ENT_QUOTES);  		// decode any encoded XML-incompatible characters now to ensure match with post-xml decoded string on server
 
 	// Below is code inserted (at .70) after discovery that extra <p> and </p> tags are inserted when post is coming from WLW - maybe this is generated by wp.getPage or within WLW itself
@@ -1865,5 +2214,131 @@ function dprv_normaliseContent($contentString)
 	// end of 0.70 inserted code
 	return trim($contentString);
 }
+function cian_eval($something, $html = false, $tabs = "")
+{
+	$log = new DPLog();
+	$line = "\r\n";
+	$tab = "\t";
+	$apos = "'";
+	$arrow = "=> ";
+	if ($html)
+	{
+		$line = "<br/>";
+		$tab = "&nbsp;&nbsp;&nbsp;&nbsp;";
+		$apos = "&#039;";
+		$arrow = "=&gt;&nbsp;";
+	}
+	if (is_null($something))
+	{
+		return "NULL; ";
+	}
+	$return = "";
+	if (is_object($something))
+	{
+		$called_class = "";
+		if (function_exists("get_called_class"))
+		{
+			$called_class = get_called_class($something);
+			if ($called_class === false)
+			{
+				$called_class = ", called from outside a class";
+			}
+			else
+			{
+				$called_class = ", called in class " . $called_class;
+			}
+		}
+		$return .= "(object) of " . count($something) . " properties, parent class is " . get_parent_class($something) . ", class is " . get_class($something) . $called_class . "; ";
+		$return .= "array of class methods is " . cian_eval(get_class_methods($something), $html, $tabs);
+		$return .= "array of class variables is " . cian_eval(get_class_vars(get_class($something)), $html, $tabs);
+		$return .= "array of object variables is " . cian_eval(get_object_vars($something), $html, $tabs);
+	}
+	if (is_array($something))
+	{
+		$return .= "(array) [" . count($something) . "]";
+		if (count($something) > 0)
+		{
+			$return .= ": " . $line . $tabs . "{" . $line;
+			foreach ($something as $a_key => $a_value)
+			{
+				$return .= $tabs . $tab . $apos . $a_key . $apos . $arrow . cian_eval($a_value, $html, $tabs . $tab) . $line;
+			}
+			$return .= $tabs . "}" . $line;
+		}
+	}
+	if (is_bool($something))
+	{
+		$return .= "(bool)";
+		if ($something == true)
+		{
+			$return .= " true; ";
+		}
+		else
+		{
+			$return .= " false; ";
+		}
+	}
+	if (is_callable($something))
+	{
+		$return .= "is callable; ";
+	}
+	if (is_double($something))
+	{
+		$return .= "(double)" . "; ";
+	}
+	if (is_float($something))
+	{
+		$return .= "(float)" . "; ";
+	}
+	if (is_int($something))
+	{
+		$return .= "(int) " . $something . "; ";
+	}
+	if (is_integer($something))
+	{
+		$return .= "(integer) " . $something . "; ";
+	}
+	if (is_long($something))
+	{
+		$return .= "(long)" . "; ";
+	}
+	if (is_numeric($something))
+	{
+		$return .= ", is numeric; ";
+	}
+	if (is_real($something))
+	{
+		$return .= ", is real; ";
+	}
+	if (is_resource($something))
+	{
+		$return .= ", is resource; ";
+	}
+	if (is_string($something))
+	{
+		$return .= "string (" . strlen($something) . ")";
+		if (strlen($something) > 0)
+		{
+			$return .= ": ";
+			if (strlen($something) > 200)
+			{
+				$return .= " begins with " . substr($something, 0, 150) . "; ";
+			}
+			else
+			{
+				$return .= $something . "; ";
+			}
+		}
+	}
+	else
+	{
+		if (is_scalar($something))
+		{
+			$return .= ", is scalar; ";
+		}
+	}
+	return $return;
+}
+
 
 ?>

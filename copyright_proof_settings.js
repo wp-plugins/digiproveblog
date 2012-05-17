@@ -1,5 +1,4 @@
 //<![CDATA[
-
 // FUNCTIONS TO SUPPORT COPYRIGHT PROOF SETTINGS PAGE
 
 // Tab Display Functions
@@ -23,6 +22,7 @@ function DisplayAdvanced()
 	document.getElementById("AdvancedPart1").style.display="";
 	document.getElementById("AdvancedPart2").style.display="";
 	document.getElementById("Content").style.display="none";
+	document.getElementById("ContentPart2").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="none";
 	HideHelpText();
@@ -49,6 +49,7 @@ function DisplayLicenseTab()
 	document.getElementById("AdvancedPart1").style.display="none";
 	document.getElementById("AdvancedPart2").style.display="none";
 	document.getElementById("Content").style.display="none";
+	document.getElementById("ContentPart2").style.display="none";
 	document.getElementById("License").style.display="";
 	document.getElementById("CopyProtect").style.display="none";
 	HideHelpText();
@@ -75,10 +76,10 @@ function DisplayContentTab()
 	document.getElementById("AdvancedPart2").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("Content").style.display="";
+	//document.getElementById("ContentPart2").style.display="";
 	document.getElementById("CopyProtect").style.display="none";
 	HideHelpText();
 }
-
 
 function DisplayCopyProtect()
 {
@@ -100,6 +101,7 @@ function DisplayCopyProtect()
 	document.getElementById("AdvancedPart1").style.display="none";
 	document.getElementById("AdvancedPart2").style.display="none";
 	document.getElementById("Content").style.display="none";
+	document.getElementById("ContentPart2").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="";
 	HideHelpText();
@@ -124,6 +126,7 @@ function DisplayBasic()
 	document.getElementById("AdvancedPart1").style.display="none";
 	document.getElementById("AdvancedPart2").style.display="none";
 	document.getElementById("Content").style.display="none";
+	document.getElementById("ContentPart2").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="none";
 	HideHelpText();
@@ -189,7 +192,9 @@ function toggleCredentials()
 		document.getElementById("dprv_password_row1").style.display="none";
 		document.getElementById("dprv_password_row2").style.display="none";
 		document.getElementById("dprv_password_row3").style.display="none";
-		document.getElementById("dprv_submit").value = dprv_literals["Update Settings"];
+		document.getElementById("dprv_contact_row0").style.display="none";
+		document.getElementById("dprv_contact_row1").style.display="none";
+		document.getElementById("dprv_submit").value = dprv_literals["Update_settings"];
 		renewApiKey();
 	}
 	else
@@ -216,7 +221,9 @@ function toggleCredentials()
 			document.getElementById("dprv_password_row1").style.display="";
 			document.getElementById("dprv_password_row2").style.display="";
 			document.getElementById("dprv_password_row3").style.display="";
-			document.getElementById("dprv_submit").value = dprv_literals["Update & Register"];
+			document.getElementById("dprv_contact_row0").style.display="";
+			document.getElementById("dprv_contact_row1").style.display="";
+			document.getElementById("dprv_submit").value = dprv_literals["Update_&_register"];
 		}
 		else
 		{
@@ -226,7 +233,9 @@ function toggleCredentials()
 			document.getElementById("dprv_password_row1").style.display="none";
 			document.getElementById("dprv_password_row2").style.display="none";
 			document.getElementById("dprv_password_row3").style.display="none";
-			document.getElementById("dprv_submit").value = dprv_literals["Update Settings"];
+			document.getElementById("dprv_contact_row0").style.display="none";
+			document.getElementById("dprv_contact_row1").style.display="none";
+			document.getElementById("dprv_submit").value = dprv_literals["Update_settings"];
 		}
 	}
 	HideHelpText();
@@ -234,7 +243,8 @@ function toggleCredentials()
 
 function EnableRegistrationInputs()
 {
-	if (confirm("Once you have registered successfully and the plugin is working it should not be necessary to modify any of these values, and entering an incorrect value may cause the plugin to stop working.  If you are sure you wish to proceed, press OK."))
+	//if (confirm("Once you have registered successfully and the plugin is working it should not be necessary to modify any of these values, and entering an incorrect value may cause the plugin to stop working.  If you are sure you wish to proceed, press OK."))
+	if (confirm(dprv_literals["No_touch_warning0"]))				// Once you have registered successfully and the plugin is working it should not be necessary to modify any of these values, and entering an incorrect value may cause the plugin to stop working.  If you are sure you wish to proceed, press OK."
 	{
 		document.getElementById("dprv_enrolled").disabled=false;
 		document.getElementById("dprv_register_yes").disabled=false;
@@ -253,13 +263,15 @@ function EnableRegistrationInputs()
 
 function UserIdChanged()
 {
-	if (dprv_lastUserId == document.getElementById('dprv_user_id').value)
+	if (dprv_lastUserId == document.getElementById('dprv_user_id').value || document.getElementById('dprv_enrolled').value == "No")
 	{
 		return true;
 	}
-	if ((dprv_last_result.indexOf("Digiprove certificate id") !== -1 || dprv_last_result.indexOf("User already activated") !== -1) && dprv_lastUserId != "")
+	//if ((dprv_last_result.indexOf("Digiprove certificate id") !== -1 || dprv_last_result.indexOf("User already activated") !== -1) && dprv_lastUserId != "")
+	if ((dprv_last_result.indexOf(dprv_literals["Digiprove certificate id"]) !== -1 || dprv_last_result.indexOf("User already activated") !== -1) && dprv_lastUserId != "")
 	{
-		if (!confirm("You are changing your Digiprove User Id. This may cause the plugin to stop working.  Press OK if you are sure, or Cancel to restore the previous value."))
+		//if (!confirm("You are changing your Digiprove User Id. This may cause the plugin to stop working.  Press OK if you are sure, or Cancel to restore the previous value."))
+		if (!confirm(dprv_literals["No_touch_warning1"]))			// "You are changing your Digiprove User Id. This may cause the plugin to stop working.  Press OK if you are sure, or Cancel to restore the previous value."
 		{
 			document.getElementById('dprv_user_id').value = dprv_lastUserId;
 			return false;
@@ -286,7 +298,8 @@ function ApiKeyChange()
 	}
 	if (dprv_lastApiKey == "")
 	{
-		if (!confirm("You have entered a value for API Key - do this only if the new API key was obtained from Digiprove"))
+		//if (!confirm("You have entered a value for API Key - do this only if the new API key was obtained from Digiprove"))
+		if (!confirm(dprv_literals["No_touch_warning2"]))			// "You have entered a value for API Key - do this only if the new API key was obtained from Digiprove
 		{
 			document.getElementById('dprv_api_key').value = dprv_lastApiKey;
 			return false;
@@ -296,16 +309,21 @@ function ApiKeyChange()
 	{
 		if (document.getElementById('dprv_api_key').value == "")
 		{
-			alert("An empty api key is invalid.");
+			//alert("An empty api key is invalid.");
+			alert(dprv_literals["API_key_empty"]);					// "An empty api key is invalid."
 			document.getElementById('dprv_api_key').value = dprv_lastApiKey;
 			return false;
 		}
 		var length_message = "";
 		if (document.getElementById('dprv_api_key').value.length != 22)
 		{
-			length_message = " That does not look like a valid API key which is normally 22 characters.";
+			
+			//length_message = " That does not look like a valid API key which is normally 22 characters.";
+			length_message = " " + dprv_literals["API_key_warning1"];		// "That does not look like a valid API key which is normally 22 characters."
 		}
-		if (!confirm("You are changing the API Key - do this only if the new API key was obtained from Digiprove, otherwise the plugin will stop working." + length_message + " Press OK to proceed with change or Cancel to restore original value"))
+		
+		//if (!confirm("You are changing the API Key - do this only if the new API key was obtained from Digiprove, otherwise the plugin will stop working." + length_message + " Press OK to proceed with change or Cancel to restore original value"))
+		if (!confirm(dprv_literals["API_key_warning0"] + length_message + dprv_literals["API_key_warning2"]))
 		{
 			document.getElementById('dprv_api_key').value = dprv_lastApiKey;
 			return false;
@@ -374,7 +392,9 @@ function toggleApiKey()
 		{
 			if (dprv_lastApiKey == "")
 			{
-				if (!confirm("Tou should only input a value for API Key if you have already obtained this API key from Digiprove."))
+				
+				//if (!confirm("You should only input a value for API Key if you have already obtained this API key from Digiprove."))
+				if (!confirm(dprv_literals["API_key_warning3"]))		// "You should only input a value for API Key if you have already obtained this API key from Digiprove."
 				{
 					document.getElementById("dprv_input_api_key").checked = false;
 					return false;
@@ -382,7 +402,9 @@ function toggleApiKey()
 			}
 			else
 			{
-				if (!confirm("Do this only if the new API key was obtained from Digiprove, otherwise the plugin will stop working."))
+				
+				//if (!confirm("Do this only if the new API key was obtained from Digiprove, otherwise the plugin will stop working."))
+				if (!confirm(dprv_literals["API_key_warning4"]))				// "Do this only if the new API key was obtained from Digiprove, otherwise the plugin will stop working."
 				{
 					document.getElementById("dprv_input_api_key").checked = false;
 					restoreApiKey();
@@ -394,7 +416,8 @@ function toggleApiKey()
 		{
 			if (document.getElementById("dprv_enrolled").value == "Yes")
 			{
-				document.getElementById("dprv_api_key_caption").innerHTML = "Current API Key:"
+				//document.getElementById("dprv_api_key_caption").innerHTML = "Current API Key:"
+				document.getElementById("dprv_api_key_caption").innerHTML = dprv_literals["Current_API_key"];
 				document.getElementById("dprv_api_key").disabled = true;
 				document.getElementById("dprv_api_key").style.backgroundColor = "#EEEEEE";
 				document.getElementById("dprv_api_key_row_2").style.display="";
@@ -407,20 +430,23 @@ function toggleApiKey()
 			{
 				document.getElementById("dprv_api_key_row_2").style.display="none";
 			}
-			document.getElementById("dprv_password_label").innerHTML = "Enter Password:";
+			//document.getElementById("dprv_password_label").innerHTML = "Enter Password:";
+			document.getElementById("dprv_password_label").innerHTML = dprv_literals["Enter_password"];			// "Enter Password:"
 			document.getElementById("dprv_password_row1").style.display="";
 			document.getElementById("dprv_password_row2").style.display="";
 			document.getElementById("dprv_password").focus();
 		}
 		else
 		{
-			document.getElementById("dprv_password_label").innerHTML = "Select a Password:";
+			//document.getElementById("dprv_password_label").innerHTML = "Select a Password:";
+			document.getElementById("dprv_password_label").innerHTML = dprv_literals["Select_password"];		//"Select a Password:"
 			document.getElementById("dprv_password_row1").style.display="none";
 			document.getElementById("dprv_password_row2").style.display="none";
 			if (document.getElementById("dprv_input_api_key").checked == true)
 			{
 				document.getElementById("dprv_api_key_row_2").style.display="";
-				document.getElementById("dprv_api_key_caption").innerHTML = "Enter API Key:"
+				//document.getElementById("dprv_api_key_caption").innerHTML = "Enter API Key:"
+				document.getElementById("dprv_api_key_caption").innerHTML = dprv_literals["Enter_API_key"];
 				document.getElementById("dprv_api_key").disabled = false;
 				document.getElementById("dprv_api_key").style.backgroundColor = "";
 				document.getElementById("dprv_api_key").focus();
@@ -429,8 +455,8 @@ function toggleApiKey()
 			{
 				document.getElementById("dprv_api_key").disabled = true;
 				document.getElementById("dprv_api_key").style.backgroundColor = "#EEEEEE";
-				document.getElementById("dprv_api_key_caption").innerHTML = "Current API Key:"
-			}
+				//document.getElementById("dprv_api_key_caption").innerHTML = "Current API Key:";
+				document.getElementById("dprv_api_key_caption").innerHTML = dprv_literals["Current_API_key"];			}
 		}
 	}
 	return true;
@@ -441,7 +467,8 @@ function restoreApiKey()
 	if (dprv_savedApiKey != "")
 	{
 		document.getElementById("dprv_api_key").value = dprv_savedApiKey;
-		document.getElementById("dprv_api_key_caption").innerHTML = "Current API Key:"
+		//document.getElementById("dprv_api_key_caption").innerHTML = "Current API Key:"
+		document.getElementById("dprv_api_key_caption").innerHTML = dprv_literals["Current_API_key"];
 		document.getElementById("dprv_api_key").disabled = true;
 		document.getElementById("dprv_api_key").style.backgroundColor = "#EEEEEE";
 		document.getElementById("dprv_api_key_row_2").style.display="";
@@ -450,53 +477,65 @@ function restoreApiKey()
 
 function ShowPersonalDetailsText()
 {
-	DisplayHelpText('Copyright Proof uses the Digiprove service (<a href="http://www.digiprove.com/creative-and-copyright.aspx" target="_blank">www.digiprove.com</a>) to certify the content and timestamp of your Wordpress posts. Digiprove needs the name of the person claiming copyright and a valid email address to which the digitally-signed content certificates will be sent. The personal details on this panel will be used only in automatically creating your account at Digiprove.  The server records of this information are accessible at <a href="https://www.digiprove.com/members/preferences.aspx" target="_blank">https://www.digiprove.com/members/preferences.aspx</a>.');
+	
+	//DisplayHelpText('Copyright Proof uses the Digiprove service (<a href="http://www.digiprove.com/creative-and-copyright.aspx" target="_blank">www.digiprove.com</a>) to certify the content and timestamp of your Wordpress posts. Digiprove needs the name of the person claiming copyright and a valid email address to which the digitally-signed content certificates will be sent. The personal details on this panel will be used only in automatically creating your account at Digiprove.  The server records of this information are accessible at <a href="https://www.digiprove.com/members/preferences.aspx" target="_blank">https://www.digiprove.com/members/preferences.aspx</a>.');
+	DisplayHelpText(dprv_literals["Personal_help"]);
 }
 
 function ShowPrivacyText()
 {
-	DisplayHelpText('The Copyright Proof notice appearing at the foot of your blog posts contains a link to a web-page showing details of the Digiprove certificate of your content. If you do not want your name to appear on this page select the &#39;Keep private&#39; option. Your email address and Digiprove User id are never revealed. Click <a href="http://www.digiprove.com/privacypolicy.aspx" target="_blank">here</a> to read the full privacy statement.');
+	//DisplayHelpText('The Copyright Proof notice appearing at the foot of your blog posts contains a link to a web-page showing details of the Digiprove certificate of your content. If you do not want your name to appear on this page select the &#39;Keep private&#39; option. Your email address and Digiprove User id are never revealed. Click <a href="http://www.digiprove.com/privacypolicy.aspx" target="_blank">here</a> to read the full privacy statement.');
+	DisplayHelpText(dprv_literals["Privacy_help"]);
 }
 
 function ShowEmailCertText()
 {
-	DisplayHelpText('Every post you publish or update will cause a cryptographically encoded certificate to be created which is your proof that your content was published by you at that exact time and date. This is retained for you in case it is required in future. Each certificate may be downloaded at the Digiprove website if required - you will need a current subscription to do this. Digiprove subscribers have the option to receive their certificates automatically by email. To set this option, select &#39;Yes&#39; here.  You will still be able to download these certificates from the Digiprove site if required.');
+	//DisplayHelpText('Every post you publish or update will cause a cryptographically encoded certificate to be created which is your proof that your content was published by you at that exact time and date. This is retained for you in case it is required in future. Each certificate may be downloaded at the Digiprove website if required - you will need a current subscription to do this. Digiprove subscribers have the option to receive their certificates automatically by email. To set this option, select &#39;Yes&#39; here.  You will still be able to download these certificates from the Digiprove site if required.');
+	DisplayHelpText(dprv_literals["Email_cert_help"]);
 }
 
 function ShowAPIText(domain_name, password_on_record)
 {
-	var dprv_api_text='A Digiprove API key for ' + dprv_blog_host + ' is required for this domain to use the Digiprove service.';
+	//var dprv_api_text='A Digiprove API key for ' + dprv_blog_host + ' is required for this domain to use the Digiprove service.';
+	var dprv_api_text = dprv_literals["API_key_required0"];		// 'A Digiprove API key for ' + dprv_blog_host + ' is required for this domain to use the Digiprove service.'
+	
 	if (document.getElementById('dprv_api_key').value == "")
 	{
 		if (password_on_record == 'Yes')
 		{
-			dprv_api_text += ' If you have already registered, you do not need to do anything, it will be filled in automatically when required. You can also obtain an API key <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">from the Digiprove members&#39; website</a> (you will be asked to log in)';
+			//dprv_api_text += ' If you have already registered, you do not need to do anything, it will be filled in automatically when required. You can also obtain an API key <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">from the Digiprove members&#39; website</a> (you will be asked to log in)';
+			dprv_api_text += dprv_literals["API_key_required1"];
 		}
 		else
 		{
-			dprv_api_text += ' If you are already registered with Digiprove, you can obtain your API key for this domain by ticking the &quot;Obtain New API Key&quot; box above (you will be asked for your password).  API keys can also be obtained at the <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">Digiprove members&#39; website</a> (you will be asked to log in)';
+			//dprv_api_text += ' If you are already registered with Digiprove, you can obtain your API key for this domain by ticking the &quot;Obtain New API Key&quot; box above (you will be asked for your password).  API keys can also be obtained at the <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">Digiprove members&#39; website</a> (you will be asked to log in)';
+			dprv_api_text += dprv_literals["API_key_required2"];
 		}
 	}
 	else
 	{
-		dprv_api_text += ' If you registered from this page this field will have been filled in automatically - there is no need to change it. If you are receiving error messages regarding your api key you can obtain a new one by ticking &quot;Obtain New Api Key&quot; box (you will need to input your password) or it can also be done from the <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">Digiprove  members&#39; website</a> (you will be asked to log in)';
+		//dprv_api_text += ' If you registered from this page this field will have been filled in automatically - there is no need to change it. If you are receiving error messages regarding your api key you can obtain a new one by ticking &quot;Obtain New Api Key&quot; box (you will need to input your password) or it can also be done from the <a href="https://www.digiprove.com/members/api_keys.aspx" target="_blank">Digiprove  members&#39; website</a> (you will be asked to log in)';
+		dprv_api_text += dprv_literals["API_key_required3"];
 	}
 	DisplayHelpText(dprv_api_text);
 }
 
 function ShowPasswordText()
 {
-	DisplayHelpText('Your password to give you access to the Digiprove website members&#39; area. An encrypted version of the password is stored on the Digiprove server but <em>not here on your Wordpress server</em>.');
+	//DisplayHelpText('Your password to give you access to the Digiprove website members&#39; area. An encrypted version of the password is stored on the Digiprove server but <em>not here on your Wordpress server</em>.');
+	DisplayHelpText(dprv_literals["Password_help"]);
 }
 
 function ShowRegistrationText()
 {
-	DisplayHelpText('Copyright Proof uses the Digiprove service (<a href="http://www.digiprove.com/creative-and-copyright.aspx" target="_blank">www.digiprove.com</a>) to certify the content and timestamp of your Wordpress posts. You need to register with Digiprove before Copyright Proof will start working for you; by selecting &quot;Yes, register me now&quot; this registration process will take place; you will then receive an email with an activation link.');
+	//DisplayHelpText('Copyright Proof uses the Digiprove service (<a href="http://www.digiprove.com/creative-and-copyright.aspx" target="_blank">www.digiprove.com</a>) to certify the content and timestamp of your Wordpress posts. You need to register with Digiprove before Copyright Proof will start working for you; by selecting &quot;Yes, register me now&quot; this registration process will take place; you will then receive an email with an activation link.');
+	DisplayHelpText(dprv_literals["Register_help"]);
 }
 
 function ShowTermsOfUseText()
 {
-	DisplayHelpText('Using this plugin, the core Digiprove services are provided free-of-charge.  There are <a href="http://www.digiprove.com/termsofuse_page.aspx" target="_blank">terms of use</a> governing things like privacy and abuse. There are some premium services that are available only to Digiprove subscribers');
+	//DisplayHelpText('Using this plugin, the core Digiprove services are provided free-of-charge.  There are <a href="http://www.digiprove.com/termsofuse_page.aspx" target="_blank">terms of use</a> governing things like privacy and abuse. There are some premium services that are available only to Digiprove subscribers');
+	DisplayHelpText(dprv_literals["Commercial_help"]);
 }
 
 // END OF FUNCTIONS FOR BASIC TAB
@@ -655,15 +694,29 @@ function ToggleFooterWarning()
 }
 function ShowMultiPostText()
 {
-	DisplayHelpText('Tick this to allow the Digiprove notice to be included in post excerpts that appear on multi-post pages such as search results, archive pages etc.');
+	//DisplayHelpText('Tick this to allow the Digiprove notice to be included in post excerpts that appear on multi-post pages such as search results, archive pages etc.');
+	DisplayHelpText(dprv_literals["Multipost_help"]);
 }
 
 function ShowFooterText()
 {
-	DisplayHelpText('Please check how this looks on your site.  Whether and where the notice appears is determined by your theme.  To change this, look for wp_footer() in the footer.php file of your theme.');
+	//DisplayHelpText('Please check how this looks on your site.  Whether and where the notice appears is determined by your theme.  To change this, look for wp_footer() in the footer.php file of your theme.');
+	DisplayHelpText(dprv_literals["Footer_text_help"]);
 }
 
 // END OF FUNCTIONS FOR ADVANCED TAB
+
+
+// FUNCTIONS FOR DATA INTEGRITY TAB
+function ShowDataIntegrityText()
+{
+	DisplayHelpText(dprv_literals["DataIntegrity_help"]);
+}
+function FileIntegrityNote()
+{
+	DisplayHelpText(dprv_literals["FileIntegrityNote"]);
+}
+// END OF FUNCTIONS FOR DATA INTEGRITY TAB
 
 
 // FUNCTIONS FOR CONTENT TAB:
@@ -672,14 +725,16 @@ function ShowFingerprintText(hash_supported)
 	var caution = ''
 	if (hash_supported=='No')
 	{
-		caution = ' <b><font color="red">Your version of PHP does not support this function.</b</font> Ask your provider to upgrade you to PHP 5.1.2 or later.'
+		//caution = ' <b><font color="red">Your version of PHP does not support this function.</b</font> Ask your provider to upgrade you to PHP 5.1.2 or later.'
+		caution = ' <b><font color="red">' + dprv_literals["PHP_warning0"] + "</b</font>" + dprv_literals["PHP_warning1"];
 	}
-	DisplayHelpText('If you include media files (such as images, sounds, video, pdf etc.) within your posts or pages, you may instruct Digiprove to certify the digital fingerprints of the individual files, as well the html and text of the post itself.' + caution);
+	DisplayHelpText(dprv_literals["Fingerprint_media_help"] + caution);
 }
 
 function ShowBetaText()
 {
-	DisplayHelpText('Note the media file Digiproving functions are in Beta form. We have tested them in a number of environments, but we are anxious for your feedback.  If you experience problems, firstly please advise us at support@digiprove.com, so we can fix the underlying problem. To get rid of problems, simply untick all of these boxes, or press &quot;Clear all&quot;.');
+	//DisplayHelpText('Note the media file Digiproving functions are in Beta form. We have tested them in a number of environments, but we are anxious for your feedback.  If you experience problems, firstly please advise us at support@digiprove.com, so we can fix the underlying problem. To get rid of problems, simply untick all of these boxes, or press &quot;Clear all&quot;.');
+	DisplayHelpText(dprv_literals["Beta_warning"]);
 }
 
 function toggleMedia(element)
@@ -815,8 +870,8 @@ function AddLicense()
 		SubscribersOnly("Add license");
 		return false;
 	}
-	document.getElementById('dprv_license_heading').innerHTML = 'New License Type';
-	document.getElementById('dprv_license_type_caption').innerHTML = 'License Type Name';
+	document.getElementById('dprv_license_heading').innerHTML = dprv_literals["New_license_type"];			// 'New License Type';
+	document.getElementById('dprv_license_type_caption').innerHTML = dprv_literals["License_type_name"];	// 'License Type Name';
 	document.getElementById('dprv_license').style.display='none';
 	document.getElementById('dprv_license_caption').style.display='none';
 	document.getElementById('dprv_license_abstract').style.display='none';
@@ -831,7 +886,7 @@ function AddLicense()
 	document.getElementById('dprv_custom_license_url').value='';
 	document.getElementById('dprv_license_commit_0').style.display='';
 	document.getElementById('dprv_license_commit_1').style.display='';
-	document.getElementById('dprv_license_commit').value='Add this license';
+	document.getElementById('dprv_license_commit').value= dprv_literals["Add_this_license"];				// 'Add this license';
 	document.getElementById('dprv_submit').style.display='none';	
 	document.getElementById('dprv_custom_license').focus();
 	return true;
@@ -843,7 +898,7 @@ function AmendLicense()
 		SubscribersOnly("Amend license");
 		return false;
 	}
-	document.getElementById('dprv_license_heading').innerHTML = 'Amend License Type';
+	document.getElementById('dprv_license_heading').innerHTML = dprv_literals["Amend_license_type"];		// 'Amend License Type';
 	document.getElementById('dprv_license').style.display='none';
 	document.getElementById('dprv_license_caption').style.display='none';
 	document.getElementById('dprv_license_abstract').style.display='none';
@@ -866,7 +921,7 @@ function AmendLicense()
 	document.getElementById('dprv_custom_license_url').value = document.getElementById('dprv_license_url').innerHTML;
 	document.getElementById('dprv_license_commit_0').style.display='';
 	document.getElementById('dprv_license_commit_1').style.display='';
-	document.getElementById('dprv_license_commit').value='Update this license';
+	document.getElementById('dprv_license_commit').value= dprv_literals["Update_this_license"];				// 'Update this license';
 	document.getElementById('dprv_submit').style.display='none';	
 	document.getElementById('dprv_custom_license').focus();
 	return true;
@@ -882,7 +937,8 @@ function RemoveLicense()
 	{
 		if (document.getElementById('dprv_license').value == dprv_licenseIds[i])
 		{
-			if (confirm("Remove License Type " + dprv_licenseTypes[i] + "?  (This operation cannot be undone)"))
+			//if (confirm("Remove License Type " + dprv_licenseTypes[i] + "?  (This operation cannot be undone)"))
+			if (confirm(dprv_literals["Remove_this_license"].replace("%s", dprv_licenseTypes[i])))
 			{
 					document.getElementById("dprv_action").value = "RemoveLicense";
 					document.getElementById("dprv_cp").submit();
@@ -903,17 +959,19 @@ function LicenseActionCommit()
 	{
 			if (document.getElementById('dprv_custom_license').value == "")
 			{
-				alert("Please enter a value for License Type");
+				alert(dprv_literals["License_Type_Missing"]);
 				document.getElementById('dprv_custom_license').focus();
 				return false;
 			}
-			if (document.getElementById('dprv_custom_license_abstract').value == "" && !confirm("You have not entered a value for License Summary.  Press OK if this is intentional"))
+			
+			//if (document.getElementById('dprv_custom_license_abstract').value == "" && !confirm("You have not entered a value for License Summary.  Press OK if this is intentional"))
+			if (document.getElementById('dprv_custom_license_abstract').value == "" && !confirm(dprv_literals["License_summary_empty"]))
 			{
 				document.getElementById('dprv_custom_license_abstract').focus();
 				return false;
 			}
 
-			if (document.getElementById('dprv_license_commit').value == 'Update this license')
+			if (document.getElementById('dprv_license_commit').value == dprv_literals["Update_this_license"])		// 'Update this license'
 			{
 				document.getElementById("dprv_action").value = "UpdateLicense";
 			}
@@ -927,8 +985,8 @@ function LicenseActionCommit()
 
 function LicenseActionAbandon()
 {
-	document.getElementById('dprv_license_heading').innerHTML = 'Default License Statement';
-	document.getElementById('dprv_license_type_caption').innerHTML = 'License Type:';
+	document.getElementById('dprv_license_heading').innerHTML = dprv_literals["Default_license_statement"];			// 'Default License Statement';
+	document.getElementById('dprv_license_type_caption').innerHTML = dprv_literals["License_type"];					// 'License Type:';
 	document.getElementById('dprv_license').style.display='';
 	document.getElementById('dprv_license_caption').style.display='';
 	document.getElementById('dprv_license_abstract').style.display='';
@@ -982,7 +1040,7 @@ function toggle_r_c_text(element)
 		document.getElementById('dprv_right_click_message').style.backgroundColor = '#FFFFFF';
 		if (document.getElementById('dprv_right_click_message').value == "")
 		{
-			document.getElementById('dprv_right_click_message').value = "Sorry, right-clicking is disabled; please respect copyrights";
+			document.getElementById('dprv_right_click_message').value = dprv_literals["Default_right_click_alert"];			// "Sorry, right-clicking is disabled; please respect copyrights";
 		}
 	}
 	else
@@ -996,7 +1054,8 @@ function toggle_r_c_text(element)
 
 function ShowFrustrateCopyText()
 {
-	DisplayHelpText('Selecting this option will prevent a user from right-clicking on your web-page (in order to view the source), selecting content (in order to copy to clipboard), or pressing CTRL/U (to view the source) in most browsers.  This may prevent the unauthorised use of your content by unsophisticated users, but will be a small nuisance to a determined content thief. This is as good as it gets on the web - DO NOT BELIEVE the claims of some other plugin authors that your content cannot be stolen...');
+	//DisplayHelpText('Selecting this option will prevent a user from right-clicking on your web-page (in order to view the source), selecting content (in order to copy to clipboard), or pressing CTRL/U (to view the source) in most browsers.  This may prevent the unauthorised use of your content by unsophisticated users, but will be a small nuisance to a determined content thief. This is as good as it gets on the web - DO NOT BELIEVE the claims of some other plugin authors that your content cannot be stolen...');
+	DisplayHelpText(dprv_literals["Frustrate_copy_help"]);
 }
 
 
@@ -1004,20 +1063,22 @@ function ShowFrustrateCopyText()
 // GENERIC (CROSS-TAB) FUNCTIONS:
 function SubmitSelected()
 {
-	if (document.getElementById("dprv_enrolled").value == "No" && document.getElementById("dprv_register_yes").checked == true)
-	{
-		if (!confirm("Do you want to proceed with registration at www.digiprove.com?  You will receive an email with an activation link. If you do not want to do this now, press Cancel"))
-		{
-			document.getElementById("dprv_register_yes").checked = false;
-			toggleCredentials();
-			return false;
-		}
-	}
+	//if (document.getElementById("dprv_enrolled").value == "No" && document.getElementById("dprv_register_yes").checked == true)
+	//{
+		//if (!confirm("Do you want to proceed with registration at www.digiprove.com?  You will receive an email with an activation link. If you do not want to do this now, press Cancel"))
+	//	if (!confirm(dprv_literals["Registration_confirm"]))
+	//	{
+	//		document.getElementById("dprv_register_yes").checked = false;
+	//		toggleCredentials();
+	//		return false;
+	//	}
+	//}
 	if (ApiKeyChange())
 	{
 		if (document.getElementById("message") != null)
 		{
-			document.getElementById("message").innerHTML = "<p>Processing...</p>";
+			//document.getElementById("message").innerHTML = "<p>Processing...</p>";
+			document.getElementById("message").innerHTML = "<p>" + dprv_literals["Processing..."] + "</p>";
 		}
 		return true;
 	}
@@ -1028,17 +1089,20 @@ function SubscribersOnly(f)
 {
 	if (dprv_subscription_type == "Basic")
 	{
-		DisplayHelpText('The ' + f + ' function is available only to Digiprove subscribers.  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Select a subscription plan</a>.');
+		//DisplayHelpText('The ' + f + ' function is available only to Digiprove subscribers.  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Select a subscription plan</a>.');
+		DisplayHelpText(dprv_literals["Subscribers_only_basic"].replace("%1$s", f));
 	}
 	else
 	{
 		if (dprv_subscription_type == "")
 		{
-			DisplayHelpText('The ' + f + ' function is available only to Digiprove subscribers. Please complete registration first.');
+			//DisplayHelpText('The ' + f + ' function is available only to Digiprove subscribers. Please complete registration first.');
+			DisplayHelpText(dprv_literals["Subscribers_only_none"].replace("%1$s", f));
 		}
 		else
 		{
-			DisplayHelpText('The ' + f + ' function is available only to current Digiprove subscribers. Your ' + dprv_subscription_type + ' account expired on ' + dprv_subscription_expiry + '. <a href=\"' + dprv_upgrade_link + '&Action=Renew\" target=\"_blank\">Renew your subscription plan</a>.');
+			//DisplayHelpText('The ' + f + ' function is available only to current Digiprove subscribers. Your ' + dprv_subscription_type + ' account expired on ' + dprv_subscription_expiry + '. <a href=\"' + dprv_upgrade_link + '&Action=Renew\" target=\"_blank\">Renew your subscription plan</a>.');
+			DisplayHelpText(dprv_literals["Subscribers_only_expired"].replace("%1$s", f));
 		}
 	}
 }
@@ -1047,17 +1111,21 @@ function PremiumOnly(f)
 {
 	if (dprv_subscription_type == "")
 	{
-		DisplayHelpText('The ' + f + ' function is available only to Digiprove subscribers at Professional level or above. Please complete registration first.');
+		//DisplayHelpText('The ' + f + ' function is available only to Digiprove subscribers at Professional level or above. Please complete registration first.');
+		DisplayHelpText(dprv_literals["Premium_only_none"].replace("%1$s", f));
 	}
 	else
 	{
 		if (dprv_subscription_type == "Personal")
 		{
-			DisplayHelpText('The ' + f + ' function is not available under your current plan (' + dprv_subscription_type + ').  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Upgrade your subscription plan</a>.');
+
+			//DisplayHelpText('The ' + f + ' function is not available under your current plan (' + dprv_subscription_type + ').  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Upgrade your subscription plan</a>.');
+			DisplayHelpText(dprv_literals["Premium_only_personal"].replace("%1$s", f));
 		}
 		else
 		{
-			DisplayHelpText('The ' + f + ' function is available to subscribers at Professional level and above - your current plan is &quot;' + dprv_subscription_type + '&quot;.  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Upgrade your subscription plan</a>.');
+			//DisplayHelpText('The ' + f + ' function is available to subscribers at Professional level and above - your current plan is &quot;' + dprv_subscription_type + '&quot;.  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Upgrade your subscription plan</a>.');
+			DisplayHelpText(dprv_literals["Premium_only_else"].replace("%1$s", f));
 		}
 	}
 }
