@@ -3,12 +3,12 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.00
+Version: 2.01
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
 */
-/*  Copyright 2008-2012  Digiprove (email : cian.kinsella@digiprove.com)
+/*  Copyright 2008-2011  Digiprove (email : cian.kinsella@digiprove.com)
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -35,7 +35,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.00");
+	define("DPRV_VERSION", "2.01");
 	//define("DPRV_Log", "Yes");                       // Set this to "Yes" to generate local log-file (needs write permissions)
 	//error_reporting(E_ALL);						   // uncomment this for test purposes
 
@@ -298,8 +298,7 @@ License: GPL
 		$dprv_prefix = get_option('dprv_prefix');
 		$dprv_posts = $dprv_prefix . "dprv_posts";
 		
-		// Check to see if the table exists already, if not, then create it
-		// If it does exist, check structure and alter it of necessary
+		// Check db structure and alter it (or create it) if necessary
 		$dprv_activation_event = get_option('dprv_activation_event');
 		$log->lwrite("creating or altering table " . $dprv_posts);
 		$sql = "CREATE TABLE " . $dprv_posts . " (
@@ -327,13 +326,23 @@ License: GPL
 		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 		dbDelta($sql);
 		$dprv_db_error =$wpdb->last_error;
-		$message = "Created or altered posts table " . $dprv_posts . " if necessary";
-		$log->lwrite($message);
+		$log->lwrite ("Created or altered posts table " . $dprv_posts . " if necessary");
 		if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
 		{
 			$message = "Failure to create table " . $dprv_posts . " with error " .  $dprv_db_error;
-			update_option('dprv_activation_event', $dprv_activation_event . '; ' . $message);
 			$log->lwrite($message);
+			dprv_record_event($message);
+			update_option('dprv_activation_event', $dprv_activation_event . '; ' . $message);
+		}
+		else
+		{
+			if ($wpdb->get_var("SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'") != 'last_fingerprint')
+			{
+				$message = "last_fingerprint column not added to " . $dprv_posts . " with error " .  $dprv_db_error;
+				$log->lwrite($message);
+				dprv_record_event($message);
+				update_option('dprv_activation_event', $dprv_activation_event . '; ' . $message);
+			}
 		}
 	}
 
@@ -443,7 +452,7 @@ License: GPL
 	// EVERY TIME WE START UP, CHECK IF ACTIVATION NEEDS TO BE DONE, CHECK FOR DB PREFIX CHANGE AND DISPLAY REMINDER ABOUT CONFIGURATION IF NECESSARY
 	function dprv_init()
 	{
-		if (get_option('dprv_activated_version') != DPRV_VERSION)
+		if (get_option('dprv_activated_version') !== DPRV_VERSION)
 		{
 			dprv_activate();
 		}
