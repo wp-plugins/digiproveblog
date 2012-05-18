@@ -1074,12 +1074,12 @@ function dprv_digiprove_post($dprv_post_id)
 	$notice = "";
 	
 	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $digital_fingerprint, $content_file_names, $dprv_subscription_type, $dprv_subscription_expiry, $dprv_last_time, $notice);
-	
 	if (!is_array($certifyResponse))
 	{
 		// Could be "Content unchanged since last edit", "Content is empty", or
 		// One of these error messages from Digiprove:
 		// User xxxxxxxx@xxxxxxxxx invalid user id -  contact support@digiprove.com for help
+		// Digiprove user xxxxxx@xxxxxxxx not activated yet - please click on link in activation email
 		$log->lwrite("response: $certifyResponse");
 		update_option('dprv_last_result', $certifyResponse);
 		update_option('dprv_pending_message', $certifyResponse);
@@ -1089,11 +1089,18 @@ function dprv_digiprove_post($dprv_post_id)
 			// Arguably don't bother user with this error condition, just pass to server in due course?
 			update_option('dprv_last_result', $certifyResponse);
 			update_option('dprv_pending_message', $certifyResponse);		// Ensure administrator sees
-			if (strpos($certifyResponse, "contact support@digiprove.com") === false)
+
+			// If it was not a communications error, no need to record event as server is already aware of it AND we can clear any previous events
+			//if (strpos($certifyResponse, "contact support@digiprove.com") === false)
+			if (strpos($certifyResponse, "Error:") !== false)
 			{
 				//update_option('dprv_event', $certifyResponse);					// Save for later reporting to server
 				$dprv_this_event = $certifyResponse;
 				dprv_record_event($dprv_this_event);
+			}
+			else
+			{
+				update_option('dprv_event','');
 			}
 		}
 		return;

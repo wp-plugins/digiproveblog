@@ -120,6 +120,7 @@ class Digiprove_HTTP
 				{
 					return "Redirect " . substr($response, $pos+1, 3);
 				}
+				// TODO - return the actual message if one supplied
 				if (substr($response, $pos+1, 3) != "200" && strpos(strtolower($response), "<title>digiprove service temporarily offline</title>") != false)
 				{
 					return "The Digiprove service is temporarily offline for maintenance, please try again in a few minutes";
