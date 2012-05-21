@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.01
+Version: 2.02
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -35,7 +35,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.01");
+	define("DPRV_VERSION", "2.02");
 	//define("DPRV_Log", "Yes");                       // Set this to "Yes" to generate local log-file (needs write permissions)
 	//error_reporting(E_ALL);						   // uncomment this for test purposes
 
@@ -70,6 +70,7 @@ License: GPL
 	// Register hooks
 	register_activation_hook(__FILE__, 'dprv_activate');
 	register_deactivation_hook(__FILE__, 'dprv_deactivate');
+	add_action('activated_plugin','dprv_activation_error');
 	add_action('init', 'dprv_init');
 	add_action('delete_post', 'dprv_post_sync', 10);
 
@@ -165,6 +166,15 @@ License: GPL
 	// FROM HERE DOWN IS ALL FUNCTIONS:
 
 	// ON-ACTIVATION FUNCTIONS:
+	function dprv_activation_error()
+	{
+		$dprv_last_error = ob_get_contents();
+		if ($dprv_last_error != "")
+		{
+			$dprv_last_error = "Error on activation: " . $dprv_last_error;
+			dprv_record_event($dprv_last_error);
+		}
+	}
 	function dprv_activate()
 	{
 		$log = new DPLog();  
@@ -297,36 +307,46 @@ License: GPL
 		global $wpdb;
 		$dprv_prefix = get_option('dprv_prefix');
 		$dprv_posts = $dprv_prefix . "dprv_posts";
-		
-		// Check db structure and alter it (or create it) if necessary
-		$dprv_activation_event = get_option('dprv_activation_event');
-		$log->lwrite("creating or altering table " . $dprv_posts);
-		$sql = "CREATE TABLE " . $dprv_posts . " (
-				id bigint(20) NOT NULL,
-				digiprove_this_post bool NOT NULL,
-				this_all_original bool NOT NULL,
-				attributions text CHARACTER SET utf8 COLLATE utf8_general_ci,
-				using_default_license bool NOT NULL,
-				license varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci,
-				custom_license_caption varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci,
-				custom_license_abstract text CHARACTER SET utf8 COLLATE utf8_general_ci,
-				custom_license_url varchar(255) CHARACTER SET ascii COLLATE ascii_general_ci,
-				certificate_id varchar(12) CHARACTER SET ascii COLLATE ascii_general_ci,
-				digital_fingerprint varchar(64) CHARACTER SET ascii COLLATE ascii_general_ci,
-				cert_utc_date_and_time varchar(40) CHARACTER SET ascii COLLATE ascii_general_ci,
-				certificate_url varchar(255) CHARACTER SET ascii COLLATE ascii_general_ci,
-				first_year smallint,
-				last_time_digiproved int,
-				last_fingerprint varchar(64) CHARACTER SET ascii COLLATE ascii_general_ci,
-				last_time_updated int,
-				UNIQUE KEY id (id)
-				);";
+		// TODO: diagnose why adding a varchar column to an existing table defaults to latin but in Create table defaults to utf-8
+		if($wpdb->get_var("show tables like '$dprv_posts'") == $dprv_posts)
+		{
+			dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
+			dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
+			dprv_add_column($dprv_posts, 'last_time_updated', 'int');
+		}
+		else
+		{
+			// Create db
+			$dprv_activation_event = get_option('dprv_activation_event');
+			$dprv_db_error =$wpdb->last_error;
+			//$log->lwrite("Will create table " . $dprv_posts . ", last_error " . $dprv_db_error);
+			$sql =	"CREATE TABLE " . $dprv_posts . " (
+					id bigint(20) NOT NULL,
+					digiprove_this_post bool NOT NULL,
+					this_all_original bool NOT NULL,
+					attributions text CHARACTER SET utf8 COLLATE utf8_general_ci,
+					using_default_license bool NOT NULL,
+					license varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci,
+					custom_license_caption varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci,
+					custom_license_abstract text CHARACTER SET utf8 COLLATE utf8_general_ci,
+					custom_license_url varchar(255),
+					certificate_id varchar(12),
+					digital_fingerprint varchar(64),
+					cert_utc_date_and_time varchar(40),
+					certificate_url varchar(255),
+					first_year smallint,
+					last_time_digiproved int,
+					last_fingerprint varchar(64),
+					last_time_updated int,
+					UNIQUE KEY id (id)
+					);";
 
-		//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
-		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
-		dbDelta($sql);
-		$dprv_db_error =$wpdb->last_error;
-		$log->lwrite ("Created or altered posts table " . $dprv_posts . " if necessary");
+			//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
+			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+			dbDelta($sql);
+			$dprv_db_error =$wpdb->last_error;
+			$log->lwrite ("Executed create table " . $dprv_posts . ", last_error " . $dprv_db_error);
+		}
 		if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
 		{
 			$message = "Failure to create table " . $dprv_posts . " with error " .  $dprv_db_error;
@@ -362,7 +382,7 @@ License: GPL
 			$sql = "CREATE TABLE " . $dprv_post_content_files . " (
 					post_id bigint(20) NOT NULL, INDEX (post_id),
 					filename varchar(280) CHARACTER SET utf8 COLLATE utf8_general_ci,
-					digital_fingerprint varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci
+					digital_fingerprint varchar(64)
 					);";
 			//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
 			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
@@ -379,6 +399,28 @@ License: GPL
 		{
 			$log->lwrite("Table " . $dprv_post_content_files . " exists already");  
 		}
+	}
+
+	function dprv_add_column($table, $column_name, $qualifier)
+	{				
+		$log = new DPLog();
+		global $wpdb;
+		$dprv_db_last_error = $wpdb->last_error; 
+		if ($wpdb->get_var("SHOW COLUMNS FROM $table LIKE '$column_name'") != $column_name)
+		{
+			$sql = "ALTER TABLE " . $table . " ADD COLUMN $column_name $qualifier";
+			$wpdb->query($sql);
+			$dprv_db_error = $wpdb->last_error;
+			//$log->lwrite("add col $column_name last error $dprv_db_error");
+			$message = "";
+			if ($wpdb->get_var("SHOW COLUMNS FROM $table LIKE '$column_name'") != $column_name)
+			{
+				$message .= "Did not add column $column_name to $table, last db error $dprv_db_error";
+				dprv_record_event($message);
+				return false;
+			}
+		}
+		return true;
 	}
 
 	function record_dprv_licenses()
