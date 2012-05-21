@@ -183,7 +183,9 @@ function dprv_display_content($content)
 		{
 			$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
 		}
-		$dprv_status_info .= "; dprv_e=" . get_option('dprv_event') . ", dprv_a_e=" . get_option('dprv_activation_event') . "-->";
+
+		//$dprv_status_info .= "; dprv_e=" . get_option('dprv_event') . ", dprv_a_e=" . get_option('dprv_activation_event') . "-->";
+		$dprv_status_info .= "; dprv_e=" . str_replace("-->", "__>", get_option('dprv_event')) . ", dprv_a_e=" . str_replace("-->", "__>", get_option('dprv_activation_event')) . "-->";
 	}
 		
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
