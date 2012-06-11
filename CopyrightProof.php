@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.02
+Version: 2.03
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -32,15 +32,16 @@ License: GPL
 	include_once('copyright_proof_admin.php');						// Functions for Settings panel
 	include_once('copyright_proof_edit.php');						// Functions for Creating and Editing content
 	include_once('copyright_proof_live.php');						// Functions for Serving pages on web
+	include_once('copyright_proof_error.php');						// Functions for handling errors
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.02");
+	define("DPRV_VERSION", "2.03");
 	//define("DPRV_Log", "Yes");                       // Set this to "Yes" to generate local log-file (needs write permissions)
 	//error_reporting(E_ALL);						   // uncomment this for test purposes
 
 
-	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id, $dprv_mime_types, $dprv_blog_host, $dprv_wp_host;
+	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id, $dprv_mime_types, $dprv_blog_host, $dprv_wp_host, $dprv_last_error;
 
 	$dprv_blog_url = parse_url(get_option('home'));
 	$dprv_blog_host = trim($dprv_blog_url['host']);
@@ -166,13 +167,16 @@ License: GPL
 	// FROM HERE DOWN IS ALL FUNCTIONS:
 
 	// ON-ACTIVATION FUNCTIONS:
-	function dprv_activation_error()
+	function dprv_activation_error($plugin_name)
 	{
-		$dprv_last_error = ob_get_contents();
-		if ($dprv_last_error != "")
+		if (strpos($plugin_name, "CopyrightProof") !== false)
 		{
-			$dprv_last_error = "Error on activation: " . $dprv_last_error;
-			dprv_record_event($dprv_last_error);
+			$dprv_last_error = ob_get_contents();
+			if ($dprv_last_error != "")
+			{
+				$dprv_last_error = "Error on activation: " . $dprv_last_error;
+				dprv_record_event($dprv_last_error);
+			}
 		}
 	}
 	function dprv_activate()
@@ -504,9 +508,10 @@ License: GPL
 
 		// Check if db prefix changed and adjust if need be
 		global $wpdb;
+		$dprv_posts = get_option('dprv_prefix') . "dprv_posts";
 		if (get_option('dprv_prefix') !== false && get_option('dprv_prefix') != $wpdb->prefix)
 		{
-			$dprv_posts = get_option('dprv_prefix') . "dprv_posts";
+			//$dprv_posts = get_option('dprv_prefix') . "dprv_posts";
 			if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
 			{
 				$dprv_posts = $wpdb->prefix . "dprv_posts";
@@ -531,6 +536,19 @@ License: GPL
 				// record event found table for dprv_prefix (dprv_prefix) even though different to wpdb->prefix
 			}
 		}
+		if ($wpdb->show_errors === true)
+		{
+			$dprv_this_event = "wpdb->show_errors is true, resetting to false"; 
+			$wpdb->show_errors = false;
+			dprv_record_event($dprv_this_event);
+		}
+		if ($wpdb->get_var("SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'") != 'last_fingerprint' && current_user_can("activate_plugins"))
+		{
+			$dprv_this_event = "last_fingerprint does not exist, repeating activation";
+			dprv_record_event($dprv_this_event);
+			dprv_activate();
+		}
+
 
 		function dprv_reminder()
 		{
@@ -730,5 +748,130 @@ License: GPL
 		update_option('dprv_event', $dprv_event);
 		return $dprv_event;
 	}
+function dprv_eval($something, $html = false, $tabs = "")
+{
+	$log = new DPLog();
+	$line = "\r\n";
+	$tab = "\t";
+	$apos = "'";
+	$arrow = "=> ";
+	if ($html)
+	{
+		$line = "<br/>";
+		$tab = "&nbsp;&nbsp;&nbsp;&nbsp;";
+		$apos = "&#039;";
+		$arrow = "=&gt;&nbsp;";
+	}
+	if (is_null($something))
+	{
+		return "NULL; ";
+	}
+	$return = "";
+	if (is_object($something))
+	{
+		$called_class = "";
+		if (function_exists("get_called_class"))
+		{
+			$called_class = get_called_class($something);
+			if ($called_class === false)
+			{
+				$called_class = ", called from outside a class";
+			}
+			else
+			{
+				$called_class = ", called in class " . $called_class;
+			}
+		}
+		$return .= "(object) of " . count($something) . " properties, parent class is " . get_parent_class($something) . ", class is " . get_class($something) . $called_class . "; ";
+		$return .= "array of class methods is " . dprv_eval(get_class_methods($something), $html, $tabs);
+		$return .= "array of class variables is " . dprv_eval(get_class_vars(get_class($something)), $html, $tabs);
+		$return .= "array of object variables is " . dprv_eval(get_object_vars($something), $html, $tabs);
+	}
+	if (is_array($something))
+	{
+		$return .= "(array) [" . count($something) . "]";
+		if (count($something) > 0)
+		{
+			$return .= ": " . $line . $tabs . "{" . $line;
+			foreach ($something as $a_key => $a_value)
+			{
+				$return .= $tabs . $tab . $apos . $a_key . $apos . $arrow . dprv_eval($a_value, $html, $tabs . $tab) . $line;
+			}
+			$return .= $tabs . "}" . $line;
+		}
+	}
+	if (is_bool($something))
+	{
+		$return .= "(bool)";
+		if ($something == true)
+		{
+			$return .= " true; ";
+		}
+		else
+		{
+			$return .= " false; ";
+		}
+	}
+	if (is_callable($something))
+	{
+		$return .= "is callable; ";
+	}
+	if (is_double($something))
+	{
+		$return .= "(double)" . "; ";
+	}
+	if (is_float($something))
+	{
+		$return .= "(float)" . "; ";
+	}
+	if (is_int($something))
+	{
+		$return .= "(int) " . $something . "; ";
+	}
+	if (is_integer($something))
+	{
+		$return .= "(integer) " . $something . "; ";
+	}
+	if (is_long($something))
+	{
+		$return .= "(long)" . "; ";
+	}
+	if (is_numeric($something))
+	{
+		$return .= ", is numeric; ";
+	}
+	if (is_real($something))
+	{
+		$return .= ", is real; ";
+	}
+	if (is_resource($something))
+	{
+		$return .= ", is resource; ";
+	}
+	if (is_string($something))
+	{
+		$return .= "string (" . strlen($something) . ")";
+		if (strlen($something) > 0)
+		{
+			$return .= ": ";
+			if (strlen($something) > 200)
+			{
+				$return .= " begins with " . substr($something, 0, 150) . "; ";
+			}
+			else
+			{
+				$return .= $something . "; ";
+			}
+		}
+	}
+	else
+	{
+		if (is_scalar($something))
+		{
+			$return .= ", is scalar; ";
+		}
+	}
+	return $return;
+}
 
 ?>

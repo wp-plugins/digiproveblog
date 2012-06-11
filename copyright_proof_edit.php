@@ -254,7 +254,7 @@ function dprv_show_postbox($post_info)
 				$a .= "<br/>" . $verify_result["result"];
 			}
 		}
-		$a .= "<br/>" . cian_eval($verify_result);
+		$a .= "<br/>" . dprv_eval($verify_result);
 	}
 	*/
 	$a .= "</td></tr></tbody></table>";
@@ -2135,7 +2135,6 @@ function dprv_getContentFiles($post_id, $content, &$content_files, &$content_fil
 				{
 					$log->lwrite("ignoring - " . $tag . " tag - no src/href attribute");
 				}
-
 			}
 			else
 			{
@@ -2220,131 +2219,6 @@ function dprv_normaliseContent($contentString)
 	}
 	// end of 0.70 inserted code
 	return trim($contentString);
-}
-function cian_eval($something, $html = false, $tabs = "")
-{
-	$log = new DPLog();
-	$line = "\r\n";
-	$tab = "\t";
-	$apos = "'";
-	$arrow = "=> ";
-	if ($html)
-	{
-		$line = "<br/>";
-		$tab = "&nbsp;&nbsp;&nbsp;&nbsp;";
-		$apos = "&#039;";
-		$arrow = "=&gt;&nbsp;";
-	}
-	if (is_null($something))
-	{
-		return "NULL; ";
-	}
-	$return = "";
-	if (is_object($something))
-	{
-		$called_class = "";
-		if (function_exists("get_called_class"))
-		{
-			$called_class = get_called_class($something);
-			if ($called_class === false)
-			{
-				$called_class = ", called from outside a class";
-			}
-			else
-			{
-				$called_class = ", called in class " . $called_class;
-			}
-		}
-		$return .= "(object) of " . count($something) . " properties, parent class is " . get_parent_class($something) . ", class is " . get_class($something) . $called_class . "; ";
-		$return .= "array of class methods is " . cian_eval(get_class_methods($something), $html, $tabs);
-		$return .= "array of class variables is " . cian_eval(get_class_vars(get_class($something)), $html, $tabs);
-		$return .= "array of object variables is " . cian_eval(get_object_vars($something), $html, $tabs);
-	}
-	if (is_array($something))
-	{
-		$return .= "(array) [" . count($something) . "]";
-		if (count($something) > 0)
-		{
-			$return .= ": " . $line . $tabs . "{" . $line;
-			foreach ($something as $a_key => $a_value)
-			{
-				$return .= $tabs . $tab . $apos . $a_key . $apos . $arrow . cian_eval($a_value, $html, $tabs . $tab) . $line;
-			}
-			$return .= $tabs . "}" . $line;
-		}
-	}
-	if (is_bool($something))
-	{
-		$return .= "(bool)";
-		if ($something == true)
-		{
-			$return .= " true; ";
-		}
-		else
-		{
-			$return .= " false; ";
-		}
-	}
-	if (is_callable($something))
-	{
-		$return .= "is callable; ";
-	}
-	if (is_double($something))
-	{
-		$return .= "(double)" . "; ";
-	}
-	if (is_float($something))
-	{
-		$return .= "(float)" . "; ";
-	}
-	if (is_int($something))
-	{
-		$return .= "(int) " . $something . "; ";
-	}
-	if (is_integer($something))
-	{
-		$return .= "(integer) " . $something . "; ";
-	}
-	if (is_long($something))
-	{
-		$return .= "(long)" . "; ";
-	}
-	if (is_numeric($something))
-	{
-		$return .= ", is numeric; ";
-	}
-	if (is_real($something))
-	{
-		$return .= ", is real; ";
-	}
-	if (is_resource($something))
-	{
-		$return .= ", is resource; ";
-	}
-	if (is_string($something))
-	{
-		$return .= "string (" . strlen($something) . ")";
-		if (strlen($something) > 0)
-		{
-			$return .= ": ";
-			if (strlen($something) > 200)
-			{
-				$return .= " begins with " . substr($something, 0, 150) . "; ";
-			}
-			else
-			{
-				$return .= $something . "; ";
-			}
-		}
-	}
-	else
-	{
-		if (is_scalar($something))
-		{
-			$return .= ", is scalar; ";
-		}
-	}
-	return $return;
 }
 
 
