@@ -5,7 +5,7 @@
 		global $wpdb;
 		$log = new DPLog();  
 		$log->lwrite("verifyContentFiles begins");
-		//$log->lwrite(cian_eval($content_file_table));
+		//$log->lwrite(dprv_eval($content_file_table));
 
 		$success=true;				// default value 
 		//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_post_content_files WHERE post_id = " . $dprv_post_id;

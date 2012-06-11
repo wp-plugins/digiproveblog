@@ -9,7 +9,6 @@ class Digiprove_HTTP
 		$request = "xml_string=" . urlencode($request);
 		$http_request  = "POST " . $path . $service . " HTTP/1.1\r\n";
 		$http_request .= "Host: $host\r\n";
-		//$http_request .= "Content-Type: application/x-www-form-urlencoded; charset=" . get_option('blog_charset') . "\r\n";
 		$http_request .= "Content-Type: application/x-www-form-urlencoded; charset=UTF-8\r\n";
 		$http_request .= "Content-Length: " . strlen($request) . "\r\n";
 		$http_request .= "Connection: close\r\n\r\n";
@@ -25,8 +24,8 @@ class Digiprove_HTTP
 			$http_host = $host;
 		}
 
-		$response = '';                 
 		$dprv_port = 80;
+		$response = '';                 
 		if (DPRV_SSL == "Yes")
 		{
 			$e = get_loaded_extensions();	// using this instead of preferable stream_get_transports() which is only supported from php 5 onwards
@@ -40,16 +39,15 @@ class Digiprove_HTTP
 				}
 			}
 		}
-		$log->lwrite("http_host " . $http_host);
 		
 			$errno = -1;
 			$errstr = "Unknown";
+
 			if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr, 10) ) ) 
 			{                 
 				if ($errno == 0)
 				{
 					fwrite($fs, $http_request);
-					$log->lwrite("fwrite done, now get response when it comes");
 					stream_set_timeout($fs, 50);
 					$get_count = 0;
 					$err_level = error_reporting();							// Save current error reporting level
@@ -62,7 +60,7 @@ class Digiprove_HTTP
 						if ($info['timed_out'])
 						{
 							$log->lwrite("timed out waiting for response");
-							return "Error: connection timed out, server may be offline";
+							return "Error: connection to " . $http_host . " timed out";
 						}
 						else
 						{
@@ -91,11 +89,9 @@ class Digiprove_HTTP
 			{
 				if ($errno ==0)
 				{
-					$log->lwrite("Could not initialise socket");
-					return "Error: Could not initialise socket to " . $http_host . ", server may be offline";
+					return "Error: Could not initialise socket to " . $http_host;
 				}
-				$log->lwrite("Could not open socket, error = " . $errno . "/" . $errstr);
-				return "Error: Could not open socket to " . $http_host . ", server may be offline.  Error = " . $errno . "/" . $errstr;
+				return "Error: Could not open socket to " . $http_host . ", Error = " . $errno . "/" . $errstr;
 			}
 
 			// TODO: Trap HTTP errors such as 403 here (happens if you try to connect to live server w/o ssl)

@@ -59,7 +59,28 @@ class Digiprove_HTTP
 		{
 			$errno = -1;
 			$errstr = "Unknown";
-			if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr, 10) ) ) 
+			// TODO - Somehow incorporate this error-handling logic into Digiprove SDK
+			// Trap errors (as alternative to suppressing)
+			global $dprv_last_error;
+			$dprv_last_error = "";
+			if (class_exists('dprvErrors'))
+			{
+				set_error_handler(array("dprvErrors", "catch_error"));     // Note that before php 4.3 this array reference will not work
+			}
+			// Test Instructions:
+			//$fs = fsockopen($http_host, $dprv_port, $errno, $errstr, 10, 20, 30, 100);		// warning error
+			//$fs = fsockopen($http_host, 89, $errno, $errstr, 10);								// time-out
+			//$fs = fsockopensesame($http_host, $dprv_port, $errno, $errstr, 10);				// fatal error
+			//$fs = fsockopen("www.digiprovedoesnotexist.com", $dprv_port, $errno, $errstr, 10);// dns error
+
+			// Correct instruction
+			$fs = fsockopen($http_host, $dprv_port, $errno, $errstr, 10);						
+			if (class_exists('dprvErrors'))
+			{
+				restore_error_handler();
+			}
+
+			if ($fs !== false) 
 			{                 
 				if ($errno == 0)
 				{
@@ -76,7 +97,7 @@ class Digiprove_HTTP
 						if ($info['timed_out'])
 						{
 							$log->lwrite("timed out waiting for response");
-							return "Error: connection timed out, server may be offline";
+							return "Error: connection to " . $http_host . " timed out";
 						}
 						else
 						{
@@ -98,18 +119,37 @@ class Digiprove_HTTP
 				else
 				{
 					$log->lwrite("Socket may be open, but error = " . $errno . "/" . $errstr);
-					return "Error: Could not open socket to " . $http_host . ".  Error = " . $errno . "/" . $errstr;
+					return "Error: Problem while opening socket to " . $http_host . ".  Error = " . $errno . "/" . $errstr;
 				}
 			}
 			else
 			{
-				if ($errno ==0)
+				$e_message = "Error: ";
+				// if error is -1, indicates a PHP error rather than a communications error
+				if ($errno == -1)
 				{
-					$log->lwrite("Could not initialise socket");
-					return "Error: Could not initialise socket to " . $http_host . ", server may be offline";
+					$e_message .= "Could not open socket to " . $http_host;
 				}
-				$log->lwrite("Could not open socket, error = " . $errno . "/" . $errstr);
-				return "Error: Could not open socket to " . $http_host . ", server may be offline.  Error = " . $errno . "/" . $errstr;
+				else
+				{
+					if ($errno ==0)
+					{
+						$e_message .= "Could not initialise socket to " . $http_host;
+					}
+					else
+					{
+						// Note error 110-Timeout (and possibly others) generate a PHP warning at the fsockopen instruction as well
+						//      error 110-Timeout
+						//      error 111-Connection Refused (e.g. web-server stopped)
+						$e_message .=  "Communications error with " . $http_host . ": " . $errno . "/" . $errstr;
+					}
+				}
+				if ($dprv_last_error != "")
+				{
+					$e_message .= " PHP error " . $dprv_last_error;
+				}
+				$log->lwrite($e_message);
+				return $e_message;
 			}
 
 			// TODO: Trap HTTP errors such as 403 here (happens if you try to connect to live server w/o ssl)
