@@ -76,8 +76,6 @@ function dprv_show_postbox($post_info)
 		$log->lwrite("not new post, global post_id = " . $post_id);
 		
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
-		//$sql="SELECT * FROM " .$wpdb->prefix . "dprv_posts WHERE id = " . $post_id;
-		$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
@@ -378,8 +376,6 @@ function dprv_verify_box()
 	}
 
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
-	//$wpdb->show_errors();
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
@@ -786,32 +782,26 @@ function dprv_parse_post ($data, $raw_data)
 		if ($dprv_post_id != -1)
 		{  
 			$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-			//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
-			//$wpdb->show_errors();
 			$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-			//$log->lwrite("count(dprv_post_info) = " . count($dprv_post_info));	// array will contain one element for each column of row
-
 			if (count($dprv_post_info) == 0)
 			{
 				// create record 
-				//if (false === $wpdb->insert($wpdb->prefix . "dprv_posts", array('digiprove_this_post'=>false, 'this_all_original'=>true, 'using_default_license'=>true, 'id'=>$dprv_post_id), array('%f','%f')))
-				if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>false, 'this_all_original'=>true, 'using_default_license'=>true, 'id'=>$dprv_post_id), array('%f','%f')))
+				if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>false, 'this_all_original'=>true, 'using_default_license'=>true, 'id'=>$dprv_post_id), array('%d','%d', '%d', '%d')))
 				{
-					//update_option('dprv_event', date("Ymd") . ': error ' . $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id);
-					$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id;
+					$dprv_this_event = $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id;
 					dprv_record_event($dprv_this_event);
+					$log->lwrite("last query was " .  mysql_info());
 				}
 			}
 			else
 			{
-				if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%f', '%f'))
 				//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%f', '%f'))
+				if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%d', '%d'))
 				{
 					//update_option('dprv_event', date("Ymd") . ': error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id);
-					$dprv_this_event = 'error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id;
+					$dprv_this_event = $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id;
 					dprv_record_event($dprv_this_event);
 				}
-
 			}
 		}
 		return $data;
@@ -833,7 +823,6 @@ function dprv_parse_post ($data, $raw_data)
 	if ($dprv_publish_dp_action == "No")
 	{
 		$log->lwrite("dprv_parse_post ending after writing copyright panel details but before the Digiproving bit - user selected publish/update without Digiprove for post Id " . $dprv_post_id);
-		//update_option('dprv_last_result', '');
 		return $data;
 	}
 
@@ -845,8 +834,6 @@ function dprv_parse_post ($data, $raw_data)
 	{
 		$dprv_new_certificate_id = false;
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-		//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
-		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
@@ -857,7 +844,6 @@ function dprv_parse_post ($data, $raw_data)
 		// If (as expected) nothing yet on db, record the information from the notice into the db 
 		if ($dprv_new_certificate_id == false || $dprv_new_certificate_id == "")
 		{
-			//$dprv_event = get_option('dprv_event');
 			if (count($dprv_post_info) > 0)
 			{
 				if ($dprv_post_info["first_year"] == null)
@@ -868,22 +854,17 @@ function dprv_parse_post ($data, $raw_data)
 				{
 					$dprv_first_year = intval($dprv_post_info["first_year"]);
 				}
-				//$wpdb->show_errors();
+				// TODO: add format modifier
 				if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year)), array('id'=>$dprv_post_id)))
-				//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year)), array('id'=>$dprv_post_id)))
 				{
-					//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' writing old notice ' . $dprv_post_id . ' to db');
-					$dprv_this_event = 'error ' . $wpdb->last_error . ' writing old notice ' . $dprv_post_id . ' to db';
+					$dprv_this_event = $wpdb->last_error . ' writing old notice ' . $dprv_post_id . ' to db';
 					dprv_record_event($dprv_this_event);
 				}
 			}
 			else
 			{	
-				//$wpdb->show_errors();
-				if (false === $wpdb->insert(get_option('dprv_prefix') . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id,   'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year))))
-				//if (false === $wpdb->insert($wpdb->prefix . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id, 'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year))))
+				if (false === $wpdb->insert(get_option('dprv_prefix') . 'dprv_posts', array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'certificate_id'=>$dprv_certificate_id,   'certificate_url'=>$dprv_certificate_url, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>intval($dprv_first_year)), array('%d','%d','%s','%s','%s','%s','%d')))
 				{
-					//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting old notice to db');
 					$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting old notice to db';
 					dprv_record_event($dprv_this_event);
 				}
@@ -900,7 +881,7 @@ function dprv_digiprove_post($dprv_post_id)
 	// This function executes after the post has been created/updated and we have a post id
 	// So we can read copyright options (or default if none there)
 	// Digiprove content if appropriate and record details of Digiprove action
-	// Otherwise record dingerprint and timestamp of html content for integrity checking 
+	// Otherwise record fingerprint and timestamp of html content for integrity checking 
 	
 	$log = new DPLog();  
 	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
@@ -1000,8 +981,6 @@ function dprv_digiprove_post($dprv_post_id)
 		$log->lwrite("dprv_digiprove_this_post = " . $dprv_digiprove_this_post);
 		global $wpdb;
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-		//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
-		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
@@ -1015,7 +994,6 @@ function dprv_digiprove_post($dprv_post_id)
 		}
 	}
 
-//	$content = trim($post_record->post_content);
 	if (strlen(trim($content)) == 0)
 	{
 		$log->lwrite("dprv_digiprove_post not starting because content is empty");
@@ -1059,7 +1037,7 @@ function dprv_digiprove_post($dprv_post_id)
 		if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
 		{
 			// NOTE - if changing the "Digiprove free daily limit" text, also modify  dprv_admin_footer() which relies on this exact text
-			$dprv_last_result = sprintf(__('Digiprove free daily limit (5) already reached, and your Digiprove account expired on $s. ', 'dprv_cp'), $dprv_subscription_expiry);
+			$dprv_last_result = sprintf(__('Digiprove free daily limit (5) already reached, and your Digiprove account expired on %s. ', 'dprv_cp'), $dprv_subscription_expiry);
 			$dprv_last_result .= sprintf(__('You can %s renew your account here.%s', 'dprv_cp'), '<a href="' . 	dprv_createUpgradeLink() . '&Action=Renew" target="_blank">', '</a>');
 			update_option('dprv_last_result', $dprv_last_result);
 			update_option('dprv_pending_message', $dprv_last_result);
@@ -1091,10 +1069,8 @@ function dprv_digiprove_post($dprv_post_id)
 			update_option('dprv_pending_message', $certifyResponse);		// Ensure administrator sees
 
 			// If it was not a communications error, no need to record event as server is already aware of it AND we can clear any previous events
-			//if (strpos($certifyResponse, "contact support@digiprove.com") === false)
 			if (strpos($certifyResponse, "Error:") !== false)
 			{
-				//update_option('dprv_event', $certifyResponse);					// Save for later reporting to server
 				$dprv_this_event = $certifyResponse;
 				dprv_record_event($dprv_this_event);
 			}
@@ -1244,7 +1220,7 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 
 	// Find Date of Certification
 	$posA = stripos($Digiprove_notice, "title=\"certified");
-	$log->lwrite("just did another stripos, posA = " . $posA);
+	//$log->lwrite("just did another stripos, posA = " . $posA);
 	$posB = stripos($Digiprove_notice, " UTC by Digiprove certificate ");
 
 	if ($posA === false || $posB === false || $posA >= $posB)
@@ -1273,7 +1249,7 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 		return;
 	}
 	$remainder = substr($Digiprove_notice, $posA);
-	$log->lwrite("about to call strpbrk");
+	//$log->lwrite("about to call strpbrk");
 	$remainder = strpbrk($remainder, '\'\"');
 	if ($remainder === false)
 	{
@@ -1392,7 +1368,6 @@ function dprv_record_copyright_details($dprv_post_id)
 		$using_default_license = false;
 	}
 
-	//if ($_POST['dprv_custom_license'] != "on")
 	if (!isset($_POST['dprv_custom_license']) || $_POST['dprv_custom_license'] != "on")
 	{
 		$license = $_POST['dprv_license_type'];
@@ -1409,31 +1384,22 @@ function dprv_record_copyright_details($dprv_post_id)
 	}
 
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
-	//$wpdb->show_errors();
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
-		//$wpdb->show_errors();
 		if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license, 'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url), array('id'=>$dprv_post_id)))
-		//if (false === $wpdb->update($wpdb->prefix .             "dprv_posts", array('digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license, 'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url), array('id'=>$dprv_post_id)))
 		{
-			//update_option('dprv_event', 'error ' . $wpdb->last_error . ' updating copyright details for ' . $dprv_post_id);
-			$dprv_this_event = 'error ' . $wpdb->last_error . ' updating copyright details for ' . $dprv_post_id;
+			$dprv_this_event = $wpdb->last_error . ' updating copyright details for ' . $dprv_post_id;
 			dprv_record_event($dprv_this_event);
 		}
 	}
 	else
 	{
-		//$wpdb->show_errors();
-		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license,  'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url)))
-		//if (false === $wpdb->insert($wpdb->prefix . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license,  'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url)))
+		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>$digiprove_this_post, 'this_all_original'=>$this_all_original, 'attributions'=>$attributions, 'using_default_license'=>$using_default_license,  'license'=>$license, 'custom_license_caption'=>$custom_license_caption, 'custom_license_abstract'=>$custom_license_abstract, 'custom_license_url'=>$custom_license_url), array('%d','%d','%d','%s','%d','%s','%s','%s','%s')))
 		{
-			//update_option('dprv_event', 'error ' . $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id);
-			$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id;
+			$dprv_this_event = $wpdb->last_error . ' inserting copyright details for ' . $dprv_post_id;
 			dprv_record_event($dprv_this_event);
 		}
-
 	}
 }
 
@@ -1465,10 +1431,8 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 	}
 
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
-	//$dprv_event = get_option('dprv_event');
-	//$wpdb->show_errors();
-	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+	//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+	$dprv_post_info = dprv_wpdb("get_row", $sql);
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
 		if ($dprv_post_info["first_year"] == null)
@@ -1479,34 +1443,58 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 		{
 			$dprv_year_certified = intval($dprv_post_info["first_year"]);
 		}
-		//$wpdb->show_errors();
-		//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified, 'last_time_digiproved'=>$dprv_time_recorded, 'last_fingerprint'=>$dprv_digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
 		if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified, 'last_time_digiproved'=>$dprv_time_recorded, 'last_fingerprint'=>$dprv_digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
 		{
-			//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' updating dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
-			$dprv_this_event = 'error ' . $wpdb->last_error . ' updating dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			$dprv_db_error = $wpdb->last_error;
+			//$dprv_this_event = 'error ' . $wpdb->last_error . ' updating dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			$dprv_this_event = $dprv_db_error . ' updating dp action for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
+			if (strpos($dprv_db_error, "Unknown column 'last_time_digiproved'") !== false)
+			{
+				$dprv_this_event .= " (now trying without new columns)";
+			}
 			dprv_record_event($dprv_this_event);
 
+			// TODO - Remove code below once issue resolved re sporadic failure to add new columns @ 2.nn
+			if (strpos($dprv_db_error, "Unknown column 'last_time_digiproved'") !== false)
+			{
+				if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified), array('id'=>$dprv_post_id)))
+				{
+					$dprv_this_event = $wpdb->last_error . ' on retry of updating dp action for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
+					dprv_record_event($dprv_this_event);
+				}
+			}
 		}
-		//$wpdb->show_errors();
-		//$sql="DELETE FROM ". $wpdb->prefix . "dprv_post_content_files WHERE post_id = " . $dprv_post_id;
 		$sql="DELETE FROM ". get_option('dprv_prefix') . "dprv_post_content_files WHERE post_id = " . $dprv_post_id;
 		if (false === $wpdb->query($sql))
 		{
-			//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' deleting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status);
-			$dprv_this_event = 'error ' . $wpdb->last_error . ' deleting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			//$dprv_this_event = 'error ' . $wpdb->last_error . ' deleting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			$dprv_this_event = $wpdb->last_error . ' deleting dprv_post_content_files for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
 			dprv_record_event($dprv_this_event);
 		}
 	}
 	else
 	{
-		//$wpdb->show_errors();
-		//if (false === $wpdb->insert($wpdb->prefix . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'this_all_original'=>true,'using_default_license'=>true, 'certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified, 'last_time_digiproved'=>$dprv_time_recorded, 'last_fingerprint'=>$dprv_digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded)))
 		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'this_all_original'=>true,'using_default_license'=>true, 'certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified, 'last_time_digiproved'=>$dprv_time_recorded, 'last_fingerprint'=>$dprv_digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded)))
 		{
-			//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status);
-			$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			$dprv_db_error = $wpdb->last_error;
+			//$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting dp action for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
+			$dprv_this_event = $dprv_db_error . ' inserting dp action for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
+			if (strpos($dprv_db_error, "Unknown column 'last_time_digiproved'") !== false)
+			{
+				$dprv_this_event .= " (now trying without new columns)";
+			}
 			dprv_record_event($dprv_this_event);
+
+			// TODO - Remove code below once issue resolved re sporadic failure to add new columns @ 2.nn
+			if (strpos($dprv_db_error, "Unknown column 'last_time_digiproved'") !== false)
+			{
+				if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'digiprove_this_post'=>true, 'this_all_original'=>true,'using_default_license'=>true, 'certificate_id'=>$dprv_certificate_id, 'digital_fingerprint'=>$dprv_digital_fingerprint, 'certificate_url'=>$dprv_certificate_url, 'cert_utc_date_and_time'=>$dprv_utc_date_and_time, 'first_year'=>$dprv_year_certified)))
+				{
+					$dprv_db_error = $wpdb->last_error;
+					$dprv_this_event = $dprv_db_error . ' on retry of inserting dp action for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
+					dprv_record_event($dprv_this_event);
+				}
+			}
 		}
 	}
 	if (isset($certifyResponse['content_files']))
@@ -1515,12 +1503,9 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 		{
 			foreach($certifyResponse['content_files'] as $filename => $file_fingerprint)
 			{
-				//$wpdb->show_errors();
-				//if (false === $wpdb->insert($wpdb->prefix . "dprv_post_content_files", array('post_id'=>$dprv_post_id, 'filename'=>$filename, 'digital_fingerprint'=>$file_fingerprint)))
 				if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_post_content_files", array('post_id'=>$dprv_post_id, 'filename'=>$filename, 'digital_fingerprint'=>$file_fingerprint)))
 				{
-					//update_option('dprv_event', $dprv_event . '; error ' . $wpdb->last_error . ' inserting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status);
-					$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting dprv_post_content_files for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+					$dprv_this_event = $wpdb->last_error . ' inserting dprv_post_content_files for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
 					dprv_record_event($dprv_this_event);
 					break;
 				}
@@ -1542,25 +1527,23 @@ function dprv_record_non_dp_action($dprv_post_id, $content)
 
 	$dprv_time_recorded = time();
 
-	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-
-	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+	//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+	$dprv_post_info = dprv_wpdb("get_row", $sql);
+	//$log->lwrite("just did dprv_wpdb, dprv_post_info = $dprv_post_info");
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
-		//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
 		if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
 		{
-			$dprv_this_event = 'error ' . $wpdb->last_error . ' updating non_dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			$dprv_this_event = $wpdb->last_error . ' updating non_dp action for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
 			dprv_record_event($dprv_this_event);
 		}
 	}
 	else
 	{
-		//if (false === $wpdb->insert($wpdb->prefix . "dprv_posts", array('id'=>$dprv_post_id, 'last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded)))
-		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded)))
+		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_posts", array('id'=>$dprv_post_id, 'last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('%d', '%s', '%d')))
 		{
-			$dprv_this_event = 'error ' . $wpdb->last_error . ' inserting non_dp action for ' . $dprv_post_id . ', status ' . $dprv_post_status;
+			$dprv_this_event = $wpdb->last_error . ' inserting non_dp action for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
 			dprv_record_event($dprv_this_event);
 		}
 	}
@@ -1575,6 +1558,13 @@ function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$conte
 	$log->lwrite("dprv_certify starts");
 
 	$rawContent = dprv_getRawContent($content, $digital_fingerprint);
+	//$temp = "";
+	//for ($i=0; $i<strlen($rawContent); $i++)
+	//{
+	//	$temp .= strtoupper(bin2hex(substr($rawContent, $i, 1))) . " ";
+	//}
+	//$log->lwrite ("Content (hex) = " . $temp);
+	//$log->lwrite ("Content (" . strlen($rawContent) . ") = " . $rawContent);
 	if ($rawContent == "")
 	{
 		return __("Content is empty", "dprv_cp");
@@ -1582,9 +1572,7 @@ function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$conte
 
 	if ($digital_fingerprint != "")
 	{
-		//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $post_id;
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
-		//$wpdb->show_errors();
 		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0 && $digital_fingerprint == $dprv_post_info["digital_fingerprint"])
 		{
@@ -1600,16 +1588,6 @@ function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$conte
 		$dprv_subscription_expired = "Yes";
 	}
 
-	// code below changed at 0.78 to avoid empty domain
-	//$dprv_blog_url = parse_url(get_option('home'));
-	//$dprv_blog_host = $dprv_blog_url['host'];
-	//$dprv_wp_host = "";		// default
-	//$dprv_wp_url = parse_url(get_option('siteurl'));
-	//$dprv_wp_host = $dprv_wp_url['host'];
-	//if (trim($dprv_blog_host) == "")
-	//{
-	//	$dprv_blog_host = $dprv_wp_host;
-	//}
 	$max_file_count = 0;
 	if ($dprv_subscription_expired != "Yes")
 	{

@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.03
+Version: 2.04
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -36,7 +36,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.03");
+	define("DPRV_VERSION", "2.04");
 	//define("DPRV_Log", "Yes");                       // Set this to "Yes" to generate local log-file (needs write permissions)
 	//error_reporting(E_ALL);						   // uncomment this for test purposes
 
@@ -171,7 +171,7 @@ License: GPL
 	{
 		if (strpos($plugin_name, "CopyrightProof") !== false)
 		{
-			$dprv_last_error = ob_get_contents();
+			$dprv_last_error = trim(ob_get_contents());
 			if ($dprv_last_error != "")
 			{
 				$dprv_last_error = "Error on activation: " . $dprv_last_error;
@@ -181,10 +181,10 @@ License: GPL
 	}
 	function dprv_activate()
 	{
+		// TODO: set error handler to dprvErrors if in existence for this function
 		$log = new DPLog();  
 		$log->lwrite("");
 		$log->lwrite("VERSION " . DPRV_VERSION . " ACTIVATED");
-		// default value first
 		update_option('dprv_activated_version', DPRV_VERSION);	// If different to installed, activation steps will take place
 		add_option('dprv_email_address', '');
 		add_option('dprv_first_name', '');
@@ -236,7 +236,7 @@ License: GPL
 		add_option('dprv_event', '');				// Place for error messages to be recorded, may be notified via API eventually
 		add_option('dprv_html_integrity', 'No');	// Whether to check HTML data integrity
 		add_option('dprv_files_integrity', 'No');	// Whether to check data integrity of embedded files
-		update_option('dprv_activation_event', '');
+		delete_option('dprv_activation_event');		// No longer required
 		add_option('dprv_prefix');
 		create_dprv_license_table();
 		create_dprv_post_table();
@@ -265,8 +265,8 @@ License: GPL
 		if ($dprv_prefix === false || $wpdb->get_var("show tables like '$dprv_licenses'") != $dprv_licenses)
 		{
 			$dprv_prefix = $wpdb->prefix;
+			update_option('dprv_prefix', $dprv_prefix);
 		}
-		update_option('dprv_prefix', $dprv_prefix);
 		$dprv_licenses = $dprv_prefix . "dprv_licenses";
 		//$dprv_licenses = $wpdb->prefix . "dprv_licenses";
 
@@ -292,7 +292,9 @@ License: GPL
 			$log->lwrite("just created license table " . $dprv_licenses . "; error text = " . $dprv_db_error);
 			if($wpdb->get_var("show tables like '$dprv_licenses'") != $dprv_licenses)
 			{
-				update_option('dprv_activation_event', 'table ' . $dprv_licenses . ' failed to create with error ' .  $dprv_db_error);
+				$message = "Failure to create table " . $dprv_licenses . " with error " .  $dprv_db_error;
+				dprv_record_event($message);
+
 			}
 			else
 			{
@@ -311,61 +313,74 @@ License: GPL
 		global $wpdb;
 		$dprv_prefix = get_option('dprv_prefix');
 		$dprv_posts = $dprv_prefix . "dprv_posts";
-		// TODO: diagnose why adding a varchar column to an existing table defaults to latin but in Create table defaults to utf-8
-		if($wpdb->get_var("show tables like '$dprv_posts'") == $dprv_posts)
-		{
-			dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
-			dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
-			dprv_add_column($dprv_posts, 'last_time_updated', 'int');
-		}
-		else
-		{
-			// Create db
-			$dprv_activation_event = get_option('dprv_activation_event');
-			$dprv_db_error =$wpdb->last_error;
-			//$log->lwrite("Will create table " . $dprv_posts . ", last_error " . $dprv_db_error);
-			$sql =	"CREATE TABLE " . $dprv_posts . " (
-					id bigint(20) NOT NULL,
-					digiprove_this_post bool NOT NULL,
-					this_all_original bool NOT NULL,
-					attributions text CHARACTER SET utf8 COLLATE utf8_general_ci,
-					using_default_license bool NOT NULL,
-					license varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci,
-					custom_license_caption varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci,
-					custom_license_abstract text CHARACTER SET utf8 COLLATE utf8_general_ci,
-					custom_license_url varchar(255),
-					certificate_id varchar(12),
-					digital_fingerprint varchar(64),
-					cert_utc_date_and_time varchar(40),
-					certificate_url varchar(255),
-					first_year smallint,
-					last_time_digiproved int,
-					last_fingerprint varchar(64),
-					last_time_updated int,
-					UNIQUE KEY id (id)
-					);";
+		$sql =	"CREATE TABLE " . $dprv_posts . " (
+				id bigint(20) NOT NULL,
+				digiprove_this_post bool NOT NULL,
+				this_all_original bool NOT NULL,
+				attributions text CHARACTER SET utf8 COLLATE utf8_general_ci,
+				using_default_license bool NOT NULL,
+				license varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci,
+				custom_license_caption varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci,
+				custom_license_abstract text CHARACTER SET utf8 COLLATE utf8_general_ci,
+				custom_license_url varchar(255),
+				certificate_id varchar(12),
+				digital_fingerprint varchar(64),
+				cert_utc_date_and_time varchar(40),
+				certificate_url varchar(255),
+				first_year smallint,
+				last_time_digiproved int,
+				last_fingerprint varchar(64),
+				last_time_updated int,
+				UNIQUE KEY id (id)
+				);";
 
-			//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
-			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
-			dbDelta($sql);
-			$dprv_db_error =$wpdb->last_error;
-			$log->lwrite ("Executed create table " . $dprv_posts . ", last_error " . $dprv_db_error);
-		}
-		if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
+		//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
+		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+		dbDelta($sql);
+
+		// TODO: statements below are pointless - do not capture dbDelta info.  Discover how to get dbDelta diagnostic info or develop direct sql commands
+		$dprv_sql_error = mysql_error();				
+		$dprv_sql_info = mysql_info();
+		$dprv_db_error = $wpdb->last_error;
+
+		$log->lwrite ("Executed create table " . $dprv_posts . ", last_error " . $dprv_db_error);
+
+		$like_dprv_posts = dprv_wpdb("get_var", "show tables like '$dprv_posts'");
+		if ($like_dprv_posts !== false && $like_dprv_posts !== $dprv_posts)
 		{
-			$message = "Failure to create table " . $dprv_posts . " with error " .  $dprv_db_error;
-			$log->lwrite($message);
+			$message = "Failure to create table " . $dprv_posts . "!=(" . $like_dprv_posts . ") with error " .  $dprv_db_error . ", mysql_error " . $dprv_sql_error;
 			dprv_record_event($message);
-			update_option('dprv_activation_event', $dprv_activation_event . '; ' . $message);
 		}
 		else
 		{
-			if ($wpdb->get_var("SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'") != 'last_fingerprint')
+			$like_last_fingerprint = dprv_wpdb("get_var","SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'");
+			if ($like_last_fingerprint != 'last_fingerprint')														// Table existed, but dbDelta failed to add new columns
 			{
-				$message = "last_fingerprint column not added to " . $dprv_posts . " with error " .  $dprv_db_error;
-				$log->lwrite($message);
+				$message = "dbDelta did not add last_fingerprint column  (= " . $like_last_fingerprint . ") to " . $dprv_posts;
+				if ($dprv_db_error != "")
+				{
+					$message .= " with error " .  $dprv_db_error;
+				}
+				if ($dprv_sql_error != "")
+				{
+					$message .= ", mysql_error " .  $dprv_sql_error;
+				}
+				if ($dprv_sql_info != "")
+				{
+					$message .= ", mysql_info " .  $dprv_sql_info;
+				}
+				
+				$message .= ", will try adding with wpdb";
 				dprv_record_event($message);
-				update_option('dprv_activation_event', $dprv_activation_event . '; ' . $message);
+				// TODO: diagnose why adding a varchar column to an existing table defaults to latin but in Create table defaults to utf-8
+				dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
+				dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
+				dprv_add_column($dprv_posts, 'last_time_updated', 'int');
+				if ($wpdb->get_var("SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'") != 'last_fingerprint')		// If still does not exist
+				{
+					$message = "Failed to add last_fingerprint column to " . $dprv_posts;
+					dprv_record_event($message);
+				}
 			}
 		}
 	}
@@ -378,8 +393,6 @@ License: GPL
 		$dprv_post_content_files = $dprv_prefix . "dprv_post_content_files";
 
 		// Check to see if the table exists already, if not, then create it
-		$dprv_activation_event = get_option('dprv_activation_event');
-		//$wpdb->show_errors();
 		if($wpdb->get_var("show tables like '$dprv_post_content_files'") != $dprv_post_content_files)
 		{
 			$log->lwrite("creating table " . $dprv_post_content_files);
@@ -393,10 +406,10 @@ License: GPL
 			dbDelta($sql);
 			$dprv_db_error =$wpdb->last_error;
 			$log->lwrite("just created posts table " . $dprv_post_content_files . "; error text = " . $dprv_db_error);
-			//$wpdb->show_errors();
 			if($wpdb->get_var("show tables like '$dprv_post_content_files'") != $dprv_post_content_files)
 			{
-				update_option('dprv_activation_event', $dprv_activation_event . '; table ' . $dprv_post_content_files . ' failed to create with error ' .  $dprv_db_error);
+				$message = "Failure to create table " . $dprv_post_content_files . " with error " .  $dprv_db_error;
+				dprv_record_event($message);
 			}
 		}
 		else
@@ -409,7 +422,7 @@ License: GPL
 	{				
 		$log = new DPLog();
 		global $wpdb;
-		$dprv_db_last_error = $wpdb->last_error; 
+		$dprv_db_last_error = $wpdb->last_error;
 		if ($wpdb->get_var("SHOW COLUMNS FROM $table LIKE '$column_name'") != $column_name)
 		{
 			$sql = "ALTER TABLE " . $table . " ADD COLUMN $column_name $qualifier";
@@ -476,7 +489,6 @@ License: GPL
 
 		global $wpdb;
 		$dprv_licenses = get_option('dprv_prefix') . "dprv_licenses";
-		//$dprv_licenses =  $wpdb->prefix . "dprv_licenses";
 
 		for ($i=0; $i<count($licenseTypes); $i++)
 		{
@@ -491,13 +503,13 @@ License: GPL
 	{
 		$log = new DPLog();  
 		$log->lwrite("VERSION " . DPRV_VERSION . " DEACTIVATED");  
-		//delete_option('dprv_last_result');	// keep other options for future install
 	}
 
 
 	// EVERY TIME WE START UP, CHECK IF ACTIVATION NEEDS TO BE DONE, CHECK FOR DB PREFIX CHANGE AND DISPLAY REMINDER ABOUT CONFIGURATION IF NECESSARY
 	function dprv_init()
 	{
+		$log = new DPLog();  
 		if (get_option('dprv_activated_version') !== DPRV_VERSION)
 		{
 			dprv_activate();
@@ -511,7 +523,6 @@ License: GPL
 		$dprv_posts = get_option('dprv_prefix') . "dprv_posts";
 		if (get_option('dprv_prefix') !== false && get_option('dprv_prefix') != $wpdb->prefix)
 		{
-			//$dprv_posts = get_option('dprv_prefix') . "dprv_posts";
 			if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
 			{
 				$dprv_posts = $wpdb->prefix . "dprv_posts";
@@ -536,19 +547,28 @@ License: GPL
 				// record event found table for dprv_prefix (dprv_prefix) even though different to wpdb->prefix
 			}
 		}
-		if ($wpdb->show_errors === true)
+		// TODO: Only perform this check if last_fingerprint may be required, e.g. edit or display posts/pages
+		// Check whether version 2.n db upgrade has been done successfully:
+		$like_last_fingerprint = dprv_wpdb("get_var", "SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'");
+		$log->lwrite ("like_last_fingerprint=" . $like_last_fingerprint);
+		if (($like_last_fingerprint === null || $like_last_fingerprint != 'last_fingerprint') && current_user_can("activate_plugins"))
 		{
-			$dprv_this_event = "wpdb->show_errors is true, resetting to false"; 
-			$wpdb->show_errors = false;
-			dprv_record_event($dprv_this_event);
-		}
-		if ($wpdb->get_var("SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'") != 'last_fingerprint' && current_user_can("activate_plugins"))
-		{
-			$dprv_this_event = "last_fingerprint does not exist, repeating activation";
+			$more_eval = "";
+			if (is_null($like_last_fingerprint))
+			{
+				$more_eval = " (like_last_fingerprint is null) ";
+			}
+			else
+			{
+				if (!is_string($like_last_fingerprint))
+				{
+					$more_eval = dprv_eval($like_last_fingerprint);
+				}
+			}
+			$dprv_this_event = "last_fingerprint does not exist in " . $dprv_posts . "(=" . $like_last_fingerprint . ")" . $more_eval . ", repeating activation";
 			dprv_record_event($dprv_this_event);
 			dprv_activate();
 		}
-
 
 		function dprv_reminder()
 		{
@@ -665,21 +685,11 @@ License: GPL
 	function dprv_createUpgradeLink()
 	{
 		global $dprv_blog_host;
-		//$dprv_blog_url = parse_url(get_option('home'));
-		//$dprv_blog_host = $dprv_blog_url['host'];
-		//$dprv_wp_host = "";		// default
-
-		//$dprv_wp_url = parse_url(get_option('siteurl'));
-		//$dprv_wp_host = $dprv_wp_url['host'];
-		//if (trim($dprv_blog_host) == "")
+		//$protocol = "http://";
+		//if (DPRV_SSL == "Yes")
 		//{
-		//	$dprv_blog_host = $dprv_wp_host;
-		//}
-		$protocol = "http://";
-		if (DPRV_SSL == "Yes")
-		{
 			$protocol = "https://";
-		}
+		//}
 		$dprv_upgrade_link = WP_PLUGIN_URL . '/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
 		return $dprv_upgrade_link;
 	}
@@ -716,9 +726,53 @@ License: GPL
 		}
 		return $links;
 	}
-
+	function dprv_wpdb($action, $sql)
+	{
+		$log = new DPLog();
+		global $wpdb;
+		$sql = $wpdb->prepare($sql);
+		$result = "29 jump street";	// just to establish variable scope
+		$prev_db_error = $wpdb->last_error;
+		switch ($action)
+		{
+			case "get_var":
+			{
+				$result = $wpdb->get_var($sql);
+				break;
+			}
+			case "get_row":
+			{
+				$result = $wpdb->get_row($sql, ARRAY_A);
+				break;
+			}
+			default:
+			{
+				return false;
+			}
+		}
+		$dprv_db_error = $wpdb->last_error;
+		if (trim($dprv_db_error) != "")
+		{
+			$error_status = "";
+			if ($prev_db_error == $dprv_db_error)
+			{
+				$error_status = "suspected ";
+			}
+			$dprv_this_event = $error_status . "wpdb SQL error " . $wpdb->last_error . " on " . $sql;
+			dprv_record_event($dprv_this_event);
+		}
+		// code below not executing; a SQL error gives a null result (same as e.g. no match on show columns like)
+		//if (!is_null($result) && $result === false)
+		//{
+		//	$dprv_this_event = "wpdb SQL error " . $wpdb->last_error . " on " . $sql;
+		//	dprv_record_event($dprv_this_event);
+		//}
+		return $result;
+	}
 	function dprv_record_event(&$dprv_this_event, $dprv_event = null)	// Record some event for error reporting purposes (will eventually show up on server log at next successful api transaction)
 	{
+		$log = new DPLog();
+		$log->lwrite($dprv_this_event);
 		if ($dprv_event == null)
 		{
 			$dprv_event = get_option('dprv_event');
@@ -729,24 +783,52 @@ License: GPL
 		}
 		$dprv_this_event =  date("Y/m/d-H:i O") . ': ' . $dprv_this_event;
 		$dprv_event .= $dprv_this_event;
+		$event_length = strlen($dprv_event);
+		if ($event_length > 16000) //  Placing a limit on size
+		{
+			$prefix = ".";
+			for ($pos=0; $pos<$event_length; $pos++)
+			{
+				if (substr($dprv_event, $pos, 1) == ".")
+				{
+					$prefix .= ".";
+				}
+				else
+				{
+					break;
+				}
+			}
+			$dprv_event = substr($dprv_event, $pos);
+			$event_length = strlen($dprv_event);
+			if ($event_length > 16000)	// still over the top?
+			{
+				$dprv_event = $prefix . substr($dprv_event, $event_length - 15999);
+			}
+			else
+			{
+				$dprv_event = $prefix . $dprv_event;
+			}
+		}
 		update_option('dprv_event', $dprv_event);
 		return $dprv_event;
 	}
 
 	function dprv_unrecord_event($dprv_this_event, $dprv_event = null)
 	{
-		//$log = new DPLog();
-		//$log->lwrite('dprv_unrecord_event dprv_event before = ' . $dprv_event);
 		if ($dprv_event == null)
 		{
 			$dprv_event = get_option('dprv_event');
 		}
-
 		$dprv_event = str_replace('; ' . $dprv_this_event, '', $dprv_event);
 		$dprv_event = trim(str_replace($dprv_this_event, '', $dprv_event));
-		//$log->lwrite('dprv_unrecord_event dprv_event after = ' . $dprv_event);
 		update_option('dprv_event', $dprv_event);
 		return $dprv_event;
+	}
+	function dprv_dbDelta($sql)
+	{
+
+
+
 	}
 function dprv_eval($something, $html = false, $tabs = "")
 {

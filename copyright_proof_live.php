@@ -159,13 +159,11 @@ function dprv_display_content($content)
 	$dprv_this_license_url = "";
 
 	// If stuff is recorded specifically for this post, use that
-	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
 	$dprv_status_info = "";
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 
-	//if (trim($wpdb->last_error) != "" || get_option('dprv_event') != "" || get_option('dprv_activation_event') != "")
-	if (trim($wpdb->last_error) != "" || is_null($dprv_post_info) ||  $dprv_post_info["digiprove_this_post"] == false || get_option('dprv_activation_event') != "" || get_option('dprv_event') != "")
+	if (trim($wpdb->last_error) != "" || is_null($dprv_post_info) ||  $dprv_post_info["digiprove_this_post"] == false || get_option('dprv_event') != "")
 	{
 		$dprv_status_info = "<!--post " . $dprv_post_id;
 		if (is_null($dprv_post_info))		// will be null if nothing found or error
@@ -184,8 +182,7 @@ function dprv_display_content($content)
 			$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
 		}
 
-		//$dprv_status_info .= "; dprv_e=" . get_option('dprv_event') . ", dprv_a_e=" . get_option('dprv_activation_event') . "-->";
-		$dprv_status_info .= "; dprv_e=" . str_replace("-->", "__>", get_option('dprv_event')) . ", dprv_a_e=" . str_replace("-->", "__>", get_option('dprv_activation_event')) . "-->";
+		$dprv_status_info .= "; dprv_e=" . str_replace("-->", "__>", get_option('dprv_event')) . "-->";
 	}
 		
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)

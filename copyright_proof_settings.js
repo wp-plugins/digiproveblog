@@ -519,6 +519,10 @@ function ShowAPIText(domain_name, password_on_record)
 	}
 	DisplayHelpText(dprv_api_text);
 }
+function ShowAPIFaqText(domain_name, password_on_record)
+{
+	DisplayHelpText(dprv_literals["API_key_FAQ"]);
+}
 
 function ShowPasswordText()
 {

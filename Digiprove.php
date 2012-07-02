@@ -1,8 +1,8 @@
 <?php
 define ("DPRV_SDK_VERSION", '0.95');
-define("DPRV_HOST", "www.digiprove.com");             // set to www.digiprove.com for live use
-define("DPRV_SSL", "Yes");
-define("DPRV_Log", "No");                             // Set this to "Yes" to generate local log-file for debug purposes (needs write permissions)
+define ("DPRV_HOST", "www.digiprove.com");               // set to www.digiprove.com for live use
+define ("DPRV_SSL", "No");
+define ("DPRV_Log", "No");                               // Set this to "Yes" to generate local log-file for debug purposes (needs write permissions)
 
 if (intval(substr(PHP_VERSION,0,1)) > 4)
 {
@@ -218,7 +218,8 @@ class Digiprove
 		}
 		if 	(isset($credentials['dprv_event']) && $credentials['dprv_event'] != "")
 		{
-			$postText .= "<dprv_event>" . $credentials['dprv_event'] . "</dprv_event>";
+			//$postText .= "<dprv_event>" . $credentials['dprv_event'] . "</dprv_event>";
+			$postText .= "<dprv_event>" . htmlspecialchars($credentials['dprv_event']) . "</dprv_event>";
 		}
 
 		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Digiprove SDK ' . DPRV_SDK_VERSION;
