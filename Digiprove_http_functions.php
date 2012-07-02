@@ -40,7 +40,7 @@ class Digiprove_HTTP
 			$http_host = $host;
 		}
 		$dprv_port = 80;
-		$response = '';                 
+		$response = '';
 		if (DPRV_SSL == "Yes")
 		{
 			$t = stream_get_transports();
@@ -48,6 +48,7 @@ class Digiprove_HTTP
 			{
 				if (stripos($t[$i], "ssl") !== false)
 				{
+					// TODO: Test to see if the ssl:// prefix is actually required
 					$http_host = "ssl://" . $http_host;
 					$dprv_port = 443;
 					break;

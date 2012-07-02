@@ -1221,7 +1221,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	{
 		$dprv_contact_checked = ' checked="checked"';
 	}
-	global $dprv_blog_host;
+	global $dprv_blog_host, $dprv_wp_host;
 	//$dprv_blog_url = parse_url(get_option('home'));
 	//$dprv_blog_host = $dprv_blog_url['host'];
 
@@ -1601,6 +1601,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr id="dprv_api_key_row_1"' . $dprv_display_api_rows . '>
 														<td></td>
 														<td><input type="checkbox" id="dprv_input_api_key" name="dprv_input_api_key" title="' . sprintf(__('Select this option only if you already have obtained a Digiprove API key for %s', 'dprv_cp'), $dprv_blog_host) . '" onclick="inputApiKey()" ' . $dprv_input_api_key_checked . $dprv_reg_disabled . '/><label for="dprv_input_api_key">&nbsp;' . $input_api_caption . '</label></td>
+														<td style="padding-left:5px" class="description" ><a href="javascript:ShowAPIFaqText(\'' . $dprv_blog_host. '\',\'' . $dprv_password_on_record . '\')">' .__('More about API keys', 'dprv_cp') . '</a></td>
+
 													</tr>
 													<tr id="dprv_api_key_row_2"' . $dprv_display_api_row2 . '>
 														<td id="dprv_api_key_caption"></td>
@@ -2114,6 +2116,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			dprv_literals["API_key_required2"] = \'' . sprintf(__(" If you are already registered with Digiprove, you can obtain your API key for this domain by ticking the &quot;Obtain New API Key&quot; box above (you will be asked for your password).  API keys can also be obtained at the %s Digiprove members&#39; website %s (you will be asked to log in)", "dprv_cp"), "<a href=\"https://www.digiprove.com/members/api_keys.aspx\" target=\"_blank\">", "</a>") . '\';
 
 			dprv_literals["API_key_required3"] = \'' . sprintf(__(" If you registered from this page the API key will have been filled in automatically - there is no need to change it. If you are receiving error messages regarding your api key you can obtain a new one by ticking &quot;Obtain New Api Key&quot; box (you will need to input your password) or it can also be done from the  %sDigiprove  members&#39; website%s (you will be asked to log in)", "dprv_cp"), "<a href=\"https://www.digiprove.com/members/api_keys.aspx\" target=\"_blank\">", "</a>") . '\';
+
+			dprv_literals["API_key_FAQ"] = \'' . sprintf(__("<p>Digiprove requires a user id and a domain name/API key pair to authenticate transactions.  Copyright Proof&#39;s activation and registration process is designed to set up the required domain name/API key pair automatically when you install for the first time in Wordpress. When setting up the api key, by default it will use the domain name of the Site address URL as set in Wordpress / Settings / General (in your case &#39;%s&#39;); if this is blank the domain will be taken from the Wordpress address URL (&#39;%s&#39;).</p>There are certain situations where you might need to do something:<br/><table cellpadding=\"3\"><tr><td valign=\"top\"><em>Error message &#39;Invalid domain or api key&#39;</em></td><td>Either Digiprove has no record of the domain (%s or %s) being supplied or the api key does not match.  This can happen if your domain name has changed recently or if the api key was changed in error. It is usually resolved by ticking the box above entitled &#39;Obtain new api key automatically&#39;, and pressing &#39;Update Settings&#39;.</td></tr><tr><td valign=\"top\"><em>Error message &#39;Max number of API keys reached for this subscription type&#39;</em></td><td>The number of permitted domains depends on the subscription level of your Digiprove account; the default free Basic account allows you to protect one website, a Personal account permits 5, and so on. You can either<ul style=\"padding-left:20px;list-style:disc\"><li>remove an existing domain/API key pair (from the <a href=\"https://www.digiprove.com/members/members_area.aspx?content=api_keys.aspx\" target=\"_blank\">Digiprove Member&#39;s area</a> (you will be asked for your user id and password) or</li><li>upgrade to a plan that allows the desired number of websites (<a href=\"%s\" target=\"_blank\" style=\"font-weight:bold\">Upgrade</a>)</li></ul>Once you have taken one of these steps, tick the box above entitled &#39;Obtain new api key automatically&#39;, then press &#39;Update Settings&#39;.</td></tr></table>", "dprv_cp"), $dprv_blog_host, $dprv_wp_host, $dprv_blog_host, $dprv_wp_host, $dprv_upgrade_link . "&amp;Action=Upgrade") . '\';
 
 			dprv_literals["Password_help"] = \'' . __("Your password to give you access to the Digiprove website members&#39; area. An encrypted version of the password is stored on the Digiprove server but <em>not here on your Wordpress server</em>.", "dprv_cp") . '\';
 
