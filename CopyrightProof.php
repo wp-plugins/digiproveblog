@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.04
+Version: 2.05
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -32,12 +32,14 @@ License: GPL
 	include_once('copyright_proof_admin.php');						// Functions for Settings panel
 	include_once('copyright_proof_edit.php');						// Functions for Creating and Editing content
 	include_once('copyright_proof_live.php');						// Functions for Serving pages on web
-	include_once('copyright_proof_error.php');						// Functions for handling errors
+	if (intval(substr(PHP_VERSION,0,1)) > 4)
+	{
+		include_once('copyright_proof_error.php');					// Functions for handling errors
+	}
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.04");
-	//define("DPRV_Log", "Yes");                       // Set this to "Yes" to generate local log-file (needs write permissions)
+	define("DPRV_VERSION", "2.05");
 	//error_reporting(E_ALL);						   // uncomment this for test purposes
 
 
@@ -77,7 +79,7 @@ License: GPL
 
 	add_action('admin_menu', 'dprv_settings_menu');
 	add_action('admin_head', 'dprv_admin_head');
-	add_action('admin_footer', 'dprv_admin_footer');
+	//add_action('admin_footer', 'dprv_admin_footer');		// No longer used, new strategy for displaying messages
 
 	//add_action('post_submitbox_misc_actions', 'dprv_verify_box');
 	add_action('post_submitbox_start', 'dprv_add_digiprove_submit_button');
@@ -186,6 +188,7 @@ License: GPL
 		$log->lwrite("");
 		$log->lwrite("VERSION " . DPRV_VERSION . " ACTIVATED");
 		update_option('dprv_activated_version', DPRV_VERSION);	// If different to installed, activation steps will take place
+		//add_option('dprv_verified_db_version', '');	            // If not up to date, will be checked and updated if necessary
 		add_option('dprv_email_address', '');
 		add_option('dprv_first_name', '');
 		add_option('dprv_last_name', '');
@@ -215,8 +218,8 @@ License: GPL
 		{
 			foreach ($dprv_html_tags as $key=>$value)
 			{
-				$log->lwrite("key=$key");
-				$log->lwrite("value=$value");
+				//$log->lwrite("key=$key");
+				//$log->lwrite("value=$value");
 				$dprv_html_tags[$key]["selected"] = "False";
 			}
 		}
@@ -260,19 +263,43 @@ License: GPL
 	{
 		$log = new DPLog();  
 		global $wpdb;
+
+		// First, investigate and set dprv_prefix to allow for various situations such as user changes wp_prefix, dbDelta used to ignore caps in prefix
 		$dprv_prefix = get_option('dprv_prefix');
 		$dprv_licenses = $dprv_prefix . "dprv_licenses";
-		if ($dprv_prefix === false || $wpdb->get_var("show tables like '$dprv_licenses'") != $dprv_licenses)
+		
+		if ($dprv_prefix === false)
 		{
+			// First-time activation of this plugin
 			$dprv_prefix = $wpdb->prefix;
 			update_option('dprv_prefix', $dprv_prefix);
 		}
-		$dprv_licenses = $dprv_prefix . "dprv_licenses";
-		//$dprv_licenses = $wpdb->prefix . "dprv_licenses";
+		else
+		{
+			$like_dprv_licenses = dprv_wpdb("get_var", "show tables like '$dprv_licenses'");
+			$log->lwrite("like_dprv_licenses=$like_dprv_licenses");
+			if ($like_dprv_licenses != $dprv_licenses)
+			{
+				$dprv_licenses = strtolower($dprv_licenses);
+				$like_dprv_licenses = dprv_wpdb("get_var", "show tables like '$dprv_licenses'");
+				if ($like_dprv_licenses == $dprv_licenses)
+				{
+					// Due to pre 3.4 db Delta bug, table name was created with all lower case prefix
+					$dprv_prefix = strtolower($dprv_prefix);
+					$log->lwrite("just set dprv_prefix to $dprv_prefix (lower case)");
+				}
+				else
+				{
+					$dprv_prefix = $wpdb->prefix;
+					$log->lwrite("just set dprv_prefix to $dprv_prefix");
+				}
+				update_option('dprv_prefix', $dprv_prefix);
+			}
+		}
 
-		// Check to see if the table exists already, if not, then create it
-		//$wpdb->show_errors();
-		if($wpdb->get_var("show tables like '$dprv_licenses'") != $dprv_licenses)
+		// Now check to see if the table exists already, if not, then create it
+		$dprv_licenses = $dprv_prefix . "dprv_licenses";
+		if(dprv_wpdb("get_var", "show tables like '$dprv_licenses'") != $dprv_licenses)
 		{
 			$log->lwrite("creating license table " . $dprv_licenses);  
 			$sql = "CREATE TABLE " . $dprv_licenses . " (
@@ -288,23 +315,52 @@ License: GPL
 			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 
 			dbDelta($sql);
+			$dprv_sql_error = mysql_error();				
 			$dprv_db_error = $wpdb->last_error;
-			$log->lwrite("just created license table " . $dprv_licenses . "; error text = " . $dprv_db_error);
-			if($wpdb->get_var("show tables like '$dprv_licenses'") != $dprv_licenses)
-			{
-				$message = "Failure to create table " . $dprv_licenses . " with error " .  $dprv_db_error;
-				dprv_record_event($message);
+			$log->lwrite("just created (if necessary) license table " . $dprv_licenses . "; error text = " . $dprv_db_error);
 
-			}
-			else
+			$like_dprv_licenses = dprv_wpdb("get_var", "show tables like '$dprv_licenses'");
+			$log->lwrite("like_dprv_licenses=$like_dprv_licenses");
+			if ($like_dprv_licenses != $dprv_licenses)
 			{
-				record_dprv_licenses();
+				// Check if created at lower case (would be if pre 3.4 version of WP)
+				$like_dprv_licenses = dprv_wpdb("get_var", "show tables like '" . strtolower($dprv_licenses) . "'");
+				if ($like_dprv_licenses != strtolower($dprv_licenses))
+				{
+					$message = "Failure to create table " . $dprv_licenses;
+					if (trim($dprv_db_error) != "")
+					{
+						$message .= " with error " .  $dprv_db_error;
+					}
+					if (trim($dprv_sql_error) != "")
+					{
+						$message .= " sql error " .  $dprv_sql_error;
+					}
+					$temp = sprintf(__("Failed to create db table %s"), $dprv_licenses);
+					if (trim($dprv_db_error) != "")
+					{
+						$temp .= " <a href='javascript:alert(\"" . __("Details:") . " $dprv_db_error" . "\")'>More</a>";
+					}
+					$log->lwrite($temp);
+					update_option("dprv_pending_message", $temp); 
+					dprv_record_event($message);
+					return false;
+				}
+				else
+				{
+					// Looks like dbDelta just created table using lower-case version of prefix, modify dprv_prefix accordingly
+					$dprv_prefix = strtolower($dprv_prefix);
+					$log->lwrite("dbDelta converted prefix to lower case, just set dprv_prefix to $dprv_prefix");
+					update_option('dprv_prefix', $dprv_prefix);
+				}
 			}
+			record_dprv_licenses();
 		}
 		else
 		{
 			$log->lwrite("Table " . $dprv_licenses . " exists already");  
 		}
+		return true;
 	}
 
 	function create_dprv_post_table()
@@ -338,7 +394,7 @@ License: GPL
 		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 		dbDelta($sql);
 
-		// TODO: statements below are pointless - do not capture dbDelta info.  Discover how to get dbDelta diagnostic info or develop direct sql commands
+		// TODO: statements below may be pointless and do not capture dbDelta info.  Test to determine facts
 		$dprv_sql_error = mysql_error();				
 		$dprv_sql_info = mysql_info();
 		$dprv_db_error = $wpdb->last_error;
@@ -353,7 +409,7 @@ License: GPL
 		}
 		else
 		{
-			$like_last_fingerprint = dprv_wpdb("get_var","SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'");
+			$like_last_fingerprint = dprv_wpdb("get_var","show columns from $dprv_posts LIKE 'last_fingerprint'");
 			if ($like_last_fingerprint != 'last_fingerprint')														// Table existed, but dbDelta failed to add new columns
 			{
 				$message = "dbDelta did not add last_fingerprint column  (= " . $like_last_fingerprint . ") to " . $dprv_posts;
@@ -376,7 +432,25 @@ License: GPL
 				dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
 				dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
 				dprv_add_column($dprv_posts, 'last_time_updated', 'int');
-				if ($wpdb->get_var("SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'") != 'last_fingerprint')		// If still does not exist
+/*
+				// Not yet implemented:
+				$result1 = dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
+				if (strpos($result1, "Duplicate column name") !== false)
+				{
+					update_option('dprv_verified_db_version', '2');
+				}
+				else
+				{
+					$result2 = dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
+					$result3 = dprv_add_column($dprv_posts, 'last_time_updated', 'int');
+					if ($result1 === true && $result2 === true && $result3 === true)
+					{
+						update_option('dprv_verified_db_version', '2');
+					}
+				}
+*/
+				$like_last_fingerprint = dprv_wpdb("get_var","SHOW COLUMNS FROM $dprv_posts like 'last_fingerprint'");
+				if ($like_last_fingerprint != 'last_fingerprint')															// If still does not exist
 				{
 					$message = "Failed to add last_fingerprint column to " . $dprv_posts;
 					dprv_record_event($message);
@@ -393,7 +467,8 @@ License: GPL
 		$dprv_post_content_files = $dprv_prefix . "dprv_post_content_files";
 
 		// Check to see if the table exists already, if not, then create it
-		if($wpdb->get_var("show tables like '$dprv_post_content_files'") != $dprv_post_content_files)
+		//if($wpdb->get_var("show tables like '$dprv_post_content_files'") != $dprv_post_content_files)
+		if(dprv_wpdb("get_var", "show tables like '$dprv_post_content_files'") != $dprv_post_content_files)
 		{
 			$log->lwrite("creating table " . $dprv_post_content_files);
 			$sql = "CREATE TABLE " . $dprv_post_content_files . " (
@@ -406,7 +481,8 @@ License: GPL
 			dbDelta($sql);
 			$dprv_db_error =$wpdb->last_error;
 			$log->lwrite("just created posts table " . $dprv_post_content_files . "; error text = " . $dprv_db_error);
-			if($wpdb->get_var("show tables like '$dprv_post_content_files'") != $dprv_post_content_files)
+			//if($wpdb->get_var("show tables like '$dprv_post_content_files'") != $dprv_post_content_files)
+			if(dprv_wpdb("get_var", "show tables like '$dprv_post_content_files'") != $dprv_post_content_files)
 			{
 				$message = "Failure to create table " . $dprv_post_content_files . " with error " .  $dprv_db_error;
 				dprv_record_event($message);
@@ -512,6 +588,7 @@ License: GPL
 		$log = new DPLog();  
 		if (get_option('dprv_activated_version') !== DPRV_VERSION)
 		{
+			$log->lwrite("change of plugin version detected, calling activation");
 			dprv_activate();
 		}
 		// Load language file if applicable
@@ -521,13 +598,15 @@ License: GPL
 		// Check if db prefix changed and adjust if need be
 		global $wpdb;
 		$dprv_posts = get_option('dprv_prefix') . "dprv_posts";
-		if (get_option('dprv_prefix') !== false && get_option('dprv_prefix') != $wpdb->prefix)
+		if (get_option('dprv_prefix') !== false && get_option('dprv_prefix') != $wpdb->prefix  && get_option('dprv_prefix') != strtolower($wpdb->prefix))
 		{
-			if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
+			//if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
+			if(dprv_wpdb("get_var", "show tables like '$dprv_posts'") != $dprv_posts)
 			{
 				$dprv_posts = $wpdb->prefix . "dprv_posts";
 
-				if($wpdb->get_var("show tables like '$dprv_posts'") == $dprv_posts)
+				//if($wpdb->get_var("show tables like '$dprv_posts'") == $dprv_posts)
+				if(dprv_wpdb("get_var", "show tables like '$dprv_posts'") == $dprv_posts)
 				{
 					// User has changed db prefix of dprv tables (assume all), adjust dprv_prefix accordingly 
 					$dprv_this_event = "found table for wpdb-prefix(" . $wpdb->prefix . ") but not dprv_prefix(" . get_option('dprv_prefix') . "), updating dprv_prefix"; 
@@ -562,7 +641,8 @@ License: GPL
 			{
 				if (!is_string($like_last_fingerprint))
 				{
-					$more_eval = dprv_eval($like_last_fingerprint);
+					//$more_eval = dprv_eval($like_last_fingerprint);
+					$more_eval =  " (like_last_fingerprint is not a string) ";
 				}
 			}
 			$dprv_this_event = "last_fingerprint does not exist in " . $dprv_posts . "(=" . $like_last_fingerprint . ")" . $more_eval . ", repeating activation";
@@ -751,6 +831,7 @@ License: GPL
 			}
 		}
 		$dprv_db_error = $wpdb->last_error;
+		$dprv_sql_error = mysql_error();
 		if (trim($dprv_db_error) != "")
 		{
 			$error_status = "";
@@ -758,17 +839,34 @@ License: GPL
 			{
 				$error_status = "suspected ";
 			}
-			$dprv_this_event = $error_status . "wpdb SQL error " . $wpdb->last_error . " on " . $sql;
+			$dprv_this_event = $error_status . "wpdb SQL error " . $dprv_db_error . " on " . $sql;
+			if (trim($dprv_sql_error) != "")
+			{
+				$dprv_this_event .= "; MySQL error " . $dprv_sql_error;
+			}
+			$more_eval = "";
+			if (is_null($result))
+			{
+				$more_eval = " (result is null) ";
+			}
+			else
+			{
+				if (!is_string($result))
+				{
+					$more_eval = " (result not string = " . $result . ")";
+				}
+				else
+				{
+					$more_eval = " (result is $result)";
+				}
+			}
+			$dprv_this_event .= $more_eval;
 			dprv_record_event($dprv_this_event);
+			$log->lwrite("mysql_info=" . mysql_info());
 		}
-		// code below not executing; a SQL error gives a null result (same as e.g. no match on show columns like)
-		//if (!is_null($result) && $result === false)
-		//{
-		//	$dprv_this_event = "wpdb SQL error " . $wpdb->last_error . " on " . $sql;
-		//	dprv_record_event($dprv_this_event);
-		//}
 		return $result;
 	}
+
 	function dprv_record_event(&$dprv_this_event, $dprv_event = null)	// Record some event for error reporting purposes (will eventually show up on server log at next successful api transaction)
 	{
 		$log = new DPLog();
@@ -832,6 +930,10 @@ License: GPL
 	}
 function dprv_eval($something, $html = false, $tabs = "")
 {
+	if (is_null($something))
+	{
+		return "NULL; ";
+	}
 	$log = new DPLog();
 	$line = "\r\n";
 	$tab = "\t";
@@ -843,10 +945,6 @@ function dprv_eval($something, $html = false, $tabs = "")
 		$tab = "&nbsp;&nbsp;&nbsp;&nbsp;";
 		$apos = "&#039;";
 		$arrow = "=&gt;&nbsp;";
-	}
-	if (is_null($something))
-	{
-		return "NULL; ";
 	}
 	$return = "";
 	if (is_object($something))

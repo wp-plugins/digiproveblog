@@ -161,7 +161,8 @@ function dprv_display_content($content)
 	// If stuff is recorded specifically for this post, use that
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
 	$dprv_status_info = "";
-	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+	//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+	$dprv_post_info = dprv_wpdb("get_row", $sql);
 
 	if (trim($wpdb->last_error) != "" || is_null($dprv_post_info) ||  $dprv_post_info["digiprove_this_post"] == false || get_option('dprv_event') != "")
 	{
