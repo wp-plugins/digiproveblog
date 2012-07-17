@@ -1,8 +1,14 @@
 <?php
 // ERROR-HANDLING FUNCTION:
+/*
+	BEWARE:
+	 - Use this at appropriate places and ensure that it will get set off - remember you're in a plugin, you do not want to be trapping errors in other people's code 
+	 - Every time you set this in a function ensure that it gets reset to previous before you return; there is a hierarchy which is tracked by PHP
+*/
 
 class dprvErrors
 {
+	// Below function not used?
 	function set_handler()
 	{
 		set_error_handler(array("dprvErrors", "catch_error"));

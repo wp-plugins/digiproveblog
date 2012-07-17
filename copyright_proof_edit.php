@@ -461,17 +461,6 @@ function dprv_verify_box()
 						if ($dprv_post_info["last_time_digiproved"] != null && $dprv_post_info["last_time_digiproved"] == $dprv_post_info["last_time_updated"] )
 						{
 							global $dprv_blog_host;
-							// TODO: make this a global or a define
-							//$dprv_blog_url = parse_url(get_option('home'));
-							//$dprv_blog_host = $dprv_blog_url['host'];
-							//$dprv_wp_host = "";		// default
-
-							//$dprv_wp_url = parse_url(get_option('siteurl'));
-							//$dprv_wp_host = $dprv_wp_url['host'];
-							//if (trim($dprv_blog_host) == "")
-							//{
-							//	$dprv_blog_host = $dprv_wp_host;
-							//}
 							$dprv_integrity_message = __("File Integrity Unknown", "dprv_cp");
 
 							dprv_getContentFiles($dprv_post_id, $content, $content_files, $content_file_names, 50, $file_count, false);

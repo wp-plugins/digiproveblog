@@ -263,21 +263,29 @@ function EnableRegistrationInputs()
 
 function UserIdChanged()
 {
-	if (dprv_lastUserId == document.getElementById('dprv_user_id').value || document.getElementById('dprv_enrolled').value == "No")
+	if (dprv_lastUserId == document.getElementById('dprv_user_id').value)
 	{
 		return true;
 	}
-	//if ((dprv_last_result.indexOf("Digiprove certificate id") !== -1 || dprv_last_result.indexOf("User already activated") !== -1) && dprv_lastUserId != "")
+	document.getElementById('dprv_user_id').value = trim(document.getElementById('dprv_user_id').value);
+	if (indexOfAny(document.getElementById('dprv_user_id').value, "/?\\:*<>|\"") != -1)
+	{
+		alert(dprv_literals["No_special_chars"]);
+		document.getElementById('dprv_user_id').value = dprv_lastUserId;
+		return false;
+	}
+	if (document.getElementById('dprv_enrolled').value == "No")
+	{
+		return true;
+	}
 	if ((dprv_last_result.indexOf(dprv_literals["Digiprove certificate id"]) !== -1 || dprv_last_result.indexOf("User already activated") !== -1) && dprv_lastUserId != "")
 	{
-		//if (!confirm("You are changing your Digiprove User Id. This may cause the plugin to stop working.  Press OK if you are sure, or Cancel to restore the previous value."))
 		if (!confirm(dprv_literals["No_touch_warning1"]))			// "You are changing your Digiprove User Id. This may cause the plugin to stop working.  Press OK if you are sure, or Cancel to restore the previous value."
 		{
 			document.getElementById('dprv_user_id').value = dprv_lastUserId;
 			return false;
 		}
 	}
-
 	dprv_lastUserId = document.getElementById('dprv_user_id').value;
 	if (document.getElementById("dprv_sub_row0"))
 	{
@@ -1145,6 +1153,29 @@ function DisplayHelpText(help_text)
 function HideHelpText()
 {
 	document.getElementById('HelpTextContainer').style.display='none';
+}
+function indexOfAny(string, values)
+{
+	var result = -1;
+	if (string != null && values != null)
+	{
+		for (var i=0; i< values.length; i++)
+		{
+			var pos = string.indexOf(values[i]);
+			if (pos != -1)
+			{
+				if (result == -1 || pos < result)
+				{
+					result = pos;
+				}
+			}
+		}
+	}
+	return result;
+}
+function trim(str)
+{
+	return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
 }
 
 //]]>
