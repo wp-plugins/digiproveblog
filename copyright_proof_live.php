@@ -102,9 +102,6 @@ function dprv_head()
 	{
 		global $dprv_wp_host;
 		$content_prefix .= "<script src='record_IP.js' type='text/javascript'></script>";
-		//$dprv_wp_url = parse_url(get_option('siteurl'));
-		//$dprv_wp_host = $dprv_wp_url[host];
-		//$log->lwrite("dprv_wp_host = " . $dprv_wp_host);  
 		$content_prefix .= "<form action='http://" . $dprv_wp_host . "/copyright_proof_handler.php' method='post' id='IPAddress'><input type='hidden' value='" . @$REMOTE_ADDR . "' /></form>";
 	}
 }
@@ -157,35 +154,41 @@ function dprv_display_content($content)
 	$dprv_this_license_caption = "";
 	$dprv_this_license_abstract = "";
 	$dprv_this_license_url = "";
-
-	// If stuff is recorded specifically for this post, use that
-	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+	$dprv_post_info = null;
 	$dprv_status_info = "";
-	//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-	$dprv_post_info = dprv_wpdb("get_row", $sql);
-
-	if (trim($wpdb->last_error) != "" || is_null($dprv_post_info) ||  $dprv_post_info["digiprove_this_post"] == false || get_option('dprv_event') != "")
+	if (trim($dprv_post_id == ""))
 	{
-		$dprv_status_info = "<!--post " . $dprv_post_id;
-		if (is_null($dprv_post_info))		// will be null if nothing found or error
-		{
-			$dprv_status_info .= "; Null return on select";
-		}
-		else
-		{
-			if ($dprv_post_info["digiprove_this_post"] == false)
-			{
-				$dprv_status_info .= "; d_t_p == false";
-			}
-		}
-		if (trim($wpdb->last_error) != "")
-		{
-			$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
-		}
-
-		$dprv_status_info .= "; dprv_e=" . str_replace("-->", "__>", get_option('dprv_event')) . "-->";
+		global $id, $post, $post_id;
+		$message = "live: dprv_post_id is empty, content id=$id, post_id=$post_id, post->id=" . $post->ID;
+		dprv_record_event($message);
 	}
-		
+	else
+	{
+		// If stuff is recorded specifically for this post, use that
+		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+		$dprv_post_info = dprv_wpdb("get_row", $sql);
+		if (trim($wpdb->last_error) != "" || is_null($dprv_post_info) ||  $dprv_post_info["digiprove_this_post"] == false || get_option('dprv_event') != "")
+		{
+			$dprv_status_info = "<!--post " . $dprv_post_id;
+			if (is_null($dprv_post_info))		// will be null if nothing found or error
+			{
+				$dprv_status_info .= "; Null return on select";
+			}
+			else
+			{
+				if ($dprv_post_info["digiprove_this_post"] == false)
+				{
+					$dprv_status_info .= "; d_t_p == false";
+				}
+			}
+			if (trim($wpdb->last_error) != "")
+			{
+				$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
+			}
+
+			$dprv_status_info .= "; dprv_e=" . str_replace("-->", "__>", get_option('dprv_event')) . "-->";
+		}
+	}		
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
 		$dprv_this_all_original = "No";
@@ -242,9 +245,9 @@ function dprv_display_content($content)
 		}
 	}
 	$dprv_license_html = "";
-	if (count($dprv_post_info) > 0 && $dprv_post_info["digiprove_this_post"] == true && $dprv_post_info["certificate_id"] != null && $dprv_post_info["certificate_id"] != "" && $dprv_post_info["certificate_id"] != false)
+	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0 && $dprv_post_info["digiprove_this_post"] == true && $dprv_post_info["certificate_id"] != null && $dprv_post_info["certificate_id"] != "" && $dprv_post_info["certificate_id"] != false)
 	{
-		$log->lwrite("there is a Digiprove cert in the meta-data");
+		$log->lwrite("Digiprove certification has been recorded in dprv_posts table");
 
 		$dprv_certificate_id = $dprv_post_info["certificate_id"];
 		$dprv_utc_date_and_time = $dprv_post_info["cert_utc_date_and_time"];
@@ -257,7 +260,7 @@ function dprv_display_content($content)
 	}
 	else
 	{
-		$log->lwrite("there is no Digiprove cert in the meta-data");
+		$log->lwrite("there is no Digiprove cert in dprv_posts table");
 		if ($dprv_certificate_id != false && $dprv_certificate_id != "")
 		{
 			$log->lwrite("but there was an old notice - will make a new one with variables from that");
@@ -293,9 +296,7 @@ function dprv_integrity_statement($dprv_post_id, &$dprv_integrity_headline,  &$d
 	}
 	$post_type_label = $post->post_type; //default value
 
-	//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_posts WHERE id = " . $dprv_post_id;
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-	//$wpdb->show_errors();
 	$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
