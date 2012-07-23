@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.05
+Version: 2.06
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -39,7 +39,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.05");
+	define("DPRV_VERSION", "2.06");
 	//error_reporting(E_ALL);						   // uncomment this for test purposes
 
 
@@ -779,15 +779,12 @@ License: GPL
 		global $wpdb;
 
 		$log = new DPLog();
-		//$wpdb->show_errors();
 		$log->lwrite("post " . $pid . " deleted, checking for dprv_post record with same id");
 		$sql='SELECT id FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = ' . $pid;
-		//$sql='SELECT id FROM ' . $wpdb->prefix . 'dprv_posts WHERE id = ' . $pid;
 		if ($wpdb->get_var($wpdb->prepare($sql)))
 		{
 			$log->lwrite("found a dprv_post " . $pid . ", will now delete it"); 
 			return $wpdb->query($wpdb->prepare('DELETE FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = %d', $pid));
-			//return $wpdb->query($wpdb->prepare('DELETE FROM ' . $wpdb->prefix . 'dprv_posts WHERE id = %d', $pid));
 		}
 		return true;
 	}
@@ -842,7 +839,14 @@ License: GPL
 			$dprv_this_event = $error_status . "wpdb SQL error " . $dprv_db_error . " on " . $sql;
 			if (trim($dprv_sql_error) != "")
 			{
-				$dprv_this_event .= "; MySQL error " . $dprv_sql_error;
+				if ($dprv_sql_error == $dprv_db_error)
+				{
+					$dprv_this_event .= "; (MySQL error same)";
+				}
+				else
+				{
+					$dprv_this_event .= "; MySQL error " . $dprv_sql_error;
+				}
 			}
 			$more_eval = "";
 			if (is_null($result))
