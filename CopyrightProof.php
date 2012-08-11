@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.06
+Version: 2.07
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -39,7 +39,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.06");
+	define("DPRV_VERSION", "2.07");
 	//error_reporting(E_ALL);						   // uncomment this for test purposes
 
 
@@ -831,27 +831,21 @@ License: GPL
 		$dprv_sql_error = mysql_error();
 		if (trim($dprv_db_error) != "")
 		{
+			$bt = debug_backtrace();
 			$error_status = "";
 			if ($prev_db_error == $dprv_db_error)
 			{
 				$error_status = "suspected ";
 			}
 			$dprv_this_event = $error_status . "wpdb SQL error " . $dprv_db_error . " on " . $sql;
-			if (trim($dprv_sql_error) != "")
+			if (trim($dprv_sql_error) != "" && $dprv_sql_error != $dprv_db_error)
 			{
-				if ($dprv_sql_error == $dprv_db_error)
-				{
-					$dprv_this_event .= "; (MySQL error same)";
-				}
-				else
-				{
-					$dprv_this_event .= "; MySQL error " . $dprv_sql_error;
-				}
+				$dprv_this_event .= "; MySQL error " . $dprv_sql_error;
 			}
 			$more_eval = "";
 			if (is_null($result))
 			{
-				$more_eval = " (result is null) ";
+				$more_eval = " (result is null)";
 			}
 			else
 			{
@@ -865,6 +859,29 @@ License: GPL
 				}
 			}
 			$dprv_this_event .= $more_eval;
+			$counter = 0;
+			if (is_array($bt))
+			{
+				foreach ($bt as $caller)
+				{
+					if (is_array($caller))
+					{
+						if (isset($caller["file"]))
+						{
+							$dprv_this_event .= "called from " . str_replace(ABSPATH, "", $caller["file"]) . " line " . $caller["line"] . "\r\n";
+						}
+						else
+						{
+							$dprv_this_event .= "function " . $caller["function"] . "\r\n";
+						}
+					}
+					$counter++;
+					if ($counter > 4)
+					{
+						break;
+					}
+				}
+			}
 			dprv_record_event($dprv_this_event);
 			$log->lwrite("mysql_info=" . mysql_info());
 		}

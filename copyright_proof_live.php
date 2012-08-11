@@ -159,7 +159,39 @@ function dprv_display_content($content)
 	if (trim($dprv_post_id == ""))
 	{
 		global $id, $post, $post_id;
-		$message = "live: dprv_post_id is empty, content id=$id, post_id=$post_id, post->id=" . $post->ID;
+		$bt = debug_backtrace();
+
+		$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+		$posDot = strrpos($script_name,'.');
+		if ($posDot != false)
+		{
+			$script_name = substr($script_name, 0, $posDot);
+		}
+		$message = "live $script_name: dprv_post_id is empty, content id=$id, post_id=$post_id, post->id=" . $post->ID;
+		$message .= ", content[0-49]=" . substr($content,0,50);
+		$counter = 0;
+		if (is_array($bt))
+		{
+			foreach ($bt as $caller)
+			{
+				if (is_array($caller))
+				{
+					if (isset($caller["file"]))
+					{
+						$message .= "called from " . str_replace(ABSPATH, "", $caller["file"]) . " line " . $caller["line"] . "\r\n";
+					}
+					else
+					{
+						$message .= "function " . $caller["function"] . "\r\n";
+					}
+				}
+				$counter++;
+				if ($counter > 4)
+				{
+					break;
+				}
+			}
+		}
 		dprv_record_event($message);
 	}
 	else
@@ -627,7 +659,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		//$log->lwrite("licenseType = " . $licenseType . ", licenseCaption=" . $licenseCaption);
 		if ($licenseType != false && $licenseType != "" && $licenseType != "Not Specified")
 		{
-			$DigiproveNotice .= "<a title='" . __("Click to see details of license", "dprv_cp") . "' href=\"javascript:dprv_DisplayLicense('" . $dprv_post_id . "')\" style=\"" . $span_style . "\" " . $mouseover . "target='_self'>";
+			$DigiproveNotice .= "<a title='" . __("Click to see details of license", "dprv_cp") . "' href=\"javascript:dprv_DisplayLicense('" . $dprv_post_id . "')\" style=\"" . $span_style . "\" " . $mouseover . " target=\"_self\">";
 			$DigiproveNotice .= $licenseCaption;
 			$DigiproveNotice .= "</a>";
 			// Need to replace transparency with inversion of text color (as license_panel is a layer):
