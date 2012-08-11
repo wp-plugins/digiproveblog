@@ -1137,11 +1137,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_contact_checked = ' checked="checked"';
 	}
 	global $dprv_blog_host, $dprv_wp_host;
-	//$dprv_blog_url = parse_url(get_option('home'));
-	//$dprv_blog_host = $dprv_blog_url['host'];
 
 	$dprv_password_on_record = "No";
-
 	if ($dprv_password != null && $dprv_password != "")
 	{
 		$dprv_password_on_record = "Yes";
@@ -1493,10 +1490,10 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 																print(' (' . sprintf(__('valid until %s', 'dprv_cp'), $dprv_subscription_expiry) . ')');
 															}
 												print('		&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:SyncUser();" style="vertical-align:-3px;width:16px;height:16px"><img src="' . WP_PLUGIN_URL. '/digiproveblog/Refresh-16.png" alt=""></a></td>
-															<td style="padding-left:5px"><a href="' . $dprv_upgrade_link . '&amp;Action=Upgrade" target="_blank" style="font-weight:bold">' . __('Upgrade', 'dprv_cp') . '</a>');
+															<td style="padding-left:5px"><a class="button" href="' . $dprv_upgrade_link . '&amp;Action=Upgrade" target="_blank" style="font-weight:bold">' . __('Upgrade', 'dprv_cp') . '</a>');
 															if ($dprv_subscription_type != "Basic" && $dprv_days_to_expiry < 15)
 															{
-																print(' / <a href="' . $dprv_upgrade_link . '&amp;Action=Renew" target="_blank" style="font-weight:bold">' . __('Renew', 'dprv_cp') . '</a>');
+																print(' / <a class="button" href="' . $dprv_upgrade_link . '&amp;Action=Renew" target="_blank" style="font-weight:bold">' . __('Renew', 'dprv_cp') . '</a>');
 															}
 												print('		</td>
 														</tr>');

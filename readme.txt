@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.4.1
-Stable tag: 2.06
+Stable tag: 2.07
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -61,15 +61,16 @@ Digiprove does not make use of these details except to deliver the service.  Ple
 
 = Your web-site appears to be commercial.  Is this going to cost me anything?  =
 
-Most of the features of the plug-in are totally free.  There are some features that are dependent on a valid subscription with Digiprove.  It is free for use by registered educational
-establishments or charities, just write to us at support@digiprove.com with details including evidence of your status to obtain this free subscription.
-
+Some of the features of the plug-in are totally free for use on a single domain.  This includes the key function of certifying the textual content of your posts and pages.
+If you want to use the more advanced features, such as protecting the copyright of pictures or other embedded media, you will need a valid subscription with Digiprove.
+It is free for use by registered educational establishments or charities, just write to us at support@digiprove.com with details including evidence of your status to obtain this free subscription.
 
 = What are the benefits of becoming a Digiprove subscriber?  =
 
 From Wordpress:
 - You can publish content from multiple domains
 - You can protect individual files and media as well as the blog post text
+- You can Digiprove more pages and posts per day
 - You can elect to have your valuable Digiprove Content Certificates emailed to you automatically
 - You can create a custom text to display in your Digiprove notice rather than using one of the standard texts
 - You can have a hyperlink from your certificate page on www.digiprove.com back to your Wordpress post (or page)
@@ -108,7 +109,7 @@ are limited to one domain.
 
 = I get an error message: "daily limit of API requests exceeded - please upgrade Digiprove account" =
 
-If you are a free user getting this message, it means that you are attempting to do more than 30 Digiprove transactions in any given day, which is a maximum we have introduced for free users. Some
+If you are a free user getting this message, it means that you are attempting to do more than 5 Digiprove transactions in any given day, which is a maximum we have introduced for free users. Some
 users were going into the thousands.  Higher limits apply to subscription accounts.
 
 
@@ -128,6 +129,10 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 2.07 =
+* Fixed small HTML error on license display link
+* Minor Performance and stability improvements
+
 
 = 2.06 =
 * Minor bugfixes

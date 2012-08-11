@@ -784,10 +784,8 @@ function dprv_parse_post ($data, $raw_data)
 			}
 			else
 			{
-				//if (false === $wpdb->update($wpdb->prefix . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%f', '%f'))
 				if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('digiprove_this_post'=>false), array('id'=>$dprv_post_id), '%d', '%d'))
 				{
-					//update_option('dprv_event', date("Ymd") . ': error ' . $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id);
 					$dprv_this_event = $wpdb->last_error . ' updating no-digiprove for ' . $dprv_post_id;
 					dprv_record_event($dprv_this_event);
 				}
@@ -1253,7 +1251,6 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 
 	// Find Date of Certification
 	$posA = stripos($Digiprove_notice, "title=\"certified");
-	//$log->lwrite("just did another stripos, posA = " . $posA);
 	$posB = stripos($Digiprove_notice, " UTC by Digiprove certificate ");
 
 	if ($posA === false || $posB === false || $posA >= $posB)
@@ -1282,7 +1279,6 @@ function dprv_strip_old_notice(&$content, &$dprv_certificate_id, &$dprv_utc_date
 		return;
 	}
 	$remainder = substr($Digiprove_notice, $posA);
-	//$log->lwrite("about to call strpbrk");
 	$remainder = strpbrk($remainder, '\'\"');
 	if ($remainder === false)
 	{
@@ -1581,7 +1577,6 @@ function dprv_record_non_dp_action($dprv_post_id, $content)
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
 		//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		$dprv_post_info = dprv_wpdb("get_row", $sql);
-		//$log->lwrite("just did dprv_wpdb, dprv_post_info = $dprv_post_info");
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))
@@ -1610,13 +1605,6 @@ function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$conte
 	$log->lwrite("dprv_certify starts");
 
 	$rawContent = dprv_getRawContent($content, $digital_fingerprint);
-	//$temp = "";
-	//for ($i=0; $i<strlen($rawContent); $i++)
-	//{
-	//	$temp .= strtoupper(bin2hex(substr($rawContent, $i, 1))) . " ";
-	//}
-	//$log->lwrite ("Content (hex) = " . $temp);
-	//$log->lwrite ("Content (" . strlen($rawContent) . ") = " . $rawContent);
 	if ($rawContent == "")
 	{
 		return __("Content is empty", "dprv_cp");
