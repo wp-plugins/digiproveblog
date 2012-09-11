@@ -134,13 +134,14 @@ function dprv_display_content($content)
 	$dprv_integrity_message="";
 	//dprv_integrity_statement($dprv_post_id, $dprv_integrity_headline, $dprv_integrity_message);
 
-	// Remove old-style notice (if there is one there) and return the core information from it 
-	dprv_strip_old_notice($content, $dprv_certificate_id, $dprv_utc_date_and_time, $dprv_digital_fingerprint, $dprv_certificate_url, $dprv_first_year);
-
 	if (!is_singular() && get_option('dprv_multi_post') == "No")
 	{
 		return $content;
 	}
+
+	// Remove old-style notice (if there is one there) and return the core information from it 
+	dprv_strip_old_notice($content, $dprv_certificate_id, $dprv_utc_date_and_time, $dprv_digital_fingerprint, $dprv_certificate_url, $dprv_first_year);
+
 
 	// a Digiprove Notice is required to append to content
 	$dprv_notice = "";
@@ -158,6 +159,10 @@ function dprv_display_content($content)
 	$dprv_status_info = "";
 	if (trim($dprv_post_id == ""))
 	{
+		return $content;
+
+		// Below was diagnostic code to identify why post_id was empty - turned out to be effect of various plugins - remove for now.
+		/*
 		global $id, $post, $post_id;
 		$bt = debug_backtrace();
 
@@ -193,12 +198,19 @@ function dprv_display_content($content)
 			}
 		}
 		dprv_record_event($message);
+		if (trim($content) == "")			// Could be a 404 from certain themes
+		{
+			return $content;
+		}
+		*/
 	}
 	else
 	{
 		// If stuff is recorded specifically for this post, use that
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
 		$dprv_post_info = dprv_wpdb("get_row", $sql);
+
+		/*
 		if (trim($wpdb->last_error) != "" || is_null($dprv_post_info) ||  $dprv_post_info["digiprove_this_post"] == false || get_option('dprv_event') != "")
 		{
 			$dprv_status_info = "<!--post " . $dprv_post_id;
@@ -218,8 +230,9 @@ function dprv_display_content($content)
 				$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
 			}
 
-			$dprv_status_info .= "; dprv_e=" . str_replace("-->", "__>", get_option('dprv_event')) . "-->";
+			//$dprv_status_info .= "; dprv_e=" . str_replace("-->", "__>", get_option('dprv_event')) . "-->";
 		}
+		*/
 	}		
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
@@ -262,7 +275,7 @@ function dprv_display_content($content)
 	}
 	else  // nothing recorded specifically for this post, fill out other license values unless license is None
 	{
-		if ($dprv_this_license != 0)
+		if ($dprv_this_license != 0 && $dprv_this_license != '0')
 		{
 			for ($i=0; $i<count($dprv_licenseIds); $i++)
 			{
