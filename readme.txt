@@ -129,10 +129,15 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 2.08 =
+* Fixed problem preventing new registrations
+* Minor performance improvements on serving pages
+* Fixed minor bug re license text
+* Removed incident reporting in html comments
+
 = 2.07 =
 * Fixed small HTML error on license display link
 * Minor Performance and stability improvements
-
 
 = 2.06 =
 * Minor bugfixes
@@ -438,3 +443,6 @@ There are some minor bug-fixes as well.
 
 = 1.10 =
 Strongly recommended upgrade - removes spurious and annoying error messages.
+
+= 2.08 =
+Strongly recommended - removes serious error for new users and performs better

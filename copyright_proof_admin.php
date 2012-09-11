@@ -487,7 +487,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					{
 						$dprv_user_id = $_POST['dprv_user_id'];
 						$dprv_update_user = true;
-						//update_option('dprv_user_id',$_POST['dprv_user_id']);		// Do later if synchronisation successful
+						//update_option('dprv_user_id',$_POST['dprv_user_id']);		// Do later if synchronisation or registration successful
 					}
 					if (isset($_POST['dprv_api_key']))
 					{
@@ -760,6 +760,10 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 						else
 						{
 							$result_message = __('Digiprove user registration was successful, check your email for the activation link', 'dprv_cp');
+							if ($dprv_user_id != get_option('dprv_user_id'))
+							{
+								update_option('dprv_user_id', $dprv_user_id);
+							}
 							$dprv_api_key = dprv_getTag($register_response, "api_key");
 							update_option('dprv_api_key',$dprv_api_key);
 							update_option('dprv_enrolled',"Yes");
