@@ -50,6 +50,8 @@ function dprv_head()
 		{
 			// Prevent Right-Clicking (entire page)
 			dprv_disableRightClick();
+			// Prevent Drag (entire page)
+			dprv_disableDrag(document.body);
 			// Prevent Control Key combinations (like CTRL A, CTRL U)
 			dprv_disableCtrlKeys();
 			dprv_disableSelection(document.body);
@@ -607,7 +609,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 		// TODO - put date and time into locale of user
 		/* translators: the language code that will be used for the lang attribute of the Digiprove notice - http://www.w3.org/TR/html4/struct/dirlang.html#adef-lang */
 		$lang = __('en', 'dprv_cp');
-		$DigiproveNotice = '<' . $dprv_container . ' id="dprv_cp_v' . DPRV_VERSION . '" lang="' . $lang . '" xml:lang="' . $lang . '" class="notranslate" style="' . $container_style . '" title="' . sprintf(__('certified %1$s by Digiprove certificate %2$s', 'dprv_cp'),  $dprv_utc_date_and_time, $dprv_certificate_id) . '" >';
+		$DigiproveNotice = '<' . $dprv_container . ' id="dprv_cp-v' . DPRV_VERSION . '" lang="' . $lang . '" xml:lang="' . $lang . '" class="notranslate" style="' . $container_style . '" title="' . sprintf(__('certified %1$s by Digiprove certificate %2$s', 'dprv_cp'),  $dprv_utc_date_and_time, $dprv_certificate_id) . '" >';
 
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" style="height:' . $dprv_a_height . '; line-height: ' . $dprv_a_height . '; border:0px; padding:0px; margin:0px; float:none; display:inline; text-decoration: none; background:transparent none; line-height:normal; font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . ';">';
 		

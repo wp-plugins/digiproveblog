@@ -76,7 +76,8 @@ function dprv_show_postbox($post_info)
 		$log->lwrite("not new post, global post_id = " . $post_id);
 		
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
-		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+		//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+		$dprv_post_info = dprv_wpdb("get_row", $sql);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			if ($dprv_post_info["digiprove_this_post"] == true)
@@ -156,6 +157,12 @@ function dprv_show_postbox($post_info)
 					}
 				}
 */
+			}
+			else
+			{
+				// Remove this
+				$log_event = "Could not find last digiprove info " . dprv_eval($dprv_post_info);
+				dprv_record_event($log_event);
 			}
 		}
 	}

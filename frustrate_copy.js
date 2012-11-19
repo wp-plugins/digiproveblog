@@ -1,29 +1,31 @@
 //<![CDATA[ 
 // FUNCTIONS
 
+var inputTags = new Array("input", "textarea", "select", "option", "optgroup", "button");
 function dprv_disableSelection(target)
 {
+	
+	// At present, this function only used in Safari or Chrome:
 	function enableInputElements(target)
 	{
-		var inputElements = target.getElementsByTagName("input");
-		for (var i=0; i<inputElements.length; i++)
+		for (var t=0; i<inputTags.length; t++)
 		{
-			enableSelection(inputElements[i]);
+			var inputElements = target.getElementsByTagName(inputTags[t]);
+			for (var i=0; i<inputElements.length; i++)
+			{
+				enableSelection(inputElements[i]);
+			}
 		}
-		inputElements = target.getElementsByTagName("textarea");
-		for (var i=0; i<inputElements.length; i++)
+		function enableSelection(target)
 		{
-			enableSelection(inputElements[i]);
-		}
-	}
-	function enableSelection(target)
-	{
-		if (typeof target.style.WebkitUserSelect!='undefined')    // Safari
-		{
-			target.style.WebkitUserSelect='text';
+			if (typeof target.style.WebkitUserSelect!='undefined')    // Safari
+			{
+				target.style.WebkitUserSelect='text';
+			}
 		}
 	}
 
+	// this function is used for Firefix and Opera
 	function trapMouseDown(e)
 	{
 		var element
@@ -32,11 +34,15 @@ function dprv_disableSelection(target)
 		else if (e.srcElement) element = e.srcElement
 		if (element.nodeType == 3) // defeat Safari bug
 		element = element.parentNode
-		var tagname=element.tagName.toUpperCase();
-		if (tagname == "INPUT" || tagname == "TEXTAREA")
+		var tagname=element.tagName.toLowerCase();
+		if (inputTags.indexOf(tagname) != -1)
 		{
 			return true;
 		}
+		//if (tagname == "INPUT" || tagname == "TEXTAREA")
+		//{
+		//	return true;
+		//}
 		else
 		{
 			return false;
@@ -57,11 +63,12 @@ function dprv_disableSelection(target)
 	}
 	else
 	{
-		if (typeof target.onselectstart != 'undefined') //For IE, Chrome or Safari (but Chrome or Safari already picked up above)
+		if (typeof target.onselectstart != 'undefined')		// IE  (and Chrome or Safari but they are already picked up above)
 		{
 			target.onselectstart=function()
 			{
-				if (event.srcElement.type != "text" && event.srcElement.type != "textarea" && event.srcElement.type != "password")  // what about select and checkbox - seem to work ok having tested
+				//if (event.srcElement.type != "text" && event.srcElement.type != "textarea" && event.srcElement.type != "password")  // what about select and checkbox - seem to work ok having tested
+				if (inputTags.indexOf(event.srcElement.tagName.ToLowerCase()) == -1)
 				{return false;}
 				else
 				{return true;}
@@ -69,14 +76,7 @@ function dprv_disableSelection(target)
 		}
 		else
 		{
-			if (window.sidebar)	// Firefox and Opera [and Netscape?], also IE and Chrome and Safari , but IE, Chrome and Safari already picked up above
-			{
-				target.onmousedown=trapMouseDown;
-			}
-			else //All other route (For Opera)
-			{
-				target.onmousedown=trapMouseDown;
-			}
+			target.onmousedown=trapMouseDown;	// Firefox, Opera and Netscape (and others but they all picked up elsewhere)
 		}
 	}
 }
@@ -130,9 +130,37 @@ function dprv_disableRightClick()
 	document.oncontextmenu=new Function("dprv_no_right_click_message();return false");
 }
 
+function dprv_disableDrag(target)
+{
+	// This doesn't work as it looks like Safari/Chrome default value for this property at element level is auto (would have expected inherit)
+	//if (typeof target.style.WebkitUserDrag != 'undefined')    // Safari or Chrome
+	//{
+	//	target.style.WebkitUserDrag='none';
+	//	return;
+	//}
 
-
-
+	if (typeof target.ondragstart != 'undefined') //	Seems to exist ok for up-to-date versions of IE, Opera, FF, Safari, Chrome
+	{
+		target.ondragstart=function()
+		{
+			if (inputTags.indexOf(event.srcElement.tagName.toLowerCase()) == -1)
+			{return false;}
+			else
+			{return true;}
+		}
+	}
+	else
+	{
+		if (typeof target.ondrag != "undefined")
+		{
+			target.ondrag=new Function("return false");		// Doesn't stop the dragging in Chrome or Safari
+		}
+		else
+		{
+			// dragging will probably be stopped by the disable selection code
+		}
+	}
+}
 
 
 // FUNCTIONS TO DISABLE CERTAIN CTRL KEY COMBINATIONS:

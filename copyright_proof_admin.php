@@ -1404,12 +1404,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 											<td colspan="2">
 												<table cellpadding="0" cellspacing="0" border="0" style="width:796px">
 													<tr>
-														<td id="BasicTab" style="height:30px; width:120px; border:1px solid #666666; -moz-border-radius-topleft: 5px; -webkit-border-top-left-radius: 5px; -moz-border-radius-topright: 5px; -webkit-border-top-right-radius: 5px; border-bottom:0px; background-color:#EEFFEE; cursor:pointer" align="center" onclick="DisplayBasic()"><em>' . __('Basic', 'dprv_cp') . '</em></td>
-														<td id="AdvancedTab" style="height:30px; width:120px; border:1px solid #666666; -moz-border-radius-topleft: 5px; -webkit-border-top-left-radius: 5px; -moz-border-radius-topright: 5px; -webkit-border-top-right-radius: 5px; background-color:#EEEEFF; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayAdvanced()"' . $dprv_tab_title . '><em>' . __('Advanced', 'dprv_cp') . '</em></td>
-														<td id="ContentTab" style="height:30px; width:160px; border:1px solid #666666; -moz-border-radius-topleft: 5px; -webkit-border-top-left-radius: 5px; -moz-border-radius-topright: 5px; -webkit-border-top-right-radius: 5px; background-color:#CCEEDD; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayContentTab()"' . $dprv_tab_title . '><em>' . __('Certifying Content', 'dprv_cp') . '</em></td>
-														<td id="LicenseTab" style="height:30px; width:120px; border:1px solid #666666; -moz-border-radius-topleft: 5px; -webkit-border-top-left-radius: 5px; -moz-border-radius-topright: 5px; -webkit-border-top-right-radius: 5px; background-color:#FFFFDD; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayLicenseTab()"' . $dprv_tab_title . '><em>' . __('License', 'dprv_cp') . '</em></td>
-														<td id="CopyProtectTab" style="height:30px; width:120px; border:1px solid #666666; -moz-border-radius-topleft: 5px; -webkit-border-top-left-radius: 5px; -moz-border-radius-topright: 5px; -webkit-border-top-right-radius: 5px; background-color:#FFEEEE; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayCopyProtect()"' . $dprv_tab_title . '><em>' . __('Copy Protect', 'dprv_cp') . '</em></td>
-														<td style="border:1px solid #666666; border-top:0px; border-left:0px; border-right:0px"></td>
+														<td id="BasicTab" style="height:30px; width:120px; border:1px solid #666666;border-top-right-radius: 5px; border-bottom:0px; background-color:#EEFFEE; cursor:pointer" align="center" onclick="DisplayBasic()"><em>' . __('Basic', 'dprv_cp') . '</em></td>
+														<td id="AdvancedTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#EEEEFF; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayAdvanced()"' . $dprv_tab_title . '><em>' . __('Advanced', 'dprv_cp') . '</em></td>
+														<td id="ContentTab" style="height:30px; width:160px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#CCEEDD; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayContentTab()"' . $dprv_tab_title . '><em>' . __('Certifying Content', 'dprv_cp') . '</em></td>
+														<td id="LicenseTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#FFFFDD; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayLicenseTab()"' . $dprv_tab_title . '><em>' . __('License', 'dprv_cp') . '</em></td>
+														<td id="CopyProtectTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#FFEEEE; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayCopyProtect()"' . $dprv_tab_title . '><em>' . __('Copy Protect', 'dprv_cp') . '</em></td>
+														<td style="border:0px; border-bottom:1px solid #666666;"></td>
 													</tr>
 												</table>
 											</td>
@@ -1919,8 +1919,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr>
 														<td valign="top">' . __('Frustrate copying attempts:&nbsp;&nbsp;', 'dprv_cp') . '</td>
 														<td>
-															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_yes" value="Yes" ' . $dprv_frustrate_yes_checked . ' onclick="toggle_r_c_checkbox()" />&nbsp;' . __('Prevent right-click,&nbsp;select&nbsp;&amp;&nbsp;Control key combinations', 'dprv_cp') . '<br/>
-															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_no" value="No" ' . $dprv_frustrate_no_checked . ' onclick="toggle_r_c_checkbox()" />&nbsp;' . __('Allow right-click,&nbsp;select&nbsp;&amp;&nbsp;Control key combinations', 'dprv_cp') . '</td>
+															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_yes" value="Yes" ' . $dprv_frustrate_yes_checked . ' onclick="toggle_r_c_checkbox()" />&nbsp;' . __('Prevent right-click,&nbsp;select,&nbsp;drag,&nbsp;&amp;&nbsp;Control key combinations', 'dprv_cp') . '<br/>
+															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_no" value="No" ' . $dprv_frustrate_no_checked . ' onclick="toggle_r_c_checkbox()" />&nbsp;' . __('Allow right-click,&nbsp;select,&nbsp;drag,&nbsp;&amp;&nbsp;Control key combinations', 'dprv_cp') . '</td>
 													</tr>
 													<tr><td style="height:12px"></td></tr>
 													<tr>

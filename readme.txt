@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.4.1
-Stable tag: 2.08
+Stable tag: 2.09
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -65,6 +65,7 @@ Some of the features of the plug-in are totally free for use on a single domain.
 If you want to use the more advanced features, such as protecting the copyright of pictures or other embedded media, you will need a valid subscription with Digiprove.
 It is free for use by registered educational establishments or charities, just write to us at support@digiprove.com with details including evidence of your status to obtain this free subscription.
 
+
 = What are the benefits of becoming a Digiprove subscriber?  =
 
 From Wordpress:
@@ -98,6 +99,16 @@ We actively seek your suggestions at suggestions@digiprove.com.  We will respond
 
 Yes, you can review your history online (and perform other functions) by visiting https://www.digiprove.com/members/my_digiprove.aspx - you will need to log in using your Digiprove user id and password.
 
+= How can I style the Digiprove Notice? =
+
+There are various colors, font-sizes etc. you can choose, these are found on the "Advanced" tab of the Settings panel.  To make the message appear consistently it is quite heavily styled at the element
+level.  However you can influence some aspects of the appearance using CSS style code such as:
+*[id|="dprv_cp"]
+{
+	margin-left:40%;
+	margin-right:40%;
+	background-color:red;
+}
 
 = I get an error message: "invalid user id, domain, or api key" =
 
@@ -129,6 +140,12 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 2.09 =
+* Changed id of Digiprove Notice container element to make it easily selectable in CSS
+* Enhance copy-protect function to explicitly prevent dragging (e.g. of images etc.) - should now prevent this in all browsers
+* Removed bug where copy-protect was disabling dropdown menus in Firefox
+
 = 2.08 =
 * Fixed problem preventing new registrations
 * Minor performance improvements on serving pages
