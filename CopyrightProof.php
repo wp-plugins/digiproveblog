@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.09
+Version: 2.10
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -39,7 +39,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.09");
+	define("DPRV_VERSION", "2.10");
 	//error_reporting(E_ALL);						   // uncomment this for test purposes
 
 
@@ -410,50 +410,61 @@ License: GPL
 		else
 		{
 			$like_last_fingerprint = dprv_wpdb("get_var","show columns from $dprv_posts LIKE 'last_fingerprint'");
+
 			if ($like_last_fingerprint != 'last_fingerprint')														// Table existed, but dbDelta failed to add new columns
 			{
-				$message = "dbDelta did not add last_fingerprint column  (= " . $like_last_fingerprint . ") to " . $dprv_posts;
-				if ($dprv_db_error != "")
+				if ($like_last_fingerprint === false)
 				{
-					$message .= " with error " .  $dprv_db_error;
-				}
-				if ($dprv_sql_error != "")
-				{
-					$message .= ", mysql_error " .  $dprv_sql_error;
-				}
-				if ($dprv_sql_info != "")
-				{
-					$message .= ", mysql_info " .  $dprv_sql_info;
-				}
-				
-				$message .= ", will try adding with wpdb";
-				dprv_record_event($message);
-				// TODO: diagnose why adding a varchar column to an existing table defaults to latin but in Create table defaults to utf-8
-				dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
-				dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
-				dprv_add_column($dprv_posts, 'last_time_updated', 'int');
-/*
-				// Not yet implemented:
-				$result1 = dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
-				if (strpos($result1, "Duplicate column name") !== false)
-				{
-					update_option('dprv_verified_db_version', '2');
+					// There was an error 28 or incorrect key file error trying to find the column maybe it is there after all:-)
+					$message = "dbDelta might not have added last_fingerprint column to " . $dprv_posts . ", check failed, ignore for now";
+					dprv_record_event($message);
 				}
 				else
 				{
-					$result2 = dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
-					$result3 = dprv_add_column($dprv_posts, 'last_time_updated', 'int');
-					if ($result1 === true && $result2 === true && $result3 === true)
+
+					$message = "dbDelta did not add last_fingerprint column  (= " . $like_last_fingerprint . ") to " . $dprv_posts;
+					if ($dprv_db_error != "")
+					{
+						$message .= " with error " .  $dprv_db_error;
+					}
+					if ($dprv_sql_error != "")
+					{
+						$message .= ", mysql_error " .  $dprv_sql_error;
+					}
+					if ($dprv_sql_info != "")
+					{
+						$message .= ", mysql_info " .  $dprv_sql_info;
+					}
+					
+					$message .= ", will try adding with wpdb";
+					dprv_record_event($message);
+					// TODO: diagnose why adding a varchar column to an existing table defaults to latin but in Create table defaults to utf-8
+					dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
+					dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
+					dprv_add_column($dprv_posts, 'last_time_updated', 'int');
+	/*
+					// Not yet implemented:
+					$result1 = dprv_add_column($dprv_posts, 'last_time_digiproved', 'int');
+					if (strpos($result1, "Duplicate column name") !== false)
 					{
 						update_option('dprv_verified_db_version', '2');
 					}
-				}
-*/
-				$like_last_fingerprint = dprv_wpdb("get_var","SHOW COLUMNS FROM $dprv_posts like 'last_fingerprint'");
-				if ($like_last_fingerprint != 'last_fingerprint')															// If still does not exist
-				{
-					$message = "Failed to add last_fingerprint column to " . $dprv_posts;
-					dprv_record_event($message);
+					else
+					{
+						$result2 = dprv_add_column($dprv_posts, 'last_fingerprint', 'varchar(64)');
+						$result3 = dprv_add_column($dprv_posts, 'last_time_updated', 'int');
+						if ($result1 === true && $result2 === true && $result3 === true)
+						{
+							update_option('dprv_verified_db_version', '2');
+						}
+					}
+	*/
+					$like_last_fingerprint = dprv_wpdb("get_var","show columns from $dprv_posts like 'last_fingerprint'");
+					if ($like_last_fingerprint != 'last_fingerprint')															// If still does not exist
+					{
+						$message = "Failed to add last_fingerprint column to " . $dprv_posts;
+						dprv_record_event($message);
+					}
 				}
 			}
 		}
@@ -629,27 +640,29 @@ License: GPL
 		// TODO: Only perform this check if last_fingerprint may be required, e.g. edit or display posts/pages
 		// Check whether version 2.n db upgrade has been done successfully:
 		$like_last_fingerprint = dprv_wpdb("get_var", "SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'");
-		$log->lwrite ("like_last_fingerprint=" . $like_last_fingerprint);
-		if (($like_last_fingerprint === null || $like_last_fingerprint != 'last_fingerprint') && current_user_can("activate_plugins"))
+		if ($like_last_fingerprint !== false)	// false would indicate that there is an error 28 or incorrect key file in either case maybe we should ignore, other ops might work
 		{
-			$more_eval = "";
-			if (is_null($like_last_fingerprint))
+			$log->lwrite ("like_last_fingerprint=" . $like_last_fingerprint);
+			if (($like_last_fingerprint === null || $like_last_fingerprint != 'last_fingerprint') && current_user_can("activate_plugins"))
 			{
-				$more_eval = " (like_last_fingerprint is null) ";
-			}
-			else
-			{
-				if (!is_string($like_last_fingerprint))
+				$more_eval = "";
+				if (is_null($like_last_fingerprint))
 				{
-					//$more_eval = dprv_eval($like_last_fingerprint);
-					$more_eval =  " (like_last_fingerprint is not a string) ";
+					$more_eval = " (like_last_fingerprint is null) ";
 				}
+				else
+				{
+					if (!is_string($like_last_fingerprint))
+					{
+						//$more_eval = dprv_eval($like_last_fingerprint);
+						$more_eval =  " (like_last_fingerprint is not a string) ";
+					}
+				}
+				$dprv_this_event = "last_fingerprint does not exist in " . $dprv_posts . "(=" . $like_last_fingerprint . ")" . $more_eval . ", repeating activation";
+				dprv_record_event($dprv_this_event);
+				dprv_activate();
 			}
-			$dprv_this_event = "last_fingerprint does not exist in " . $dprv_posts . "(=" . $like_last_fingerprint . ")" . $more_eval . ", repeating activation";
-			dprv_record_event($dprv_this_event);
-			dprv_activate();
 		}
-
 		function dprv_reminder()
 		{
 			$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
@@ -692,8 +705,6 @@ License: GPL
 		$log = new DPLog();
 		global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $wpdb;
 		$dbquery = 'SELECT * FROM ' . get_option('dprv_prefix') . 'dprv_licenses';
-		//$dbquery = 'SELECT * FROM ' . $wpdb->prefix . 'dprv_licenses';
-		//$wpdb->show_errors();
 		$license_info = $wpdb->get_results($dbquery, ARRAY_A);
 		if (empty($license_info))
 		{
@@ -780,8 +791,10 @@ License: GPL
 
 		$log = new DPLog();
 		$log->lwrite("post " . $pid . " deleted, checking for dprv_post record with same id");
-		$sql='SELECT id FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = ' . $pid;
-		if ($wpdb->get_var($wpdb->prepare($sql)))
+		//$sql='SELECT id FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = ' . $pid;
+		$sql='SELECT id FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = %d';
+		//if ($wpdb->get_var($wpdb->prepare($sql)))
+		if (dprv_wpdb("get_var", $sql, $pid))
 		{
 			$log->lwrite("found a dprv_post " . $pid . ", will now delete it"); 
 			return $wpdb->query($wpdb->prepare('DELETE FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = %d', $pid));
@@ -803,11 +816,15 @@ License: GPL
 		}
 		return $links;
 	}
-	function dprv_wpdb($action, $sql)
+	//function dprv_wpdb($action, $sql)
+	function dprv_wpdb($action, $sql, $args = null)
 	{
 		$log = new DPLog();
 		global $wpdb;
-		$sql = $wpdb->prepare($sql);
+		if (!is_null($args))
+		{
+			$sql = $wpdb->prepare($sql, $args);
+		}
 		$result = "29 jump street";	// just to establish variable scope
 		$prev_db_error = $wpdb->last_error;
 		switch ($action)
@@ -837,7 +854,16 @@ License: GPL
 			{
 				$error_status = "suspected ";
 			}
+			// Note "SHOW COLUMNS" rather than "show columns" used in this plugin indicates not a critical point (normal everyday check)
 			$dprv_this_event = $error_status . "wpdb SQL error " . $dprv_db_error . " on " . $sql;
+			if ((stripos($dprv_db_error, "Incorrect key file for table") !== false || stripos($dprv_db_error, "Got error 28 from storage engine") !== false || stripos($dprv_db_error, "Errcode: 28") !== false) && strpos($sql, "SHOW COLUMNS FROM") !== false && is_null($result))
+			{
+				// Not good but (for now) ignore it, maybe other instructions will work:-)
+				// Calling code will recognise false and ignore error
+				// Also don't bother with logging all that backtrace stuff
+				dprv_record_event($dprv_this_event);
+				return false;
+			}
 			if (trim($dprv_sql_error) != "" && $dprv_sql_error != $dprv_db_error)
 			{
 				$dprv_this_event .= "; MySQL error " . $dprv_sql_error;
@@ -858,7 +884,7 @@ License: GPL
 					$more_eval = " (result is $result)";
 				}
 			}
-			$dprv_this_event .= $more_eval;
+			$dprv_this_event .= $more_eval . " ";
 			$counter = 0;
 			if (is_array($bt))
 			{
@@ -884,6 +910,17 @@ License: GPL
 			}
 			dprv_record_event($dprv_this_event);
 			$log->lwrite("mysql_info=" . mysql_info());
+			$dprv_pending_message = get_option('dprv_pending_message');
+			$dprv_new_message = "MySQL Error occurred: " . $dprv_db_error;
+			if (strpos($dprv_pending_message, $dprv_new_message) === false)		// Avoid repeating the same message over and over
+			{
+				if ($dprv_pending_message != "")
+				{
+					$dprv_pending_message .= "<br/>";
+				}
+				$dprv_pending_message .= "MySQL Error occurred: " . $dprv_db_error;
+				update_option('dprv_pending_message', $dprv_pending_message);
+			}
 		}
 		return $result;
 	}

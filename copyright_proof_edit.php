@@ -75,9 +75,10 @@ function dprv_show_postbox($post_info)
 		}
 		$log->lwrite("not new post, global post_id = " . $post_id);
 		
-		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
+		//$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
 		//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-		$dprv_post_info = dprv_wpdb("get_row", $sql);
+		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
+		$dprv_post_info = dprv_wpdb("get_row", $sql, $post_id);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			if ($dprv_post_info["digiprove_this_post"] == true)
@@ -160,9 +161,7 @@ function dprv_show_postbox($post_info)
 			}
 			else
 			{
-				// Remove this
-				$log_event = "Could not find last digiprove info " . dprv_eval($dprv_post_info);
-				dprv_record_event($log_event);
+				// This post has not previously been Digiproved
 			}
 		}
 	}
@@ -1474,9 +1473,10 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 	else
 	{
 
-		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+		//$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
 		//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-		$dprv_post_info = dprv_wpdb("get_row", $sql);
+		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
+		$dprv_post_info = dprv_wpdb("get_row", $sql, $dprv_post_id);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			if ($dprv_post_info["first_year"] == null)
@@ -1581,9 +1581,10 @@ function dprv_record_non_dp_action($dprv_post_id, $content)
 	}
 	else
 	{
-		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+		//$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
 		//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
-		$dprv_post_info = dprv_wpdb("get_row", $sql);
+		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
+		$dprv_post_info = dprv_wpdb("get_row", $sql, $dprv_post_id);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			if (false === $wpdb->update(get_option('dprv_prefix') . "dprv_posts", array('last_fingerprint'=>$digital_fingerprint, 'last_time_updated'=>$dprv_time_recorded), array('id'=>$dprv_post_id)))

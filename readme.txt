@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.4.1
-Stable tag: 2.09
+Tested up to: 3.5
+Stable tag: 2.10
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -140,6 +140,11 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 2.10 =
+* Removed unnecessary error diagnostic
+* Now informs user of (important) MySQL errors that have occurred
+* Compatible with Wordpress 3.5 (and change to wpdb->prepare)
 
 = 2.09 =
 * Changed id of Digiprove Notice container element to make it easily selectable in CSS
@@ -463,3 +468,6 @@ Strongly recommended upgrade - removes spurious and annoying error messages.
 
 = 2.08 =
 Strongly recommended - removes serious error for new users and performs better
+
+= 2.10 = 
+Strongly recommended, required to support Wordpress 3.5
