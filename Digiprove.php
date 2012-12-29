@@ -1,8 +1,8 @@
 <?php
-define ("DPRV_SDK_VERSION", '0.95');
-define ("DPRV_HOST", "www.digiprove.com");               // set to www.digiprove.com for live use
-define ("DPRV_SSL", "No");
-define ("DPRV_Log", "No");                               // Set this to "Yes" to generate local log-file for debug purposes (needs write permissions)
+define("DPRV_SDK_VERSION", '0.97');
+define("DPRV_HOST", "www.digiprove.com");                // you may use digiprove1.dyndns.ws for testing
+define("DPRV_SSL", "No");
+define("DPRV_Log", "No");                                // Set this to "Yes" to generate local log-file for debug purposes (needs write permissions)
 
 if (intval(substr(PHP_VERSION,0,1)) > 4)
 {
@@ -56,12 +56,13 @@ class Digiprove
 	// ['certificate_filename']		Will be present if everything worked ok and $return_dp_cert parameter was set to true: suggested name for certificate file (includes the p7s extension)
 	// ['content_files']			Will be present if everything worked ok and £content_files array was included as input parameter: an array where keys = filenames and values = digital fingerprints
 
-	function certify(&$error_message, &$credentials, $content, &$digiproved_content, $content_files = null, $content_type="", $metadata = null, $document_tracking = null, $user_agent = "", $content_url = "", $linkback = false, $obscure_url = false, $return_dp_cert = false, $email_confirmation = false, $save_content = false)
+	static public function certify(&$error_message, &$credentials, $content, &$digiproved_content, $content_files = null, $content_type="", $metadata = null, $document_tracking = null, $user_agent = "", $content_url = "", $linkback = false, $obscure_url = false, $return_dp_cert = false, $email_confirmation = false, $save_content = false)
 	{
 		$log = new DPLog();
 		$log->lwrite("Digiprove::certify starts");
 		$error_message = "";
-		if (!self::is_valid($credentials, &$error_message))
+		//if (!self::is_valid($credentials, &$error_message))
+		if (!self::is_valid($credentials, $error_message))
 		{
 			return false;
 		}
@@ -141,7 +142,7 @@ class Digiprove
 		return $return;
 	}
 
-	function is_valid($credentials, &$error_message)
+	static private function is_valid($credentials, &$error_message)
 	{
 		if (!isset($credentials['user_id']) || $credentials['user_id'] == "")
 		{
@@ -150,7 +151,7 @@ class Digiprove
 		}
 		if (!isset($credentials['password']) || $credentials['password'] == "")
 		{
-			if (!isset($credentials['api_key']) || $credentials['user_id'] == "")
+			if (!isset($credentials['api_key']) || $credentials['api_key'] == "")
 			{
 				$error_message = "Api key not supplied";
 				return false;
@@ -163,7 +164,7 @@ class Digiprove
 		}
 		return true;
 	}
-	function prepareCertifyXML(&$error_message, $credentials,$content, $digital_fingerprint, $content_files = null, &$content_file_table = null, $content_type="", $metadata = null, $document_tracking = null, $user_agent = "", $content_url = "", $linkback = false,  $obscure_url = false,  $return_dp_cert = false, $email_confirmation = false, $save_content = false)
+	static private function prepareCertifyXML(&$error_message, $credentials,$content, $digital_fingerprint, $content_files = null, &$content_file_table = null, $content_type="", $metadata = null, $document_tracking = null, $user_agent = "", $content_url = "", $linkback = false,  $obscure_url = false,  $return_dp_cert = false, $email_confirmation = false, $save_content = false)
 	{
 		$log = new DPLog();  
 		$log->lwrite("prepareXML starts");
@@ -347,25 +348,30 @@ class Digiprove
 	//
 	// Supply one or other of these 2 parameters:
 	// $content                     content to be verified; can be a string, array, or object
-	// $digiproved_content          The serialised value of content (will have been provided as a return value from original Digiprove transaction)
+	// $digiproved_content          A string containing the serialised value of content (will have been provided as a return value from original Digiprove transaction)
 	//
 	// $content_files               Optional - an array of files (full path names) referring to files which were Digiproved as part of this transaction
 	// $user_agent                  Optional = a string describing your software and its version e.g. "Bank Software 1.1" to aid in debugging etc.
 	//
 	// Returns an array:
-	// ['result_code']				200 - Document is authentic and all requested checks were successful
+	// ["result_code"]				A string with values:
+	//              				200 - Document is authentic and all requested checks were successful
 	//								201 - Qualified Success (qualification described in result)
 	//								202 - Document is authentic but out of date (latest version number in result)
 	//								210 - Digiprove has no record of this document
 	//								211 - Digiprove has no record of this instance of this document (but is aware of the original document id)
 	//								220 - Possible Tamper Alert! The supplied certificate id is valid, but the content fingerprint does not match any of the Digiproved files/documents
+    //                              101 - Credentials incomplete (see error message) 
+    //                              102 - Raw content (i.e. after trimming) is empty 
 	//								110 - Internal error
+	//								111 - Error while attempting to contact server
+	//								112 - Could not decipher server response
 	//								120 - XML validation error (as described in <result> tag)
 	//								130 - Other Error (as described in <result> tag)
-	// ['result']					Description of result (e.g. "Document is Authentic", "Digiprove has no record of this document")
-	// ['notes']					May be present.  Further information
-	// ['instance_count']			Only supplied if searching on fingerprint only (certificate id not supplied): the number of times this exact content has been Digiproved
-	// ['content_fingerprint']		Digital fingerprint of supplied content
+	// ['result']					a string containing description of result (e.g. "Document is Authentic", "Digiprove has no record of this document")
+	// ['notes']					a string (may be present) containing further information
+	// ['instance_count']			an integer - only supplied if searching on fingerprint only (certificate id not supplied): the number of times this exact content has been Digiproved
+	// ['content_fingerprint']		a string containing digital fingerprint of supplied content
 	//
 	// If not an anonymous request (a set of credentials was supplied), and the verification was successful, serially-named array(s) (beginning with document_0)
 	// one for every Digiproved document that contains the specified content (and was issued to that user)
@@ -390,9 +396,13 @@ class Digiprove
 		$log = new DPLog();
 		$log->lwrite("Digiprove::verify starts");
 		$error_message = "";
-		if (isset($credentials) && isset($credentials['user_id']) && !self::is_valid($credentials, &$error_message))
+		$return_table = array();
+		//if (isset($credentials) && isset($credentials['user_id']) && !self::is_valid($credentials, &$error_message))
+		if (isset($credentials) && isset($credentials['user_id']) && !self::is_valid($credentials, $error_message))
 		{
-			return false;
+            $return_table["result_code"] = "101";
+            $return_table["result"] = "Credentials incomplete";
+            return $return_table;
 		}
 		if (!is_string($content))
 		{
@@ -414,7 +424,9 @@ class Digiprove
 		if ($content == "")
 		{
 			$error_message = "Raw content is empty";
-			return false;
+            $return_table["result_code"] = "101";
+            $return_table["result"] =  "Raw content is empty";
+			return $return_table;
 		}
 		$XML_string = self::prepareVerifyXML($error_message, $credentials, $certificate_id, $content, $digital_fingerprint, $content_files, $content_type, $user_agent);
 		$log->lwrite("request: $XML_string");
@@ -422,7 +434,9 @@ class Digiprove
 		if ($XML_string === false)
 		{
 			// Error while creating the XML
-			return false;
+            $return_table["result_code"] = "110";
+            $return_table["result"] =  "Failed to create XML";
+			return $return_table;
 		}
 
 		$data = Digiprove_HTTP::post($XML_string, DPRV_HOST, "/secure/service.asmx/", "DigiproveVerify");
@@ -430,8 +444,10 @@ class Digiprove
 		if ($pos !== false)
 		{
 			$log->lwrite("There was a problem in Digiprove_HTTP::post");
+            $return_table["result_code"] = "111";
+            $return_table["result"] =  "Error while attempting to contact server";
 			$error_message = $data;
-			return false;
+			return $return_table;
 		}
 		$pos = stripos($data, "<result_code>2");	// Return codes in the 200-299 range indicate verification process completed without error (although not necessarily verified)
 		if ($pos === false)
@@ -441,32 +457,30 @@ class Digiprove
 			{
 				$error_message = $data;
 			}
-			return false;
+			$return_table["result_code"] = "112";
+            $return_table["result"] =  "Could not decipher server response";
+			return $return_table;
 		}
 		$pos = strpos($data, "<?xml ");
 		$pos2 = strpos($data, "<digiprove_verify_response>", $pos); 
 		$pos3 = strpos($data, "</digiprove_verify_response>", $pos2+27);
-		$return = self::parseResponse(substr($data,$pos2+27,$pos3-$pos2-27));
-
-		if (!isset($return['content_fingerprint']))
+		$return_table = self::parseResponse(substr($data,$pos2+27,$pos3-$pos2-27));
+		if (!isset($return_table['content_fingerprint']))
 		{
-			$return['content_fingerprint'] = $digital_fingerprint;
+			$return_table['content_fingerprint'] = $digital_fingerprint;
 		}
 		$log->lwrite("finishing Digiprove::verify");
-		return $return;
+		return $return_table;
 	}
 
 
-	function prepareVerifyXML(&$error_message, $credentials, $certificate_id, $content, $digital_fingerprint, $content_files = null, $content_type="", $user_agent = "")
+	static private function prepareVerifyXML(&$error_message, $credentials, $certificate_id, $content, $digital_fingerprint, $content_files = null, $content_type="", $user_agent = "")
 	{
 		$log = new DPLog();  
 		$log->lwrite("prepareVerifyXML starts");
-		//$content_file_names = array();
-		//$content_file_fingerprints = array();
 		$content_file_table = array();
 		if (function_exists("hash") && $content_files !== null)
 		{
-			//self::parseContentFiles($error_message, $content_files, $content_file_names, $content_file_fingerprints, $content_file_table);
 			self::parseContentFiles($error_message, $content_files, $content_file_table);
 		}
 
@@ -556,7 +570,7 @@ class Digiprove
 
 
 	//function parseContentfiles(&$error_message, $content_files, &$content_file_names, &$content_file_fingerprints, &$content_file_table=null)
-	function parseContentfiles(&$error_message, $content_files, &$content_file_table=null)
+	static public function parseContentFiles(&$error_message, $content_files, &$content_file_table=null)
 	{
 		$log = new DPLog();
 		$t = 0;
@@ -624,7 +638,7 @@ class Digiprove
 		return true;
 	}
 
-	function getTag($xmlString, $tagName)
+	static private function getTag($xmlString, $tagName)
 	{
 		$start_contents = stripos($xmlString, "<" . $tagName . ">") + strlen($tagName) + 2;
 		$end_tag = stripos($xmlString, "</" . $tagName . ">");
@@ -636,7 +650,7 @@ class Digiprove
 	}
 
 	// Extract raw content to be Digiproved and calculate digital fingerprint
-	function getRawContent($content, &$raw_content_hash)
+	static private function getRawContent($content, &$raw_content_hash)
 	{
 		$raw_content = trim($content);
 		$raw_content = htmlspecialchars_decode($raw_content, ENT_QUOTES);  		// decode any encoded XML-incompatible characters now to ensure match with post-xml decoded string on server
@@ -649,13 +663,13 @@ class Digiprove
 		return $raw_content;
 	}
 
-	function parseResponse($data)
+	static private function parseResponse($data)
 	{
 		return self::xml2array($data);
 	}
 
 	// This function works with XML strings supplied from Digiprove
-	function xml2array($xml_string)
+	static private function xml2array($xml_string)
 	{
 		$return = array();
 		$param = $xml_string;

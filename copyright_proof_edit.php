@@ -915,7 +915,11 @@ function dprv_digiprove_post($dprv_post_id)
 	}
 	else
 	{
-		$message = "post record is not an object";
+		$message = "post record for $dprv_post_id is not an object";
+		if (is_null($post_record))
+		{
+			$message .= ", is null";
+		}
 		dprv_record_event($message);
 		//return;
 	}

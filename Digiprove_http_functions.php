@@ -19,7 +19,7 @@ class Digiprove_HTTP
 		}
 	}
 
-	function post($request, $host, $path, $service, $ip=null) 
+	static public function post($request, $host, $path, $service, $ip=null) 
 	{
 		$log = new DPLog();  
 		$request = "xml_string=" . urlencode($request);

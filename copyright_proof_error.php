@@ -9,17 +9,18 @@
 class dprvErrors
 {
 	// Below function not used?
-	function set_handler()
-	{
-		set_error_handler(array("dprvErrors", "catch_error"));
-	}
-	function catch_error($errno, $errstr, $errfile, $errline)
+	//function set_handler()
+	//{
+	//	set_error_handler(array("dprvErrors", "catch_error"));
+	//}
+	static public function catch_error($errno, $errstr, $errfile, $errline)
 	{
 	 	// Note this function can be triggered twice by a single problem e.g. fsockopen dns error generates 2 (seems to try twice)
 		$log = new DPLog();  
 		//$log->lwrite("entered dprv_error with " . $errstr);
 		global $dprv_last_error;
 		$dprv_last_error = $errstr;
+		// TODO: add in additional caregories (deprecated etc.)
 		switch ($errno)
 		{
 			case E_NOTICE:
