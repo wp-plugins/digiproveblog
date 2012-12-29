@@ -3,7 +3,7 @@
 // THIS VERSION DOES NOT USE TRY/CATCH BLOCKS AND CAN RUN IN PHP4
 class Digiprove_HTTP
 {
-	function post($request, $host, $path, $service, $ip=null) 
+	static public function post($request, $host, $path, $service, $ip=null) 
 	{
 		$log = new DPLog();  
 		$request = "xml_string=" . urlencode($request);
@@ -24,8 +24,8 @@ class Digiprove_HTTP
 			$http_host = $host;
 		}
 
-		$dprv_port = 80;
 		$response = '';                 
+		$dprv_port = 80;
 		if (DPRV_SSL == "Yes")
 		{
 			$e = get_loaded_extensions();	// using this instead of preferable stream_get_transports() which is only supported from php 5 onwards
