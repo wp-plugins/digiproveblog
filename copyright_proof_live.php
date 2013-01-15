@@ -162,49 +162,6 @@ function dprv_display_content($content)
 	if (trim($dprv_post_id == ""))
 	{
 		return $content;
-
-		// Below was diagnostic code to identify why post_id was empty - turned out to be effect of various plugins - remove for now.
-		/*
-		global $id, $post, $post_id;
-		$bt = debug_backtrace();
-
-		$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
-		$posDot = strrpos($script_name,'.');
-		if ($posDot != false)
-		{
-			$script_name = substr($script_name, 0, $posDot);
-		}
-		$message = "live $script_name: dprv_post_id is empty, content id=$id, post_id=$post_id, post->id=" . $post->ID;
-		$message .= ", content[0-49]=" . substr($content,0,50);
-		$counter = 0;
-		if (is_array($bt))
-		{
-			foreach ($bt as $caller)
-			{
-				if (is_array($caller))
-				{
-					if (isset($caller["file"]))
-					{
-						$message .= "called from " . str_replace(ABSPATH, "", $caller["file"]) . " line " . $caller["line"] . "\r\n";
-					}
-					else
-					{
-						$message .= "function " . $caller["function"] . "\r\n";
-					}
-				}
-				$counter++;
-				if ($counter > 4)
-				{
-					break;
-				}
-			}
-		}
-		dprv_record_event($message);
-		if (trim($content) == "")			// Could be a 404 from certain themes
-		{
-			return $content;
-		}
-		*/
 	}
 	else
 	{

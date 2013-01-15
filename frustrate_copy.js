@@ -1,7 +1,8 @@
 //<![CDATA[ 
 // FUNCTIONS
 
-var inputTags = new Array("input", "textarea", "select", "option", "optgroup", "button");
+//var inputTags = new Array("input", "textarea", "select", "option", "optgroup", "button");
+var inputTags = new Array("input", "textarea", "select", "option", "optgroup", "button", "canvas");
 function dprv_disableSelection(target)
 {
 	
@@ -39,10 +40,6 @@ function dprv_disableSelection(target)
 		{
 			return true;
 		}
-		//if (tagname == "INPUT" || tagname == "TEXTAREA")
-		//{
-		//	return true;
-		//}
 		else
 		{
 			return false;
@@ -67,7 +64,6 @@ function dprv_disableSelection(target)
 		{
 			target.onselectstart=function()
 			{
-				//if (event.srcElement.type != "text" && event.srcElement.type != "textarea" && event.srcElement.type != "password")  // what about select and checkbox - seem to work ok having tested
 				if (inputTags.indexOf(event.srcElement.tagName.ToLowerCase()) == -1)
 				{return false;}
 				else
@@ -105,29 +101,17 @@ function dprv_no_right_click_message()
 
 function dprv_disableRightClick()
 {
-	function clickNS(e)
+	function clickCheck(e)
 	{
-		if	(document.layers||(document.getElementById&&!document.all))
+		if (e.button && e.button == 2 || e.which && e.which == 3)	// Was it a right-click? 
 		{
-			if (e.which==2||e.which==3)	// Was it a right-click? 
-			{
-				dprv_no_right_click_message();
-				return false;
-			}
+			dprv_no_right_click_message();
+			return false;
 		}
 		return true;
 	}
-
-	if (document.layers)
-	{
-		document.captureEvents(Event.MOUSEDOWN);
-		document.onmousedown=clickNS;
-	}
-	else
-	{
-		document.onmouseup=clickNS;
-	}
-	document.oncontextmenu=new Function("dprv_no_right_click_message();return false");
+	document.onmousedown=clickCheck;		// Works in FF, Chrome, IE, but in Safari, Opera still shows context menu
+	document.oncontextmenu=new Function("dprv_no_right_click_message();return false");	// fallback, works in modern versions of Safari, Chrome, Opera, IE, and FF
 }
 
 function dprv_disableDrag(target)
@@ -217,7 +201,6 @@ function dprv_disableCtrlKeys()
 	}
 	else
 	{
-	//alert("onkeypress");
 		document.onkeypress=trapCtrlKeyCombination;
 	}
 }

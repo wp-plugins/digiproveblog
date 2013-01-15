@@ -1,6 +1,7 @@
 <?php
-define("DPRV_SDK_VERSION", '0.97');
-define("DPRV_HOST", "www.digiprove.com");                // you may use digiprove1.dyndns.ws for testing
+define("DPRV_SDK_VERSION", '0.98');
+define("DPRV_HOST", "api.digiprove.com");                // you may use digiprove1.dyndns.ws for testing
+define("DPRV_VERIFY_HOST", "verify.digiprove.com");                // you may use digiprove1.dyndns.ws for testing
 define("DPRV_SSL", "No");
 define("DPRV_Log", "No");                                // Set this to "Yes" to generate local log-file for debug purposes (needs write permissions)
 
@@ -439,7 +440,7 @@ class Digiprove
 			return $return_table;
 		}
 
-		$data = Digiprove_HTTP::post($XML_string, DPRV_HOST, "/secure/service.asmx/", "DigiproveVerify");
+		$data = Digiprove_HTTP::post($XML_string, DPRV_VERIFY_HOST, "/secure/service.asmx/", "DigiproveVerify");
 		$pos = strpos($data, "Error:");
 		if ($pos !== false)
 		{
