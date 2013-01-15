@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.5
-Stable tag: 2.11
+Stable tag: 2.12
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -140,6 +140,11 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 2.12 =
+* Removes spurious copy-protect messages on iPad and iPhone
+* Upgraded from Digiprove SDK 0.97 to 0.98
+  - Uses host api.digiprove.com rather than www.digiprove.com
 
 = 2.11 =
 * Upgraded from Digiprove SDK 0.95 to 0.97
@@ -450,6 +455,13 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Minor bug-fixes
 
 == Upgrade Notice ==
+
+= 2.10 = 
+Strongly recommended, required to support Wordpress 3.5
+
+= 2.08 =
+Strongly recommended - removes serious error for new users and performs better
+
 = 1.2 =
 Significant functional and stability enhancements
 
@@ -471,9 +483,3 @@ There are some minor bug-fixes as well.
 
 = 1.10 =
 Strongly recommended upgrade - removes spurious and annoying error messages.
-
-= 2.08 =
-Strongly recommended - removes serious error for new users and performs better
-
-= 2.10 = 
-Strongly recommended, required to support Wordpress 3.5
