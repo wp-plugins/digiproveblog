@@ -16,11 +16,12 @@
 			</tbody>
 		</table>
 		<form id="Upgrade" name="Upgrade" method="POST">
-			<input type="hidden" id="UserId" name="UserId">
-			<input type="hidden" id="ApiKey" name="ApiKey">
-			<input type="hidden" id="Domain" name="Domain">
-			<input type="hidden" id="UserAgent" name="UserAgent">
-			<input type="hidden" id="Action" name="Action">
+			<input type="hidden" id="UserId" name="UserId"/>
+			<input type="hidden" id="ApiKey" name="ApiKey"/>
+			<input type="hidden" id="Domain" name="Domain"/>
+			<input type="hidden" id="UserAgent" name="UserAgent"/>
+			<input type="hidden" id="Action" name="Action"/>
+			<input type="hidden" id="Info" name="Info"/>			
 		</form>
 	</div>
 
@@ -40,6 +41,13 @@
 		document.getElementById("ApiKey").value = getQuerystring("ApiKey");
 		document.getElementById("Domain").value = getQuerystring("Domain");
 		document.getElementById("UserAgent").value = getQuerystring("UserAgent");
+		if (document.Upgrade.method.toLowerCase() != "post")		// This should never happen but sometimes arrives at server as a GET!
+		{
+			var info = "Changed form method from " + document.Upgrade.method + " to ";
+			document.Upgrade.method = "POST";
+			info += document.Upgrade.method;
+			document.getElementById("Info").value = info;
+		}
 		document.Upgrade.submit();
 		function getQuerystring(key, default_)
 		{

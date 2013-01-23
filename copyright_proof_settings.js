@@ -674,7 +674,8 @@ function Preview()
 
 	DigiproveNotice += "<span style='height:" + a_height + "; border:0px; padding:0px; margin:0px; float:none; display:inline; text-decoration: none; background-color:transparent; line-height:normal; font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:" + notice_font_size + ";'>";
 
-	DigiproveNotice += "<img src='" + dprv_plugin_url + "/digiproveblog/dp_seal_trans_16x16.png' style='vertical-align:" + img_valign + "; display:inline; border:0px; margin:0px; float:none; background-color:transparent' border='0'" + image_scale + "/>";
+	//DigiproveNotice += "<img src='" + dprv_plugin_url + "/digiproveblog/dp_seal_trans_16x16.png' style='vertical-align:" + img_valign + "; display:inline; border:0px; margin:0px; float:none; background-color:transparent' border='0'" + image_scale + "/>";
+	DigiproveNotice += "<img src='" + dprv_plugin_url + "/dp_seal_trans_16x16.png' style='vertical-align:" + img_valign + "; display:inline; border:0px; margin:0px; float:none; background-color:transparent' border='0'" + image_scale + "/>";
 
 	DigiproveNotice += "<span  style='font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:" + notice_font_size + ";color:" + notice_color + "; border:0px; float:none; text-decoration: none; letter-spacing:normal; vertical-align:" + txt_valign + ";' onmouseover=\"this.style.color='" + hover_color + "'\" onmouseout=\"this.style.color='" + notice_color + "'\" >";
 	

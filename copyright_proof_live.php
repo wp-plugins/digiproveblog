@@ -11,8 +11,8 @@ function dprv_head()
 
 	if ($dprv_frustrate_copy == "Yes")
 	{
-		//$dprv_home = get_settings('siteurl');
-		echo ("<script type='text/javascript' src='" . WP_PLUGIN_URL . "/digiproveblog/frustrate_copy.js?v=".DPRV_VERSION."'></script>");
+		//echo ("<script type='text/javascript' src='" . WP_PLUGIN_URL . "/digiproveblog/frustrate_copy.js?v=".DPRV_VERSION."'></script>");
+		echo ("<script type='text/javascript' src='" . plugins_url("frustrate_copy.js", __FILE__ ) . "?v=" . DPRV_VERSION. "'></script>");
 	}
 
 	echo ("
@@ -115,20 +115,37 @@ function dprv_display_content($content)
 	$log = new DPLog();  
 	$dprv_post_id = get_the_ID();
 	$log->lwrite("dprv_display_content starts for post/page " . $dprv_post_id);
-	
-	$in_excerpt = false;
 
-	// Determine whether being called in the_excerpt:
-	// If so, HTML tags will be stripped out and notice will look funny
-	// Maybe we should just return at this point ?
-	$my_arrays = debug_backtrace();
-	foreach ($my_arrays as $my_array)
+	// Find out context:
+	//		In Excerpt (search pages, archive pages without manual excerpt, auto-generated 55-character excerpt text with HTML tags removed)
+	//		Note manual excerpts do not get filtered through the_content()
+	//		From post-template.php means in standard web-page display
+	//		From feed.php - In a Feed 
+	//
+	$in_auto_excerpt = false;
+	$normal_display = false;
+	$counter = 0;
+	$bt = debug_backtrace();
+	foreach ($bt as $caller)
 	{
-		$search_result = array_search("the_excerpt", $my_array);
+		$search_result = array_search("wp_trim_excerpt", $caller);
 		if ($search_result == "function")
 		{
-			$in_excerpt = true;
+			$in_auto_excerpt = true;
 		}
+		if ($normal_display == false && is_array($caller) && isset($caller["file"]) && (strpos($caller["file"], "post-template.php") != false || strpos($caller["file"], "feed.php") != false))
+		{
+			$normal_display = true;
+		}
+		$counter++;
+		if ($counter > 6)
+		{
+			break;
+		}
+	}
+	if ($normal_display == false && $in_auto_excerpt == false)	// if not called from post-template or feed, probably called from some other plugin, or not in auto_excerpt don't add any copyright stuff
+	{
+		return $content;
 	}
 
 	// Do Data Integrity Check and get statement for the Digiprove notice
@@ -136,7 +153,7 @@ function dprv_display_content($content)
 	$dprv_integrity_message="";
 	//dprv_integrity_statement($dprv_post_id, $dprv_integrity_headline, $dprv_integrity_message);
 
-	if (!is_singular() && get_option('dprv_multi_post') == "No")
+	if (($in_auto_excerpt == true || !is_singular()) && get_option('dprv_multi_post') == "No")
 	{
 		return $content;
 	}
@@ -171,29 +188,6 @@ function dprv_display_content($content)
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
 		$dprv_post_info = dprv_wpdb("get_row", $sql, $dprv_post_id);
 
-		/*
-		if (trim($wpdb->last_error) != "" || is_null($dprv_post_info) ||  $dprv_post_info["digiprove_this_post"] == false || get_option('dprv_event') != "")
-		{
-			$dprv_status_info = "<!--post " . $dprv_post_id;
-			if (is_null($dprv_post_info))		// will be null if nothing found or error
-			{
-				$dprv_status_info .= "; Null return on select";
-			}
-			else
-			{
-				if ($dprv_post_info["digiprove_this_post"] == false)
-				{
-					$dprv_status_info .= "; d_t_p == false";
-				}
-			}
-			if (trim($wpdb->last_error) != "")
-			{
-				$dprv_status_info .= "; last SQL error is " . $wpdb->last_error;
-			}
-
-			//$dprv_status_info .= "; dprv_e=" . str_replace("-->", "__>", get_option('dprv_event')) . "-->";
-		}
-		*/
 	}		
 	if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 	{
@@ -572,8 +566,8 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" style="height:' . $dprv_a_height . '; line-height: ' . $dprv_a_height . '; border:0px; padding:0px; margin:0px; float:none; display:inline; text-decoration: none; background:transparent none; line-height:normal; font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . ';">';
 		
-		//$dprv_home = get_settings('siteurl');
-		$DigiproveNotice .= '<img src="' . WP_PLUGIN_URL . '/digiproveblog/dp_seal_trans_16x16.png" style="max-width:none !important;' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" border="0" alt=""/>';
+		//$DigiproveNotice .= '<img src="' . WP_PLUGIN_URL . '/digiproveblog/dp_seal_trans_16x16.png" style="max-width:none !important;' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" border="0" alt=""/>';
+		$DigiproveNotice .= '<img src="' . plugins_url("dp_seal_trans_16x16.png", __FILE__ ) . '" style="max-width:none !important;' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" border="0" alt=""/>';
 
 		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-style:normal; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal; padding:0px; padding-left:' . $dprv_notice_pad_left0 . '; vertical-align:' . $dprv_txt_valign . ';margin-bottom:' . $dprv_line_margin . '" ';
 
