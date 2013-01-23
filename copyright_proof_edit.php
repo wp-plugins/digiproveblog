@@ -330,8 +330,8 @@ function dprv_show_postbox($post_info)
 	$a .= "</tbody></table>";
 	echo $a;
 	
-	//$dprv_home = get_settings('siteurl');
-	$jsfile = WP_PLUGIN_URL . '/digiproveblog/copyright_proof_cr_panel.js?v='.DPRV_VERSION;
+	//$jsfile = WP_PLUGIN_URL . '/digiproveblog/copyright_proof_cr_panel.js?v='.DPRV_VERSION;
+	$jsfile = plugins_url("copyright_proof_cr_panel.js", __FILE__) . "?v=" . DPRV_VERSION;
 	echo('<script type="text/javascript" src="' . $jsfile . '"></script>');
 
 	// Following required for correct management of F5 refresh

@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.12
+Version: 2.13
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -39,7 +39,8 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.12");
+	define("DPRV_VERSION", "2.13");
+	define("DPRV_WWW", "www.digiprove.com");                       // you may use digiprove1.dyndns.ws for testing
 	//error_reporting(-1);						   // uncomment this for test purposes
 
 
@@ -227,7 +228,7 @@ License: GPL
 		add_option('dprv_outside_media','NoOutside');
 		delete_option('dprv_body_or_footer');		// Not used, discard
 		add_option('dprv_footer', 'No');
-		add_option('dprv_multi_post', 'Yes');
+		add_option('dprv_multi_post', 'No');
 		add_option('dprv_enrolled', 'No');
 		add_option('dprv_user_id', '');
 		add_option('dprv_api_key', '');
@@ -776,12 +777,9 @@ License: GPL
 	function dprv_createUpgradeLink()
 	{
 		global $dprv_blog_host;
-		//$protocol = "http://";
-		//if (DPRV_SSL == "Yes")
-		//{
-			$protocol = "https://";
-		//}
-		$dprv_upgrade_link = WP_PLUGIN_URL . '/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
+		//$dprv_upgrade_link = WP_PLUGIN_URL . '/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
+
+		$dprv_upgrade_link = plugins_url("UpgradeRenew.html", __FILE__) . '?FormAction=https://' . DPRV_WWW . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
 		return $dprv_upgrade_link;
 	}
 

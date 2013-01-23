@@ -26,21 +26,6 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 	dprv_populate_licenses_js();
 }
 
-/*
-function dprv_admin_footer()	// runs in admin panel inside body tags - previously used to add Digiprove message to message bar
-{
-	$log = new DPLog();  
-	$log->lwrite("dprv_admin_footer starts");
-	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
-	$posDot = strrpos($script_name,'.');
-	if ($posDot != false)
-	{
-		$script_name = substr($script_name, 0, $posDot);
-	}
-}
-*/
-
-
 function dprv_settings()		// Run when Digiprove selected from Settings menu
 {		
 	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $wpdb, $dprv_mime_types;
@@ -180,7 +165,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	$dprv_multi_post = get_option('dprv_multi_post');
 	if ($dprv_multi_post == false)
 	{
-		$dprv_multi_post = 'Yes';
+		$dprv_multi_post = 'No';
 	}
 
 
@@ -1389,7 +1374,6 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_tabs_enabled = '; color:#AAAAAA';
 		$dprv_tab_title = ' title="You need to register before using this tab"';
 	}
-	//$dprv_home = get_settings('siteurl');
 
 	print('
 			<div class="wrap">
@@ -1493,7 +1477,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 															{
 																print(' (' . sprintf(__('valid until %s', 'dprv_cp'), $dprv_subscription_expiry) . ')');
 															}
-												print('		&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:SyncUser();" style="vertical-align:-3px;width:16px;height:16px"><img src="' . WP_PLUGIN_URL. '/digiproveblog/Refresh-16.png" alt=""></a></td>
+												print('		&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:SyncUser();" style="vertical-align:-3px;width:16px;height:16px"><img src="' . plugins_url("Refresh-16.png", __FILE__ ) . '" alt=""></a></td>
 															<td style="padding-left:5px"><a class="button" href="' . $dprv_upgrade_link . '&amp;Action=Upgrade" target="_blank" style="font-weight:bold">' . __('Upgrade', 'dprv_cp') . '</a>');
 															if ($dprv_subscription_type != "Basic" && $dprv_days_to_expiry < 15)
 															{
@@ -1986,9 +1970,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				</form>' );
 
 	
-	$jsfile = WP_PLUGIN_URL . '/digiproveblog/jscolor.js?v='.DPRV_VERSION;
+	//$jsfile = WP_PLUGIN_URL . '/digiproveblog/jscolor.js?v='.DPRV_VERSION;
+	$jsfile = plugins_url("jscolor.js", __FILE__ ) . '?v=' . DPRV_VERSION;
 	print('<script type="text/javascript" src="' . $jsfile . '"></script>');
-	$jsfile = WP_PLUGIN_URL . '/digiproveblog/copyright_proof_settings.js?v='.DPRV_VERSION;
+
+	//$jsfile = WP_PLUGIN_URL . '/digiproveblog/copyright_proof_settings.js?v='.DPRV_VERSION;
+	$jsfile = plugins_url("copyright_proof_settings.js", __FILE__ ) . "?v=" . DPRV_VERSION;
 	print('<script type="text/javascript" src="' . $jsfile . '"></script>');
 	$creative_hyperlink = "<a href=\"http://www.digiprove.com/creative-and-copyright.aspx\" target=\"_blank\">";
 	$upgrade_hyperlink = "<a href=\"" . $dprv_upgrade_link . "&Action=Upgrade\" target=\"_blank\">";
@@ -2092,7 +2079,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			var dprv_subscription_expiry = "' . $dprv_subscription_expiry . '";
 			var dprv_subscription_expired = "' . $dprv_subscription_expired . '";
 			var dprv_upgrade_link = "' . $dprv_upgrade_link . '";
-			var dprv_plugin_url = "' . WP_PLUGIN_URL . '";
+			//var dprv_plugin_url = "' . WP_PLUGIN_URL . '";
+			var dprv_plugin_url = "' . plugins_url("", __FILE__ ) . '";
 			var dprv_last_result = "' . $dprv_last_result . '";
 			var dprv_lastUserId = document.getElementById(\'dprv_user_id\').value;
 			var dprv_lastApiKey = document.getElementById(\'dprv_api_key\').value;
@@ -2479,7 +2467,6 @@ function dprv_sync_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_rene
 
 function dprv_resend_activation_email($dprv_user_id, $dprv_email_address)
 {
-	//global $wp_version, $dprv_host;
 	global $wp_version;
 	$log = new DPLog();  
 	$log->lwrite("dprv_resend_activation starts");  
