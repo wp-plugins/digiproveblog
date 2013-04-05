@@ -25,7 +25,7 @@ class Digiprove
 	// $content                     Optional (but either this or $content_files must be supplied) - content to be digiproved; can be a string, array, or object
 	// $digiproved_content          indirect reference - if $content was not a string, it will be serialized into a string and that is what will be Digiproved; $digiproved_content contains this string value
 	//                              Note it is recommended that this is saved for future reference along with $content itself
-	// $content_files               Optional (but either this or $content_files must be supplied) - an array of files (full path names) to be Digiproved as part of this transaction
+	// $content_files               An array of files (full path names) to be Digiproved as part of this transaction
 	// $content_type                Optional = a string describing the content, e.g. "Medical Record"
 	// $metadata					Optional = an array containing metadata elements.  For now, supports finite values:
 	//                                                                                 ['content_title'] = string

@@ -1,5 +1,5 @@
 <?php
-	// FUNCTIONS CALLED WHEN CHJECKING INTEGRITY OF POSTS OR PAGES
+	// FUNCTIONS CALLED WHEN CHECKING INTEGRITY OF POSTS OR PAGES
 	function dprv_verifyContentFiles(&$error_message, $dprv_post_id, $content_file_table, &$match_results)
 	{
 		global $wpdb;
@@ -8,8 +8,8 @@
 		//$log->lwrite(dprv_eval($content_file_table));
 
 		$success=true;				// default value 
-		//$sql="SELECT * FROM " . $wpdb->prefix . "dprv_post_content_files WHERE post_id = " . $dprv_post_id;
-		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_post_content_files WHERE post_id = " . $dprv_post_id;
+
+		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_post_content_files WHERE post_id = $dprv_post_id";
 		$wpdb->show_errors();
 		$dprv_post_files = $wpdb->get_results($sql, ARRAY_A);
 		$match_results = array();
@@ -20,7 +20,6 @@
 				$file = $dprv_post_files[$i];
 				$filename=$file['filename'];
 				$fingerprint = $file['digital_fingerprint'];
-
 				if (isset($content_file_table[$filename]))
 				{
 					if ($content_file_table[$filename] == $fingerprint)
@@ -53,7 +52,7 @@
 		{
 			if ($fingerprint != "Processed")
 			{
-				$match_results[$filename] = __("File was not there before", "dprv_cp");
+				$match_results[$filename] = __("File $filename ($fingerprint) was not there before", "dprv_cp");
 				$success=false;
 			}
 		}
