@@ -68,12 +68,22 @@ function dprv_show_postbox($post_info)
 	// Secondly, get values previously assigned to this post (if set)
 	if ($script_name == "post" || $script_name == "page")	// "post" (or "page" in earlier versions of wp) means we are displaying form for editing an existing post/page ("post-new" is for a new post)
 	{
+		// Ensure $post_id is set to correct value (have seen it being incorrect)
 		if (!isset($post_id))
 		{
-			$log->lwrite("post id not set, using post_info");
+			$log->lwrite("post id not set, using  post_info->ID ($post_info->ID)");
 			$post_id = $post_info->ID;
 		}
-		$log->lwrite("not new post, global post_id = " . $post_id);
+		// Added this else block at 2.14 as discovered quite often $post_id erroneously set to a value of 0:
+		else
+		{
+			if ($post_id == 0 && $post_info->ID != 0)
+			{
+				$log->lwrite("replacing post id of 0 with post_info->ID ($post_info->ID)");
+				$post_id = $post_info->ID;
+			}
+		}
+		$log->lwrite("Edit $script_name, global post_id = " . $post_id);
 		
 		//$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
 		//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
@@ -167,7 +177,13 @@ function dprv_show_postbox($post_info)
 	}
 	else
 	{
-		$log->lwrite("script not = post, post_id = " . $post_id . "; expect this is post-new");
+		$log->lwrite("script not = post or page, post_id = " . $post_id . "; expect this is post-new");
+		// Added this if block at 2.14 to test above assumption
+		if ($script_name != "post-new")
+		{
+			$dprv_this_event = "Unexpected script name $script_name";
+			dprv_record_event($dprv_this_event);
+		}
 	}
 
 	// OK Values have been set, start preparing HTML
@@ -371,6 +387,7 @@ function dprv_verify_box()
 			$post_type_label = __("post", "dprv_cp"); 
 		}
 	}
+/*
 	if (!isset($post_id))
 	{
 		$log->lwrite("post id not set, using post");
@@ -379,6 +396,25 @@ function dprv_verify_box()
 	else
 	{
 		$dprv_post_id = $post_id;
+	}
+*/
+	// Added this revised if block and new else block at 2.14 as discovered quite often $post_id erroneously set to a value of 0:
+	if (!isset($post_id))
+	{
+		$log->lwrite("post id not set, using  post->ID ($post->ID)");
+		$dprv_post_id = $post->ID;
+	}
+	else
+	{
+		if ($post_id == 0 && $post->ID != 0)
+		{
+			$log->lwrite("replacing post id of 0 with post->ID ($post->ID)");
+			$dprv_post_id = $post->ID;
+		}
+		else
+		{
+			$dprv_post_id = $post_id;
+		}
 	}
 
 	$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
@@ -703,7 +739,6 @@ function dprv_add_digiprove_submit_button()
 // Remove old notice if there, and write information from it into custom post fields 
 function dprv_parse_post ($data, $raw_data)
 {
-	//global $wpdb, $dprv_digiprove_this_post, $post_id, $post_ID;
 	global $wpdb, $dprv_digiprove_this_post;
 	$log = new DPLog();  
 	$log->lwrite("dprv_parse_post starts"); 
@@ -1609,7 +1644,7 @@ function dprv_record_non_dp_action($dprv_post_id, $content)
 }
 
 
-function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$content_file_names, $dprv_subscription_type, $dprv_subscription_expiry, &$dprv_last_time,&$notice)
+function dprv_certify($dprv_post_id, $title, $content, &$digital_fingerprint, &$content_file_names, $dprv_subscription_type, $dprv_subscription_expiry, &$dprv_last_time,&$notice)
 {
 	$log = new DPLog();  
 	global $wp_version, $wpdb, $dprv_blog_host, $dprv_wp_host;
@@ -1624,8 +1659,10 @@ function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$conte
 
 	if ($digital_fingerprint != "")
 	{
-		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
-		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+		//$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
+		//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
+		$dprv_post_info = dprv_wpdb("get_row", $sql, $dprv_post_id);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0 && $digital_fingerprint == $dprv_post_info["digital_fingerprint"])
 		{
 			$dprv_last_time = strtotime($dprv_post_info["cert_utc_date_and_time"]);
@@ -1676,7 +1713,18 @@ function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$conte
 	$file_count = 0;							// Initialise just to avoid a notice message, not essential
 	if (function_exists("hash") && ($max_file_count > 0 || $dprv_subscription_expired == "Yes"))		// Scan for files if permitted (or for advisory notice if subscription expired)
 	{
-		dprv_getContentFiles($post_id, $rawContent, $content_files, $content_file_names, $max_file_count, $file_count);
+		dprv_getContentFiles($dprv_post_id, $rawContent, $content_files, $content_file_names, $max_file_count, $file_count);
+		//dprv_alt_getContentFiles($dprv_post_id, $alt_content_files, $max_file_count, $file_count);
+		//$log->lwrite("alt_content_files:\n");
+		//for ($f=0; $f<count($alt_content_files); $f++)
+		//{
+		//	$log->lwrite($alt_content_files[$f]);
+		//}
+		//$log->lwrite("content_files:\n");
+		//for ($f=0; $f<count($content_files); $f++)
+		//{
+		//	$log->lwrite($content_files[$f]);
+		//}
 	}
 	if ($file_count > $max_file_count)
 	{
@@ -1708,12 +1756,19 @@ function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$conte
 		$credentials['dprv_event'] = $dprv_event;
 	}
 
-	$user_agent = "Copyright Proof " . DPRV_VERSION;
+	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+	$posDot = strrpos($script_name,'.');
+	if ($posDot != false)
+	{
+		$script_name = substr($script_name, 0, $posDot);
+	}
+
+	$user_agent = "Copyright Proof " . DPRV_VERSION . " / Wordpress " . $wp_version . " / " . $script_name;
 	$permalink = get_bloginfo('url');
-	if ($post_id != -1)									// will be set to -1 if the value is unknown
+	if ($dprv_post_id != -1)									// will be set to -1 if the value is unknown
 	{
 		// Note - Decided not to implement soft permalinks as can end up with broken links if user changes scheme
-		$permalink = get_bloginfo('url') . "/?p=" . $post_id;
+		$permalink = get_bloginfo('url') . "/?p=" . $dprv_post_id;
 	}
 
 	$obscure_url = false;
@@ -1745,7 +1800,31 @@ function dprv_certify($post_id, $title, $content, &$digital_fingerprint, &$conte
 	return $return_value;
 }
 
-function dprv_getContentFiles($post_id, $content, &$content_files, &$content_file_names, $max_file_count, &$file_count, $alltags = false)
+// In current form this does not find all embedded media, even those attached explicitly - needs more testing
+function dprv_alt_getContentFiles($dprv_post_id, $content, &$content_files, $max_file_count, &$file_count, $alltags = false)
+{
+	$log = new DPLog();	
+	//$dprv_post = get_post($dprv_post_id);
+
+	//$attachments = get_posts(array('post_type' => 'attachment',	'posts_per_page' => -1,	'post_parent' => $dprv_post_id, 'exclude' => get_post_thumbnail_id()));
+	$attachments = get_posts(array('post_type' => 'attachment',	'posts_per_page' => -1,	'post_parent' => $dprv_post_id));
+
+	if ($attachments) 
+	{
+		$log->lwrite("attachments=\n" . dprv_eval($attachments));
+		foreach ($attachments as $attachment)
+		{
+			$class = "post-attachment mime-" . sanitize_title( $attachment->post_mime_type );
+			$thumbimg = wp_get_attachment_link( $attachment->ID, 'thumbnail-size', true );
+			//echo '<li class="' . $class . ' data-design-thumbnail">' . $thumbimg . '</li>';
+		}
+	}
+	else
+	{
+		$log->lwrite("no attachments");
+	}
+}
+function dprv_getContentFiles($dprv_post_id, $content, &$content_files, &$content_file_names, $max_file_count, &$file_count, $alltags = false)
 {
 	function str_findAny($haystack, $needles, $offset=0)
 	{
@@ -1987,6 +2066,7 @@ function dprv_getContentFiles($post_id, $content, &$content_files, &$content_fil
 			}
 			if ($needScan === false)
 			{
+				// TODO - Allow for possibility that there is a featured image to be Digiproved even in this case
 				$log->lwrite("getContentFiles: no tags selected, return without parsing");
 				dprv_unrecord_event($start_marker, $dprv_event);						// remove start marker from dprv event
 				return;
@@ -2017,7 +2097,7 @@ function dprv_getContentFiles($post_id, $content, &$content_files, &$content_fil
 		$w++;
 		if ($w>500)
 		{
-			$this_event = 'post ' . $post_id . ' suspected endless loop (a)';
+			$this_event = 'post ' . $dprv_post_id . ' suspected endless loop (a)';
 			$log->lwrite($this_event);
 			$dprv_event = dprv_record_event($this_event, $dprv_event);
 			break;
@@ -2049,7 +2129,7 @@ function dprv_getContentFiles($post_id, $content, &$content_files, &$content_fil
 				$r++;
 				if ($r>300)
 				{
-					$this_event = 'post ' . $post_id . ' suspected endless loop (b)';
+					$this_event = 'post ' . $dprv_post_id . ' suspected endless loop (b)';
 					$log->lwrite($this_event);
 					$dprv_event = dprv_record_event($this_event, $dprv_event);
 					break;
@@ -2185,15 +2265,50 @@ function dprv_getContentFiles($post_id, $content, &$content_files, &$content_fil
 			break;
 		}
 	}
+	$featured_image_path = dprv_get_featured_image($dprv_post_id);
+	if ($featured_image_path != false && trim($featured_image_path) != "")
+	{
+		if (file_exists($featured_image_path))
+		{
+			if (array_search($featured_image_path, $content_files) === false)		// prevent duplicate references
+			{
+				$t = count($content_files);
+				if($t < $max_file_count)
+				{
+					$file_name = basename($featured_image_path);
+					$content_file_names[$t] = $file_name;
+					$content_files[$t] = $featured_image_path;
+					$log->lwrite("content_file_names[" . $t . "]=" . $content_file_names[$t] . " (is featured image)");
+				}
+				$file_count++;
+			}
+			else
+			{
+				$log->lwrite("ignoring featured image - " . $file_name . " - encountered earlier)");
+			}
+		}
+		else
+		{
+			$log->lwrite("Featured image file does not exist: $featured_image_path");
+		}
+	}
+
 	dprv_unrecord_event($start_marker, $dprv_event);						// remove start marker from dprv event
-	//if (get_option('dprv_event') == 'started dprv_getContentFiles')	// If ending normally,
-	//{
-	//	update_option('dprv_event', '');						// clear event notice field
-	//}
 	$log->lwrite('unrecord_event just ran');
 
 }
 
+// GET FEATURED IMAGE  
+function dprv_get_featured_image($dprv_post_id) 
+{  
+	$post_thumbnail_id = get_post_thumbnail_id($dprv_post_id);  
+	if ($post_thumbnail_id)
+	{  
+		$dprv_featured_image_path = get_attached_file($post_thumbnail_id);  
+		return $dprv_featured_image_path;  
+	}
+	return false;
+}  
 
 
 function dprv_getTag($xmlString, $tagName)

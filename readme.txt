@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.5
-Stable tag: 2.13
+Tested up to: 3.5.1
+Stable tag: 2.14
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -140,6 +140,12 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 2.14 =
+* Track source of each Digiprove transaction (User/Postie/RSS/Plugin)
+* Fixed problem where "Digiproved: Never" appears for a post/page that has been Digiproved (caused by non-standard behaviour of other plugins)
+* Will Digiprove featured image even if that image not otherwise contained in post/page content
+
 = 2.13 =
 * Changed file references to avoid IE mixed-security alerts on https:// pages
 * Changed default value for multi-post pages to NOT append Digiprove notice
