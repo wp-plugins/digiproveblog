@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.5.1
-Stable tag: 2.14
+Tested up to: 3.5.2
+Stable tag: 2.15
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -140,6 +140,16 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 2.15 =
+* Now you can see in Post or Page lists a new column indicating whether the page/post has been Digiproved already
+* Number of media files that can be Digiproved within a single post raised to 10 for Personal users (was 5)
+* Number of media files that can be Digiproved within a single post raised to 40 for Professional users (was 20)
+* New preference setting for selecting or de-selecting featured images for Digiproving
+* Removes leading and trailing spaces etc. from email address, user id, domain names, and api keys to prevent validation problems
+* Uses latest version of Digiprove PHP SDK
+* Now copes properly when main Administrator is not user id 1
+* More information on what exactly is being Digiproved in each transaction
+* Minor bug corrections
 
 = 2.14 =
 * Track source of each Digiprove transaction (User/Postie/RSS/Plugin)

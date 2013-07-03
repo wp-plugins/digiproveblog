@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.14
+Version: 2.15
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -39,7 +39,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.14");
+	define("DPRV_VERSION", "2.15");
 	define("DPRV_WWW", "www.digiprove.com");                       // you may use digiprove1.dyndns.ws for testing
 	//error_reporting(-1);						   // uncomment this for test purposes
 
@@ -49,7 +49,8 @@ License: GPL
 	$dprv_blog_url = parse_url(get_option('home'));
 	$dprv_blog_host = trim($dprv_blog_url['host']);
 	$dprv_wp_url = parse_url(get_option('siteurl'));
-	$dprv_wp_host = $dprv_wp_url['host'];
+	//$dprv_wp_host = $dprv_wp_url['host'];
+	$dprv_wp_host = trim($dprv_wp_url['host']);
 	if ($dprv_blog_host == "")
 	{
 		$dprv_blog_host = $dprv_wp_host;
@@ -191,8 +192,8 @@ License: GPL
 		update_option('dprv_activated_version', DPRV_VERSION);	// If different to installed, activation steps will take place
 		//add_option('dprv_verified_db_version', '');	            // If not up to date, will be checked and updated if necessary
 		add_option('dprv_email_address', '');
-		add_option('dprv_first_name', '');
-		add_option('dprv_last_name', '');
+		//add_option('dprv_first_name', '');
+		//add_option('dprv_last_name', '');
 		add_option('dprv_subscription_type', '');               // Will be empty until activation of membership
 		add_option('dprv_subscription_expiry', '');
 		add_option('dprv_content_type', '');
@@ -242,6 +243,7 @@ License: GPL
 		add_option('dprv_files_integrity', 'No');	// Whether to check data integrity of embedded files
 		delete_option('dprv_activation_event');		// No longer required
 		add_option('dprv_prefix');
+		add_option('dprv_featured_images', 'No');
 		create_dprv_license_table();
 		create_dprv_post_table();
 		create_dprv_post_content_files_table();
@@ -612,12 +614,10 @@ License: GPL
 		$dprv_posts = get_option('dprv_prefix') . "dprv_posts";
 		if (get_option('dprv_prefix') !== false && get_option('dprv_prefix') != $wpdb->prefix  && get_option('dprv_prefix') != strtolower($wpdb->prefix))
 		{
-			//if($wpdb->get_var("show tables like '$dprv_posts'") != $dprv_posts)
 			if(dprv_wpdb("get_var", "show tables like '$dprv_posts'") != $dprv_posts)
 			{
 				$dprv_posts = $wpdb->prefix . "dprv_posts";
 
-				//if($wpdb->get_var("show tables like '$dprv_posts'") == $dprv_posts)
 				if(dprv_wpdb("get_var", "show tables like '$dprv_posts'") == $dprv_posts)
 				{
 					// User has changed db prefix of dprv tables (assume all), adjust dprv_prefix accordingly 
@@ -640,6 +640,18 @@ License: GPL
 		}
 		// TODO: Only perform this check if last_fingerprint may be required, e.g. edit or display posts/pages
 		// Check whether version 2.n db upgrade has been done successfully:
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+		$int_db_ok = dprv_db_ok();
+		if ($int_db_ok < 0)
+		{
+			// Repeat activation
+			dprv_activate();
+		}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////		
+
+/*
 		$like_last_fingerprint = dprv_wpdb("get_var", "SHOW COLUMNS FROM $dprv_posts LIKE 'last_fingerprint'");
 		if ($like_last_fingerprint !== false)	// false would indicate that there is an error 28 or incorrect key file in either case maybe we should ignore, other ops might work
 		{
@@ -664,6 +676,8 @@ License: GPL
 				dprv_activate();
 			}
 		}
+
+*/
 		function dprv_reminder()
 		{
 			$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
@@ -779,7 +793,7 @@ License: GPL
 		global $dprv_blog_host;
 		//$dprv_upgrade_link = WP_PLUGIN_URL . '/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
 
-		$dprv_upgrade_link = plugins_url("UpgradeRenew.html", __FILE__) . '?FormAction=https://' . DPRV_WWW . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
+		$dprv_upgrade_link = plugins_url("UpgradeRenew.html", __FILE__) . '?FormAction=https://' . DPRV_WWW . '/secure/upgrade.aspx&amp;UserId='  . trim(get_option('dprv_user_id')) . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
 		return $dprv_upgrade_link;
 	}
 
@@ -824,7 +838,8 @@ License: GPL
 			$sql = $wpdb->prepare($sql, $args);
 		}
 		$result = "29 jump street";	// just to establish variable scope
-		$prev_db_error = $wpdb->last_error;
+		//$prev_db_error = $wpdb->last_error;
+		$wpdb->last_error = "";
 		switch ($action)
 		{
 			case "get_var":
@@ -837,6 +852,16 @@ License: GPL
 				$result = $wpdb->get_row($sql, ARRAY_A);
 				break;
 			}
+			case "get_results":
+			{
+				$result = $wpdb->get_results($sql, ARRAY_A);
+				break;
+			}
+			case "query":
+			{
+				$result = $wpdb->query($sql);
+				break;
+			}
 			default:
 			{
 				return false;
@@ -847,19 +872,22 @@ License: GPL
 		if (trim($dprv_db_error) != "")
 		{
 			$bt = debug_backtrace();
-			$error_status = "";
-			if ($prev_db_error == $dprv_db_error)
-			{
-				$error_status = "suspected ";
-			}
+			//$error_status = "";
+			//if ($prev_db_error == $dprv_db_error)
+			//{
+			//	$error_status = "suspected ";
+			//}
 			// Note "SHOW COLUMNS" rather than "show columns" used in this plugin indicates not a critical point (normal everyday check)
-			$dprv_this_event = $error_status . "wpdb SQL error " . $dprv_db_error . " on " . $sql;
+			//$dprv_this_event = $error_status . "wpdb SQL error " . $dprv_db_error . " on " . $sql;
+			$dprv_this_event = "wpdb SQL error " . $dprv_db_error . " on " . $sql;
 			if ((stripos($dprv_db_error, "Incorrect key file for table") !== false || stripos($dprv_db_error, "Got error 28 from storage engine") !== false || stripos($dprv_db_error, "Errcode: 28") !== false) && strpos($sql, "SHOW COLUMNS FROM") !== false && is_null($result))
 			{
 				// Not good but (for now) ignore it, maybe other instructions will work:-)
 				// Calling code will recognise false and ignore error
 				// Also don't bother with logging all that backtrace stuff
 				dprv_record_event($dprv_this_event);
+				$secondary_result = "Result of dprv_db_ok()=" . dprv_db_ok();
+				dprv_record_event($secondary_result);
 				return false;
 			}
 			if (trim($dprv_sql_error) != "" && $dprv_sql_error != $dprv_db_error)
@@ -907,22 +935,128 @@ License: GPL
 				}
 			}
 			dprv_record_event($dprv_this_event);
-			$log->lwrite("mysql_info=" . mysql_info());
-			$dprv_pending_message = get_option('dprv_pending_message');
-			$dprv_new_message = "MySQL Error occurred: " . $dprv_db_error;
-			if (strpos($dprv_pending_message, $dprv_new_message) === false)		// Avoid repeating the same message over and over
+			$dprv_db_ok = dprv_db_ok();
+			$secondary_result = "Result of dprv_db_ok()=" . $dprv_db_ok;
+			dprv_record_event($secondary_result);
+			if (stripos($sql, "SHOW COLUMNS FROM") === false)  // Do not display SQL error message if the problem occurred on Show columns from
 			{
-				if ($dprv_pending_message != "")
+				$log->lwrite("mysql_info=" . mysql_info());
+				$dprv_pending_message = get_option('dprv_pending_message');
+				$dprv_new_message = "MySQL Error occurred: " . $dprv_db_error;
+				if (strpos($dprv_pending_message, $dprv_new_message) === false)		// Avoid repeating the same message over and over
 				{
-					$dprv_pending_message .= "<br/>";
+					if ($dprv_pending_message != "")
+					{
+						$dprv_pending_message .= "<br/>";
+					}
+					//$dprv_pending_message .= "MySQL Error occurred: " . $dprv_db_error;
+					$dprv_pending_message .= $dprv_new_message . " on &quot;" . $sql . "&quot;";
+					update_option('dprv_pending_message', $dprv_pending_message);
 				}
-				$dprv_pending_message .= "MySQL Error occurred: " . $dprv_db_error;
-				update_option('dprv_pending_message', $dprv_pending_message);
 			}
 		}
 		return $result;
 	}
 
+
+	// CHECK FOR EXISTENCE OF "last_fingerprint" COLUMN (if not there, then 2.n db updates not performed OK)
+	function dprv_db_ok()
+	{
+		$log = new DPLog();
+		global $wpdb;
+		$wpdb->last_error = "";
+		$sql="SELECT last_fingerprint FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = 0 LIMIT 1";
+		$result = $wpdb->get_var($sql);
+		$dprv_sql_error = mysql_error();
+		$dprv_db_error = $wpdb->last_error;
+		if (trim($dprv_db_error) != "")
+		{
+			$dprv_this_event = $dprv_db_error . " while testing for last_fingerprint";
+			dprv_record_event($dprv_this_event);
+			if (strpos(strtolower($dprv_db_error), "unknown column") !== false)
+			{
+				return -1;		// last fingerprint column does not exist
+			}
+			return 0;			// some other error
+		}
+		return 1;				// OK
+	}
+
+
+	// ADD NEW COLUMN  
+    function dprv_columns_head($defaults)
+	{  
+        
+		$defaults['digiproved'] = '<span title="' . __("Copyright of content secured by Digiprove?", "dprv_cp") . '">Digiproved?</span>';  
+        return $defaults;  
+    }  
+      
+    // SHOW THE Digiproved Status  
+    function dprv_columns_content($column_name, $dprv_post_id)
+	{  
+        if ($column_name == 'digiproved')
+		{  
+            $post_digiproved = dprv_get_dp_status($dprv_post_id);  
+            if ($post_digiproved) 
+			{  
+                echo $post_digiproved;  
+            }  
+        }  
+    }  
+	
+	// GET DIGIPROVED DATA  
+    function dprv_get_dp_status($dprv_post_id)
+	{  
+   		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
+		$dprv_post_info = dprv_wpdb("get_row", $sql, $dprv_post_id);
+		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
+		{
+			if ($dprv_post_info["digiprove_this_post"] == true)
+			{
+				if ($dprv_post_info["certificate_id"] != null)
+				{
+					$dprv_timestamp = strtotime($dprv_post_info["cert_utc_date_and_time"]);
+					$dprv_timestamp = "<span title='" . date("j M Y H.i:s", $dprv_timestamp) . " UTC'>" . date("j M Y", $dprv_timestamp) . "</span>";
+					return $dprv_timestamp;
+				}
+				else
+				{
+					return "No";
+				}
+			}
+			else
+			{
+				return "De-selected";
+			}
+		}
+		else
+		{
+			return "No";
+		}
+	}
+
+	$dprv_post_types = explode(',',get_option('dprv_post_types'));
+	foreach ($dprv_post_types as $dprv_post_type)
+	{
+		if ($dprv_post_type == "post")
+		{
+			add_filter('manage_posts_columns', 'dprv_columns_head');  
+			add_action('manage_posts_custom_column', 'dprv_columns_content', 10, 2);
+		}
+		else
+		{
+			if ($dprv_post_type == "page")
+			{
+				add_filter('manage_pages_columns', 'dprv_columns_head');  
+				add_action('manage_pages_custom_column', 'dprv_columns_content', 10, 2);
+			}
+			else
+			{
+				add_filter('manage_users_sortable_columns', 'dprv_columns_head');  
+				add_action('manage_users_custom_column', 'dprv_columns_content', 10, 2);
+			}
+		}
+	}
 	function dprv_record_event(&$dprv_this_event, $dprv_event = null)	// Record some event for error reporting purposes (will eventually show up on server log at next successful api transaction)
 	{
 		$log = new DPLog();
@@ -1005,20 +1139,21 @@ function dprv_eval($something, $html = false, $tabs = "")
 	$return = "";
 	if (is_object($something))
 	{
-		$called_class = "";
-		if (function_exists("get_called_class"))
-		{
-			$called_class = get_called_class($something);
-			if ($called_class === false)
-			{
-				$called_class = ", called from outside a class";
-			}
-			else
-			{
-				$called_class = ", called in class " . $called_class;
-			}
-		}
-		$return .= "(object) of " . count($something) . " properties, parent class is " . get_parent_class($something) . ", class is " . get_class($something) . $called_class . "; ";
+		//$called_class = "";
+		//if (function_exists("get_called_class"))
+		//{
+		//	$called_class = get_called_class($something);
+		//	if ($called_class === false)
+		//	{
+		//		$called_class = ", called from outside a class";
+		//	}
+		//	else
+		//	{
+		//		$called_class = ", called in class " . $called_class;
+		//	}
+		//}
+		//$return .= "(object) of " . count($something) . " properties, parent class is " . get_parent_class($something) . ", class is " . get_class($something) . $called_class . "; ";
+		$return .= "(object) of " . count($something) . " properties, parent class is " . get_parent_class($something) . ", class is " . get_class($something) . "; ";
 		$return .= "array of class methods is " . dprv_eval(get_class_methods($something), $html, $tabs);
 		$return .= "array of class variables is " . dprv_eval(get_class_vars(get_class($something)), $html, $tabs);
 		$return .= "array of object variables is " . dprv_eval(get_object_vars($something), $html, $tabs);

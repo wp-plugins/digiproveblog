@@ -327,7 +327,7 @@ function dprv_integrity_statement($dprv_post_id, &$dprv_integrity_headline,  &$d
 				}
 
 				$digital_fingerprint = "";
-				// Might need to get fram db, but try this:
+				// Might need to get from db, but try this:
 				$check_content = $post->post_content;
 				$log->lwrite("post->post_content=" . $post->post_content);
 				$check_content = dprv_getRawContent($check_content, $digital_fingerprint);
@@ -377,14 +377,14 @@ function dprv_integrity_statement($dprv_post_id, &$dprv_integrity_headline,  &$d
 				}
 
 				$files_integrity = 0;
-				if (   function_exists("hash")
-					&& get_option('dprv_files_integrity') == "Yes"
-					&& $dprv_post_info["last_time_digiproved"] != null
-					&& $dprv_post_info["last_time_digiproved"] == $dprv_post_info["last_time_updated"] )
-				{
-					global $dprv_blog_host;  // check maybe this is not required
 
-					dprv_getContentFiles($dprv_post_id, $check_content, $content_files, $content_file_names, 50, $file_count, false);
+				if (function_exists("hash") && get_option('dprv_files_integrity') == "Yes")
+					//&& $dprv_post_info["last_time_digiproved"] != null
+					//&& $dprv_post_info["last_time_digiproved"] == $dprv_post_info["last_time_updated"] )
+				{
+					//global $dprv_blog_host;  // check maybe this is not required
+
+					dprv_getContentFiles($dprv_post_id, $check_content, $content_files, $content_file_names, 50, $file_count, $total_url_count, false);
 					if ($file_count > 0)
 					{
 						$log->lwrite("file count = " . $file_count . ", count(content_files) = " . count($content_files) . ", count(content_file_names) = " . count($content_file_names));
@@ -394,7 +394,11 @@ function dprv_integrity_statement($dprv_post_id, &$dprv_integrity_headline,  &$d
 							if (dprv_verifyContentFiles($error_message, $dprv_post_id, $content_file_table, $match_results))
 							{
 								$log->lwrite("file count = " . $file_count . ", count(match_results) = " . count($match_results));
-								$files_integrity = $file_count;
+								$files_integrity = 2;
+								if ($dprv_post_info["last_time_digiproved"] != null && $dprv_post_info["last_time_digiproved"] == $dprv_post_info["last_time_updated"])
+								{
+									$files_integrity = 1;
+								}
 								$dprv_files_integrity_headline = sprintf(__("%s files Verified", "dprv_cp"), $file_count);
 							}
 							else
@@ -435,13 +439,13 @@ function dprv_integrity_statement($dprv_post_id, &$dprv_integrity_headline,  &$d
 					$dprv_integrity_message .= $dprv_files_integrity_message;
 					if ($files_integrity > 0 && $html_integrity > 0)	// Ensure a nice neat headline if everything good for display in notice
 					{
-						if ($html_integrity == 1)
+						if ($html_integrity == 1 && $files_integrity == 1)
 						{
-							$dprv_integrity_headline =  sprintf(__('HTML &amp; %s Files Certified &amp; Verified', 'dprv_cp'), $files_integrity);
+							$dprv_integrity_headline = __('All content certified &amp; verified', 'dprv_cp');
 						}
 						else
 						{
-							$dprv_integrity_headline =  sprintf(__('HTML &amp; %s Files Verified', 'dprv_cp'), $files_integrity);
+							$dprv_integrity_headline =  __('All content verified', 'dprv_cp');
 						}
 					}
 				}

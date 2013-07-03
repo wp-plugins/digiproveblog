@@ -1,5 +1,5 @@
 <?php
-define("DPRV_SDK_VERSION", '0.98');
+define("DPRV_SDK_VERSION", '1.00');
 define("DPRV_HOST", "api.digiprove.com");                // you may use digiprove1.dyndns.ws for testing
 define("DPRV_VERIFY_HOST", "verify.digiprove.com");                // you may use digiprove1.dyndns.ws for testing
 define("DPRV_SSL", "No");
@@ -345,7 +345,7 @@ class Digiprove
 	//								If null is supplied or an object that does not contain "user_id" property, will be treated as an anonymous verify request.
 	//								NOTE: anonymous verify requests return only the essential results (as described below) and are less processor intensive
 	//
-	// $certificate_id				Optional: The original Digiprove certificate id
+	// $certificate_id				Optional: The original Digiprove certificate id.  If supplied, the fingerprint will be sought in this certificate only
 	//
 	// Supply one or other of these 2 parameters:
 	// $content                     content to be verified; can be a string, array, or object
@@ -392,19 +392,12 @@ class Digiprove
 	//																["digital_fingerprint"]
 
 	// TODO: Return complete certificate detail (i.e. all associated files)
-	function verify(&$error_message, $credentials, $certificate_id, $content, &$digiproved_content = null, $content_files = null, $user_agent = "")
+	static public function verify(&$error_message, $credentials, $certificate_id, $content, &$digiproved_content = null, $content_files = null, $user_agent = "")
 	{
 		$log = new DPLog();
 		$log->lwrite("Digiprove::verify starts");
 		$error_message = "";
 		$return_table = array();
-		//if (isset($credentials) && isset($credentials['user_id']) && !self::is_valid($credentials, &$error_message))
-		if (isset($credentials) && isset($credentials['user_id']) && !self::is_valid($credentials, $error_message))
-		{
-            $return_table["result_code"] = "101";
-            $return_table["result"] = "Credentials incomplete";
-            return $return_table;
-		}
 		if (!is_string($content))
 		{
 			if ($digiproved_content == null)
@@ -428,6 +421,20 @@ class Digiprove
             $return_table["result_code"] = "101";
             $return_table["result"] =  "Raw content is empty";
 			return $return_table;
+		}
+		return verify_fingerprint($error_message, $credentials, $certificate_id, $digital_fingerprint, $content, $digiproved_content, $content_files, $user_agent);
+	}
+
+	function verify_fingerprint(&$error_message, $credentials, $certificate_id, $digital_fingerprint, $content, &$digiproved_content = null, $content_files = null, $user_agent = "")
+	{
+		$log = new DPLog();
+		$log->lwrite("Digiprove::verify_fingerprint starts");
+		$return_table = array();
+		if (isset($credentials) && isset($credentials['user_id']) && !self::is_valid($credentials, $error_message))
+		{
+            $return_table["result_code"] = "101";
+            $return_table["result"] = "Credentials incomplete";
+            return $return_table;
 		}
 		$XML_string = self::prepareVerifyXML($error_message, $credentials, $certificate_id, $content, $digital_fingerprint, $content_files, $content_type, $user_agent);
 		$log->lwrite("request: $XML_string");
@@ -457,9 +464,14 @@ class Digiprove
 			if ($error_message == false)
 			{
 				$error_message = $data;
+				$return_table["result_code"] = "112";
+				$return_table["result"] =  "Could not decipher server response";
 			}
-			$return_table["result_code"] = "112";
-            $return_table["result"] =  "Could not decipher server response";
+			else
+			{
+				$return_table["result_code"] = self::getTag($data,"result_code");
+				$return_table["result"] = $error_message;
+			}
 			return $return_table;
 		}
 		$pos = strpos($data, "<?xml ");
@@ -666,6 +678,7 @@ class Digiprove
 
 	static private function parseResponse($data)
 	{
+
 		return self::xml2array($data);
 	}
 
@@ -716,6 +729,322 @@ class Digiprove
 		}
 		return $return;
 	}
+
+	
+	// This function Registers a new user and sends out an activation email
+	// $error_message               a string - indirect reference - will contain error message if something went wrong
+	// $credentials                 an object containing desired "user_id" and "password" properties (with optional "domain_name", and "alt_domain_name" properties)
+	//                              if "domain_name" or "alt_domain_name was supplied, a new api key will be generated on the server and will be returned as a property of credentials and in the return array
+	//			
+	// $dprv_email_address			string = User's email address
+	// $dprv_first_name				string = User's first name
+	// $dprv_last_name				string = User's last name
+	// $dprv_display_name			boolean: if true, the user's name will be shown publicly whenever his certifications are being shown, otherwise it will be kept private
+	// $dprv_email_certs			boolean: if false, Digiprove certificates will not be emailed automatically to user, otherwise they will (although note that the Basic plan does not email these certs)
+	// $dprv_can_contact			boolean: if true, the user can be contacted with special offers etc., otherwise there will be no contact from Digiprove other than necessary service messages
+	// $user_agent                  Optional = a string describing your software and its version e.g. "Bank Software 1.1" to aid in debugging etc.
+	//
+	// If parameters missing or in error, will return boolean false, while $error_message will contain the explanation
+	// Otherwsie, returns an array:
+	// ["result_code"]				A string with values:
+	//              				'0' -   User registered OK
+	//								Other value - user was not registered (see ['result'] for explanation
+	// ['result']					a string containing description of result (e.g. "Success", "User already exists")
+	// ['api_key']					Will only exist if result code was '0': a string containing the api key for the supplied domain
+	// ['subscription_type']		Will only exist if result code was '0': a string containing the subscription type (at present will always be "Basic")
+
+	static public function register_user(&$error_message, $credentials, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs, $dprv_can_contact, $user_agent)
+	{
+		$log = new DPLog();  
+		$log->lwrite("register_user starts");  
+		$error_message = "";
+		if (!isset($credentials['user_id']) || trim($credentials['user_id']) == "")
+		{
+			$error_message = __('Please specify a desired Digiprove user id','dprv_cp');
+			return false;
+		}
+		if (!isset($credentials['password']) || trim($credentials['password']) == "")
+		{
+			$error_message = __('You need to input a password', 'dprv_cp');
+			return false;
+		}
+		if (strlen($credentials['password']) < 6)
+		{
+			$error_message = __('Password must be at least 6 characters', 'dprv_cp');
+			return false;
+		}
+		if ($dprv_email_address == "")
+		{
+			$error_message = __('Please input your email address (to which the activation link will be sent)', 'dprv_cp');
+			return false;
+		}
+		if ($dprv_first_name == "" && $dprv_last_name == "")
+		{
+			$error_message = __('You need to complete either first or last name', 'dprv_cp');
+			return false;
+		}
+
+		if ((!isset($credentials['domain_name']) || trim($credentials['domain_name']) == "") && (!isset($credentials['alt_domain_name']) || trim($credentials['alt_domain_name']) == ""))
+		{
+			$error_message = __('Please supply domain name', 'dprv_cp');
+			return false;
+		}
+
+		$postText = "<digiprove_register_user>";
+		//$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
+		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Digiprove SDK ' . DPRV_SDK_VERSION;
+		if ($user_agent != "")
+		{
+			$postText .= ' / ' . $user_agent;
+		}
+		$postText .= '</user_agent>';
+
+		$postText .= "<user_id>" . trim($credentials['user_id']) . "</user_id>";
+		$postText .= '<password>' . htmlspecialchars(stripslashes($credentials['password']), ENT_QUOTES, 'UTF-8') . '</password>';  // encode password if necessary
+		$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
+		$dprv_domain = "";
+		if (isset($credentials['alt_domain_name']))
+		{
+			$dprv_domain = trim($credentials['alt_domain_name']);
+		}
+		if (isset($credentials['domain_name']))
+		{
+			$dprv_domain = trim($credentials['domain_name']);
+		}
+		$postText .= '<domain_name>' . $dprv_domain . '</domain_name>';
+		$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary if using SOAP
+		$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary if using SOAP
+		if ($dprv_display_name == true)
+		{
+			$postText .= '<display_name>Yes</display_name>';
+		}
+		else
+		{
+			$postText .= '<display_name>No</display_name>';
+		}
+		if ($dprv_email_certs == false)
+		{
+			$postText .= '<email_certs>No</email_certs>';
+		}
+		else
+		{
+			$postText .= '<email_certs>Yes</email_certs>';
+		}
+		if (isset($dprv_can_contact))
+		{
+			$postText .= '<can_contact>';
+			if ($dprv_can_contact == true)
+			{
+				$postText .= 'Yes';
+			}
+			else
+			{
+				$postText .= 'No';
+			}
+			$postText .= '</can_contact>';
+		}
+		$postText .= '<subscription_plan>' . 'Basic' . '</subscription_plan>';	// Can upgrade later
+		if (isset($credentials['dprv_event']) && trim($credentials['dprv_event']) != "")
+		{
+			$postText .= "<dprv_event>" . trim(htmlspecialchars($credentials['dprv_event'])) . "</dprv_event>";
+		}
+		$postText .= '</digiprove_register_user>';
+		$log->lwrite("xml string = " . $postText);
+
+		//TODO try soap_post first, and on exception use http_post
+		//$data = dprv_soap_post($postText, "RegisterUser");
+		$data = Digiprove_HTTP::post($postText, DPRV_HOST, "/secure/service.asmx/", "RegisterUser");
+
+		$pos = strpos($data, "Error:");
+		if ($pos === false)
+		{
+			$pos = strpos($data, "<?xml ");
+			$pos2 = strpos($data, "<digiprove_register_user_response>", $pos); 
+			$pos3 = strpos($data, "</digiprove_register_user_response>", $pos2+34);
+			$return_table = self::parseResponse(substr($data,$pos2+34,$pos3-$pos2-34));
+
+			//$log->lwrite("Returning successfully from dprv_register_user, response = " . substr($data,$pos2+34,$pos3-$pos2-34));
+			return $return_table;
+		}
+		$error_message = $data;
+		return false;
+	}
+
+	static public function update_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs,$dprv_renew_api_key)
+	{
+		global $wp_version, $dprv_blog_host, $dprv_wp_host;
+		$log = new DPLog();
+		$log->lwrite("update_user starts"); 
+
+		if ($dprv_user_id == "") return __('Please input your Digiprove User ID','dprv_cp');
+		if ($dprv_api_key == null || $dprv_api_key == "")
+		{
+			if ($dprv_password == "") return __('No password or API key', 'dprv_cp');
+			if (strlen($dprv_password) < 6) return __('Password must be at least 6 characters', 'dprv_cp');
+		}
+
+		$postText = "<digiprove_update_user>";
+		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
+		$postText .= "<user_id>" . $dprv_user_id . "</user_id>";
+		$postText .= '<domain_name>' . $dprv_blog_host . '</domain_name>';
+		if ($dprv_blog_host != $dprv_wp_host)
+		{
+			$postText .= '<alt_domain_name>' . $dprv_wp_host . '</alt_domain_name>';
+		}
+
+		$dprv_api_key = trim(get_option('dprv_api_key'));
+		if ($dprv_api_key != null && $dprv_api_key != "" && $dprv_renew_api_key != "on")
+		{
+			$postText .= '<api_key>' . $dprv_api_key . '</api_key>';
+		}
+		else
+		{
+			$postText .= '<password>' . htmlspecialchars(stripslashes($dprv_password), ENT_QUOTES, 'UTF-8') . '</password>';  // encode password if necessary
+			$postText .= '<request_api_key>Yes</request_api_key>';
+		}
+		
+		$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
+		$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary if using SOAP
+		$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary if using SOAP
+		if ($dprv_display_name == "Yes")
+		{
+			$postText .= '<display_name>Yes</display_name>';
+		}
+		else
+		{
+			$postText .= '<display_name>No</display_name>';
+		}
+		if ($dprv_email_certs == "No")
+		{
+			$postText .= '<email_certs>No</email_certs>';
+		}
+		else
+		{
+			$postText .= '<email_certs>Yes</email_certs>';
+		}
+		$dprv_event = get_option('dprv_event');
+		if ($dprv_event !== false && $dprv_event != "")
+		{
+			$postText .= "<dprv_event>" . trim(htmlspecialchars($dprv_event)) . "</dprv_event>";
+			update_option('dprv_event', '');								// Clear it down
+		}
+
+		$postText .= '</digiprove_update_user>';
+
+		$log->lwrite("xml string = " . $postText);
+		$data = Digiprove_HTTP::post($postText, DPRV_HOST, "/secure/service.asmx/", "UpdateUser");
+
+		$pos = strpos($data, "Error:");
+		if ($pos === false)
+		{
+			// NOTE that the API seems to return <digiprove_register_user_response> instead of more logical <digiprove_update_user_response>
+			$log->lwrite("Returning successfully from dprv_update_user");
+		}
+		return $data;
+	}
+
+	// This function gets the latest subscription information for a user
+	// $error_message               a string - indirect reference - will contain error message if something went wrong
+	// $credentials                 an object containing EITHER "user_id" and "password" properties (with optional "domain_name"),
+	//													 OR "user_id", "domain_name", and "api_key" properties (recommended).  "alt_domain_name" property is optional. 
+	//                              indirect reference - on successful return, will also contain up to date "subscription_type" and "subscription_expiry_date" properties (also included in the return array);
+	//                              if "api_key" was not supplied but "domain_name" was, or if $dprv_renew_api_key was set to "on", a new api key will be generated on the server and will be returned as a 
+	//                              property of credentials and in the return array
+	//			
+	// $dprv_renew_api_key          Optional = a boolean if this is set to true, a new api key will be generated to replace any previous one for the given domain and returned
+	// $user_agent                  Optional = a string describing your software and its version e.g. "Bank Software 1.1" to aid in debugging etc.
+	//
+	// If parameters missing or in error, will return boolean false, while $error_message will contain the explanation
+	// Otherwise, returns an array:
+	// ["result_code"]				A string with values:
+	//              				'0' -   User registered OK
+	//								Other value - user was not registered (see ['result'] for explanation
+	// ['result']					a string containing description of result (e.g. "Success", "User not found")
+	// ['subscription_type']		Will only exist if result code was '0': a string containing the subscription type (at present will always be "Basic")
+	// ['subscription_expiry']		Will only exist if result code was '0': a string containing the subscription expiry date (or '' if subscription type is Basic)
+	// ['api_key']					Will only exist if $dprv_renew_api_key was set to true OR no api_key was supplied but domain_name was
+
+	static public function get_user(&$error_message, &$credentials, $dprv_renew_api_key, $user_agent)
+	{
+		//global $wp_version, $dprv_blog_host, $dprv_wp_host;
+		$log = new DPLog();  
+		$log->lwrite("get_user starts");
+		$error_message = "";
+		$cred_check = self::check_Credentials($credentials);
+		if ($cred_check !== true)
+		{
+			$error_message = $cred_check;
+			return false;
+		}
+
+		$postText = "<digiprove_sync_user>";
+		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Digiprove SDK ' . DPRV_SDK_VERSION;
+		if ($user_agent != "")
+		{
+			$postText .= ' / ' . $user_agent;
+		}
+		$postText .= '</user_agent>';
+		$postText .= "<user_id>" . trim($credentials['user_id']) . "</user_id>";
+		$postText .= '<domain_name>' . trim($credentials['domain_name']) . '</domain_name>';
+		if (isset($credentials['alt_domain_name']) && trim($credentials['alt_domain_name']) != "")
+		{
+			$postText .= '<alt_domain_name>' .  trim($credentials['alt_domain_name']) . '</alt_domain_name>';
+		}
+
+		//$dprv_api_key = get_option('dprv_api_key');
+		if (isset($credentials['api_key']) && trim($credentials['api_key']) != "")  // && $dprv_renew_api_key != "on")
+		{
+			$postText .= '<api_key>' . trim($credentials['api_key']) . '</api_key>';
+		}
+		else
+		{
+			$postText .= '<password>' . htmlspecialchars(stripslashes($credentials['password'], ENT_QUOTES, 'UTF-8')) . '</password>';  // encode password if necessary
+		}
+		if ($dprv_renew_api_key == true)
+		{
+			$postText .= '<request_api_key>Yes</request_api_key>';
+		}
+		if (isset($credentials['dprv_event']) && trim($credentials['dprv_event']) != "")
+		{
+			$postText .= "<dprv_event>" . trim(htmlspecialchars($credentials['dprv_event'])) . "</dprv_event>";
+		}
+
+		$postText .= '</digiprove_sync_user>';
+
+		$log->lwrite("xml string = " . $postText);
+		$data = Digiprove_HTTP::post($postText, DPRV_HOST, "/secure/service.asmx/", "SyncUser");
+
+		$pos = strpos($data, "Error:");
+		if ($pos === false)
+		{
+			$pos = strpos($data, "<?xml ");
+			$pos2 = strpos($data, "<sync_user_response>", $pos); 
+			$pos3 = strpos($data, "</sync_user_response>", $pos2+20);
+			$return_table = self::parseResponse(substr($data,$pos2+20,$pos3-$pos2-20));
+			//$log->lwrite("return_table = " . dprv_eval($return_table));
+			if (isset($return_table['api_key']) && trim($return_table['api_key']) != "")
+			{
+				$credentials['api_key'] = trim($return_table['api_key']);
+			}
+			$log->lwrite("Returning successfully from Digiprove::get_user");
+			return $return_table;
+		}
+		$error_message = $data;
+		return false;
+	}
+
+	static private function check_Credentials($credentials)
+	{
+		if (!isset($credentials['user_id']) || trim($credentials['user_id']) == "") return __('Please specify a Digiprove user id','dprv_cp');
+		if (!isset($credentials['api_key']) || trim($credentials['api_key']) == "")
+		{
+			if (!isset($credentials['password']) || trim($credentials['password']) == "") return __('No password or API key', 'dprv_cp');
+			if (strlen($credentials['password']) < 6) return __('Password must be at least 6 characters', 'dprv_cp');
+		}
+		return true;
+	}
+
+
 }
 
 class DPLog
