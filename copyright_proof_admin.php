@@ -7,8 +7,8 @@ function dprv_settings_menu()	// Runs after the basic admin panel menu structure
 function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - include js file
 {
 	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs;
-	$log = new DPLog();  
-	$log->lwrite("dprv_admin_head starts");
+	//$log = new DPLog();  
+	//$log->lwrite("dprv_admin_head starts");
 
 	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
 	$posDot = strrpos($script_name,'.');
@@ -19,7 +19,7 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 
 	if ($script_name != "post" && $script_name != "page" && $script_name != "post-new" && $script_name != "page-new" && ($script_name != "options-general" || strpos($_SERVER['QUERY_STRING'], "copyright_proof_admin.php") === false))
 	{
-		$log->lwrite("dprv_admin_head returning early, no need for license or other info");
+		//$log->lwrite("dprv_admin_head returning early, no need for license or other info");
 		return;
 	}
 	dprv_populate_licenses();
@@ -28,12 +28,19 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 
 function dprv_settings()		// Run when Digiprove selected from Settings menu
 {		
-	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $wpdb, $dprv_mime_types;
+	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $wpdb, $dprv_mime_types, $wp_version, $dprv_blog_host;
 	$log = new DPLog();  
 	$log->lwrite("dprv_settings starting");
 
 	$message = "";
 	$result_message="";
+
+	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+	$posDot = strrpos($script_name,'.');
+	if ($posDot != false)
+	{
+		$script_name = substr($script_name, 0, $posDot);
+	}
 
 	// Populate variables and record default values if necessary
 	$dprv_subscription_type = get_option('dprv_subscription_type');
@@ -41,18 +48,23 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 	// STUFF FOR BASIC TAB (PERSONAL DETAILS):
 	$user_info = get_userdata(1);
+	if ($user_info == false)
+	{
+		$user_info = wp_get_current_user();
+	}
 	$dprv_email_address = get_option('dprv_email_address');
 	if ($dprv_email_address == false)
 	{
-		$dprv_email_address = $user_info->user_email;
+		$dprv_email_address = trim($user_info->user_email);
 	}
+	$dprv_email_address = trim($dprv_email_address);
 	$dprv_first_name = get_option('dprv_first_name');
-	if ($dprv_first_name == false)
+	if ($dprv_first_name === false)	// Note empty string == false but !== false
 	{
 		$dprv_first_name = $user_info->first_name;
 	}
 	$dprv_last_name = get_option('dprv_last_name');
-	if ($dprv_last_name == false)
+	if ($dprv_last_name ===	false)	// Note empty string == false but !== false
 	{
 		$dprv_last_name = $user_info->last_name;
 	}
@@ -86,7 +98,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	{
 		$dprv_user_id = $dprv_email_address;
 	}
-	$dprv_api_key = get_option('dprv_api_key');
+	$dprv_user_id = trim($dprv_user_id);
+	$dprv_api_key = trim(get_option('dprv_api_key'));
 	$dprv_password = get_option('dprv_password');			// This is retained simply to know if a password is still on record (affects some help text)
 	// TODO - Check if the variable below is required
 	$dprv_pw_confirm = $dprv_password;
@@ -171,7 +184,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 	// STUFF FOR CONTENT TAB:
 	$dprv_post_types = get_option('dprv_post_types');
-	if ($dprv_post_types == false)
+	if ($dprv_post_types === false)
 	{
 		$dprv_post_types = 'post,page';
 	}
@@ -187,6 +200,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	if ($dprv_outside_media == false || $dprv_subscription_type == "Basic")
 	{
 		$dprv_outside_media = 'NoOutside';
+	}
+
+	$dprv_featured_images = get_option('dprv_featured_images');
+	if ($dprv_featured_images == false || $dprv_subscription_type == "Basic")
+	{
+		$dprv_featured_images = 'No';
 	}
 
 
@@ -262,11 +281,26 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_custom_license_caption = $_POST['dprv_custom_license_caption'];
 		$dprv_custom_license_abstract = $_POST['dprv_custom_license_abstract'];
 		$dprv_custom_license_url = $_POST['dprv_custom_license_url'];
+
+					
+		// Populate parameters for a Digiprove:: function (if required):
+		$dprv_credentials = array("user_id" => $dprv_user_id, "password" => $dprv_password, "api_key" => $dprv_api_key, "domain_name" => $dprv_blog_host);
+		if ($dprv_blog_host != $dprv_wp_host)
+		{
+			$dprv_credentials['alt_domain_name'] = $dprv_wp_host;
+		}
+		$dprv_event = get_option('dprv_event');
+		if ($dprv_event !== false && $dprv_event != "")
+		{
+			$dprv_credentials['dprv_event'] = $dprv_event;
+		}
+		$user_agent = "Copyright Proof " . DPRV_VERSION . " / Wordpress " . $wp_version . " / " . $script_name;
+
 		switch ($dprv_action)
 		{
 			case "ResendEmail":
 			{
-				$log->lwrite("about to call dprv_resend_activation_email");
+				//$log->lwrite("about to call dprv_resend_activation_email");
 				$dprv_resend_response = dprv_resend_activation_email($dprv_user_id, $dprv_email_address);
 				$pos = stripos($dprv_resend_response, "<result_code>0");
 				if ($pos === false)
@@ -296,37 +330,45 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			}
 			case "SyncUser":
 			{
-				$log->lwrite("about to call dprv_sync_user");
-				$dprv_sync_response = dprv_sync_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_renew_api_key);
-
-				$pos = stripos($dprv_sync_response, "<result_code>0");
-				if ($pos === false)
+				$error_message = "";
+				$dprv_renew_api_key_bool = false;
+				if ($dprv_renew_api_key == "on")
 				{
-					$failure_message = dprv_getTag($dprv_sync_response,"result");
-					if ($failure_message == false)
-					{
-						$failure_message = $dprv_sync_response;
-					}
-					$result_message = __('Did not refresh subscription data:', 'dprv_cp') . ' '  . htmlentities($failure_message, ENT_QUOTES, 'UTF-8');
-					$log->lwrite("Sync user failed, response:");
-					$log->lwrite($dprv_sync_response);
+					$dprv_renew_api_key_bool = true;
+				}
+				$dprv_sync_response = Digiprove::get_user($error_message, $dprv_credentials, $dprv_renew_api_key_bool, $user_agent);
+
+				if ($dprv_sync_response === false)
+				{
+					$result_message = __('Did not refresh subscription data:', 'dprv_cp') . ' '  . htmlentities($error_message, ENT_QUOTES, 'UTF-8');
+					$log->lwrite("Get user failed, response: " . $error_message);
 				}
 				else
 				{
-					$result_message = __("Subscription information refreshed OK", "dprv");
-					$dprv_subscription_type = dprv_getTag($dprv_sync_response, "subscription_type");
-					if ($dprv_subscription_type != null && $dprv_subscription_type != false && $dprv_subscription_type != "")
+					update_option('dprv_event', '');
+					if (trim($dprv_sync_response['result_code']) == '0')
 					{
-						update_option('dprv_subscription_type', $dprv_subscription_type);
-						$dprv_subscription_expiry = dprv_getTag($dprv_sync_response, "subscription_expiry");
-						if ($dprv_subscription_expiry != null && $dprv_subscription_expiry != false && $dprv_subscription_expiry != "")
+						$result_message = __("Subscription information refreshed OK", "dprv_cp");
+						$dprv_subscription_type = $dprv_sync_response["subscription_type"];
+						if ($dprv_subscription_type != null && $dprv_subscription_type != false && $dprv_subscription_type != "")
 						{
-							update_option('dprv_subscription_expiry', $dprv_subscription_expiry);
+							update_option('dprv_subscription_type', $dprv_subscription_type);
+							$dprv_subscription_expiry = $dprv_sync_response["subscription_expiry"];
+							if ($dprv_subscription_expiry != null && $dprv_subscription_expiry != false && $dprv_subscription_expiry != "")
+							{
+								update_option('dprv_subscription_expiry', $dprv_subscription_expiry);
+							}
+							else
+							{
+								update_option('dprv_subscription_expiry', '');
+							}
 						}
-						else
-						{
-							update_option('dprv_subscription_expiry', '');
-						}
+					}
+					else
+					{
+						$result_message = "<font color='orangered'>" . __("Synchronisation did not complete:", "dprv_cp") . " " . htmlentities($dprv_sync_response['result'], ENT_QUOTES, 'UTF-8') . "</font>";
+						$log->lwrite("Synchronisation failed, response: " . $dprv_sync_response['result']);
+
 					}
 				}
 
@@ -337,29 +379,30 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 			case "ClearHTMLTags":
 			{
-				$log->lwrite("about to clear dprv_html_tags");
+				//$log->lwrite("about to clear dprv_html_tags");
 				$dprv_html_tags = set_default_html_tags();
 				foreach ($dprv_html_tags as $key=>$value)
 				{
-					$log->lwrite("key=$key");
-					$log->lwrite("value=$value");
+					//$log->lwrite("key=$key");
+					//$log->lwrite("value=$value");
 					$dprv_html_tags[$key]["selected"] = "False";
 				}
-
+				$dprv_featured_images = "No";
 				$result_message = __('Content settings cleared', 'dprv_cp');
 				break;
 			}
 			case "DefaultHTMLTags":
 			{
-				$log->lwrite("about to reset dprv_html_tags to default values");
+				//$log->lwrite("about to reset dprv_html_tags to default values");
 				$dprv_html_tags = set_default_html_tags();
+				$dprv_featured_images = "Yes";
 				$result_message = __('Content settings reset to default', 'dprv_cp');
 				break;
 			}
 
 			case "UpdateLicense":
 			{
-				$log->lwrite("about to update license " . $_POST['dprv_license']); 
+				//$log->lwrite("about to update license " . $_POST['dprv_license']); 
 				$dbquery = 'SELECT * FROM ' . get_option('dprv_prefix') . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
 				$license_info = $wpdb->get_row($dbquery, ARRAY_A);
 				if (!empty ($license_info))
@@ -378,7 +421,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			}
 			case "AddLicense":
 			{
-				$log->lwrite("about to add license " . $dprv_custom_license);
+				//$log->lwrite("about to add license " . $dprv_custom_license);
 
 				$dprv_licenses = get_option('dprv_prefix') . "dprv_licenses";
 				$rows_affected = $wpdb->insert($dprv_licenses, array('license_type'=>$dprv_custom_license, 'license_caption'=>$dprv_custom_license_caption, 'license_abstract'=>$dprv_custom_license_abstract, 'license_url'=>$dprv_custom_license_url));
@@ -390,10 +433,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			}
 			case "RemoveLicense":
 			{
-				$log->lwrite("about to remove license " .  $_POST['dprv_license']);
-				//$wpdb->show_errors();
+				//$log->lwrite("about to remove license " .  $_POST['dprv_license']);
 				$dbquery = 'DELETE FROM ' . get_option('dprv_prefix') . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
-				//$dbquery = 'DELETE FROM ' . $wpdb->prefix . 'dprv_licenses WHERE id = ' .  $_POST['dprv_license'];
 				$wpdb->query($dbquery);
 				if ($_POST['dprv_license'] == get_option('dprv_license'))
 				{
@@ -416,10 +457,10 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 				// Problem here - if invalid settings, error message is displayed but contents of $__POST is lost
 				$result_message = dprv_ValidateRegistration();
-				$log->lwrite("result_message=$result_message");
 				if ($result_message == "")
 				{
 					$log->lwrite("dprv_settings continuing");
+
 					$dprv_update_user = false;
 					
 					// NOTE: Need to check if set each field as some may be disabled
@@ -427,18 +468,19 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					// PERSONAL DETAILS:
 					if (isset($_POST['dprv_email_address']) && $_POST['dprv_email_address'] != get_option('dprv_email_address'))
 					{
-						update_option('dprv_email_address',$_POST['dprv_email_address']);
-						$dprv_email_address = $_POST['dprv_email_address'];
+						$dprv_email_address = trim($_POST['dprv_email_address']);
+						update_option('dprv_email_address', $dprv_email_address);
 						$dprv_update_user = true;
 					}
 
-					if (isset($_POST['dprv_first_name']) && $_POST['dprv_first_name'] != get_option('dprv_first_name'))
+
+					if (isset($_POST['dprv_first_name']) && $_POST['dprv_first_name'] !== get_option('dprv_first_name'))
 					{
 						update_option('dprv_first_name',$_POST['dprv_first_name']);
 						$dprv_first_name = $_POST['dprv_first_name'];
 						$dprv_update_user = true;
 					}
-					if (isset($_POST['dprv_last_name']) && $_POST['dprv_last_name'] != get_option('dprv_last_name'))
+					if (isset($_POST['dprv_last_name']) && $_POST['dprv_last_name'] !== get_option('dprv_last_name'))
 					{
 						update_option('dprv_last_name',$_POST['dprv_last_name']);
 						$dprv_last_name = $_POST['dprv_last_name'];
@@ -470,14 +512,17 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					}
 					if (isset($_POST['dprv_user_id']) && $dprv_user_id != $_POST['dprv_user_id'])   // Change of User Id?
 					{
-						$dprv_user_id = $_POST['dprv_user_id'];
+						//$dprv_user_id = $_POST['dprv_user_id'];
+						$dprv_user_id = trim($_POST['dprv_user_id']);
+						$dprv_credentials['user_id'] = $dprv_user_id;
 						$dprv_update_user = true;
 						//update_option('dprv_user_id',$_POST['dprv_user_id']);		// Do later if synchronisation or registration successful
 					}
 					if (isset($_POST['dprv_api_key']))
 					{
-						$dprv_api_key = $_POST['dprv_api_key'];
-						update_option('dprv_api_key',$_POST['dprv_api_key']);
+						$dprv_api_key = trim($_POST['dprv_api_key']);
+						$dprv_credentials['api_key'] = $dprv_api_key;
+						update_option('dprv_api_key', $dprv_api_key);
 					}
 					if (isset($_POST['dprv_renew_api_key']) && $_POST['dprv_renew_api_key'] == "on")
 					{
@@ -487,6 +532,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					if (isset($_POST['dprv_password']) && $_POST['dprv_password'] != "")
 					{
 						$dprv_password = $_POST['dprv_password'];
+						$dprv_credentials['password'] = $dprv_password;
 					}
 					if (isset($_POST['dprv_pw_confirm']) && $_POST['dprv_pw_confirm'] != "")
 					{
@@ -597,15 +643,16 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 							}
 						}
 					}
+					
 					if ($new_post_types != "")
 					{
 						if (substr($new_post_types, strlen($new_post_types)-1) == ",")
 						{
 							$new_post_types = substr($new_post_types,0,strlen($new_post_types)-1);
 						}
-						$dprv_post_types = $new_post_types;
-						update_option('dprv_post_types', $dprv_post_types);
 					}
+					$dprv_post_types = $new_post_types;
+					update_option('dprv_post_types', $dprv_post_types);
 
 					//  key = tag, value = array("selected"=>True/False, "incl_excl"=>Include/Exclude,	"notag" or "tag....tag": True/False)
 					foreach ($dprv_html_tags as $tag=>$value)
@@ -657,6 +704,17 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 						$dprv_outside_media = $_POST['dprv_outside_media'];
 						update_option('dprv_outside_media',$_POST['dprv_outside_media']);
 					}
+
+					if (isset($_POST['dprv_featured_images']) && $_POST['dprv_featured_images'] == "on")
+					{
+						$dprv_featured_images = "Yes";
+					}
+					else
+					{
+						$dprv_featured_images = "No";
+					}
+					update_option('dprv_featured_images', $dprv_featured_images);
+					
 
 					// LICENSE TAB INFO:
 					if (isset($_POST['dprv_license']))
@@ -724,49 +782,59 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					$log->lwrite("dprv_enrolled = $dprv_enrolled, dprv_register_option = $dprv_register_option");
 					if ($dprv_enrolled == "No" && $dprv_register_option == "Yes")
 					{
-						$register_response = dprv_register_user($dprv_user_id, $dprv_password, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs, $dprv_can_contact);
-						$pos = stripos($register_response, "<result_code>0");
-						if ($pos === false)
+						$error_message = "";
+						$dprv_display_name_bool = false;
+						if ($dprv_display_name == "Yes")
 						{
-							$failure_message = dprv_getTag($register_response,"result");
-							if ($failure_message == false)
-							{
-								$failure_message = $register_response;
-							}
-							$result_message = "<font color='orangered'>" . __("Registration did not complete:", "dprv_cp") . " " . htmlentities($failure_message, ENT_QUOTES, 'UTF-8');
-							if (strpos($failure_message, "already registered") === false)
-							{
-								$result_message .= ", " . __("please try later", "dprv_cp");
-							}
+							$dprv_display_name_bool = true;
+						}
+						$dprv_email_certs_bool = true;
+						if ($dprv_email_certs == "No")
+						{
+							$dprv_email_certs_bool = false;
+						}
+						$register_response = Digiprove::register_user($error_message, $dprv_credentials, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name_bool, $dprv_email_certs_bool, $dprv_can_contact, $user_agent);
+						if ($register_response == false)
+						{
+							$result_message = "<font color='orangered'>" . __("Registration did not complete:", "dprv_cp") . " " . htmlentities($error_message, ENT_QUOTES, 'UTF-8');
 							$result_message .= "</font>";
-							$log->lwrite("Registration failed, response:");
-							$log->lwrite($register_response);
+							$log->lwrite("Registration failed, response: " . $error_message);
 						}
 						else
 						{
-							$result_message = __('Digiprove user registration was successful, check your email for the activation link', 'dprv_cp');
-							if ($dprv_user_id != get_option('dprv_user_id'))
+							update_option('dprv_event', '');								// Clear down any outstanding event (which will have been reported just now)
+							if (trim($register_response['result_code']) == '0')
 							{
-								update_option('dprv_user_id', $dprv_user_id);
+								$result_message = __('Digiprove user registration was successful, check your email for the activation link', 'dprv_cp');
+
+								if ($dprv_user_id != get_option('dprv_user_id'))
+								{
+									update_option('dprv_user_id', $dprv_user_id);
+								}
+								$dprv_api_key = $register_response["api_key"];
+								update_option('dprv_api_key',$dprv_api_key);
+								update_option('dprv_enrolled',"Yes");
+								$dprv_subscription_type = $register_response["subscription_type"];
+								if ($dprv_subscription_type != null && $dprv_subscription_type != false && $dprv_subscription_type != "")
+								{
+									update_option('dprv_subscription_type', $dprv_subscription_type);
+								}
+								$dprv_enrolled = "Yes";
+								print('<script type="text/javascript">
+											//<![CDATA[
+											if(document.getElementById("dprv_reminder"))
+											{
+												document.getElementById("dprv_reminder").innerHTML = "";
+												document.getElementById("dprv_reminder").style.display = "none";
+											}
+											//]]>
+										</script>');
 							}
-							$dprv_api_key = dprv_getTag($register_response, "api_key");
-							update_option('dprv_api_key',$dprv_api_key);
-							update_option('dprv_enrolled',"Yes");
-							$dprv_subscription_type = dprv_getTag($register_response, "subscription_type");
-							if ($dprv_subscription_type != null && $dprv_subscription_type != false && $dprv_subscription_type != "")
+							else
 							{
-								update_option('dprv_subscription_type', $dprv_subscription_type);
+								$result_message = "<font color='orangered'>" . __("Registration did not complete:", "dprv_cp") . " " . htmlentities($register_response['result'], ENT_QUOTES, 'UTF-8') . "</font>";
+								$log->lwrite("Registration failed, response: " . $register_response['result']);
 							}
-							$dprv_enrolled = "Yes";
-							print('<script type="text/javascript">
-										//<![CDATA[
-										if(document.getElementById("dprv_reminder"))
-										{
-											document.getElementById("dprv_reminder").innerHTML = "";
-											document.getElementById("dprv_reminder").style.display = "none";
-										}
-										//]]>
-									</script>');
 						}
 					}
 					else
@@ -802,7 +870,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 								// If a new user id was valid but the domain or api key was not, let the user id stick
 								if ($dprv_user_id != get_option('dprv_user_id') && strpos($failure_message, "invalid domain or API key") !== false)
 								{
-									update_option('dprv_user_id',$_POST['dprv_user_id']);
+									update_option('dprv_user_id', trim($_POST['dprv_user_id']));
 								}
 								$result_message = __('Server synchronisation did not complete:', 'dprv_cp') . ' '  . htmlentities($failure_message, ENT_QUOTES, 'UTF-8');
 								$log->lwrite("Update failed, response:");
@@ -813,7 +881,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 								// If a new user id was input, make it stick
 								if ($dprv_user_id != get_option('dprv_user_id'))
 								{
-									update_option('dprv_user_id',$_POST['dprv_user_id']);
+									update_option('dprv_user_id', trim($_POST['dprv_user_id']));
 								}
 
 								$result_message = __('Server data has also been synchronised', 'dprv_cp');
@@ -863,7 +931,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					$message = "<font color='orangered'>" . __("Digiprove Settings not Updated.", 'dprv_cp') . "</font>";
 
 					// Refresh variables with Postback values (if given) so that error value is shown:
-					$dprv_email_address = $_POST['dprv_email_address'];
+					//$dprv_email_address = $_POST['dprv_email_address'];
+					$dprv_email_address = trim($_POST['dprv_email_address']);
 					$dprv_first_name = $_POST['dprv_first_name'];
 					$dprv_last_name = $_POST['dprv_last_name'];
 					$dprv_display_name = $_POST['dprv_display_name'];
@@ -880,11 +949,11 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					}
 					if (isset($_POST['dprv_user_id']))
 					{
-						$dprv_user_id = $_POST['dprv_user_id'];
+						$dprv_user_id = trim($_POST['dprv_user_id']);
 					}
 					if (isset($_POST['dprv_api_key']))
 					{
-						$dprv_api_key = $_POST['dprv_api_key'];
+						$dprv_api_key = trim($_POST['dprv_api_key']);
 					}
 					$dprv_renew_api_key = "off";
 					if (isset($_POST['dprv_renew_api_key']) && $_POST['dprv_renew_api_key'] == "on")
@@ -918,7 +987,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					{
 						if (strpos($key, "dprv_post_type_") !== false)
 						{
-							$log->lwrite($key . " is set to " . $value);
+							//$log->lwrite($key . " is set to " . $value);
 							if ($value == "on")
 							{
 								$new_post_types .= substr($key, 15) . ",";
@@ -931,8 +1000,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 						{
 							$new_post_types = substr($new_post_types,0,strlen($new_post_types)-1);
 						}
-						$dprv_post_types = $new_post_types;
+						//$dprv_post_types = $new_post_types;
 					}
+					$dprv_post_types = $new_post_types;
 
 					
 					foreach ($dprv_html_tags as $tag=>$value)
@@ -981,6 +1051,20 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 					$dprv_outside_media = $_POST['dprv_outside_media'];
 
+					$dprv_featured_images = "No";
+					if (isset($_POST['dprv_featured_images']))
+					{
+						if ($_POST['dprv_featured_images'] == "on")
+						{
+							$dprv_featured_images = "Yes";
+						}
+						else
+						{
+							$dprv_featured_images = "No";
+						}
+					}
+
+
 					if (isset($_POST['dprv_footer']) && $_POST['dprv_footer'] =="on")
 					{
 						$dprv_footer = "Yes";
@@ -999,7 +1083,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					}
 
 					$dprv_license = $_POST['dprv_license'];
-					$log->lwrite("dprv_license=".$dprv_license);
+					//$log->lwrite("dprv_license=".$dprv_license);
 					$dprv_custom_license = $_POST['dprv_custom_license'];
 					$dprv_custom_license_caption = $_POST['dprv_custom_license_caption'];
 					$dprv_custom_license_abstract = $_POST['dprv_custom_license_abstract'];
@@ -1061,7 +1145,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				&&
 				$registration_error == false
 				&&
-				(strpos($dprv_last_result, __('Digiprove certificate id', 'dprv_cp')) !== false || strpos($dprv_last_result, "User already activated") !== false || strpos($dprv_last_result, __('Server data has also been synchronised', 'dprv_cp')) !== false || strpos($dprv_last_result, __("Subscription information refreshed OK", "dprv")) !== false)
+				(strpos($dprv_last_result, __('Digiprove certificate id', 'dprv_cp')) !== false || strpos($dprv_last_result, "User already activated") !== false || strpos($dprv_last_result, __('Server data has also been synchronised', 'dprv_cp')) !== false || strpos($dprv_last_result, __("Subscription information refreshed OK", "dprv_cp")) !== false)
 			)
 		)
 	{
@@ -1268,6 +1352,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_not_outside_media_selected = '';
 	}
 
+	$dprv_featured_images_checked = '';
+	if ($dprv_featured_images == 'Yes')
+	{
+		$dprv_featured_images_checked = ' checked = "checked"';
+	}
+
 	// LICENSE TAB:
 	$dprv_all_rights_selected = ' selected="selected"';
 	$dprv_some_rights__selected = '';
@@ -1285,7 +1375,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_html_integrity_no_checked = '';
 		$dprv_html_integrity_yes_checked = ' checked="checked"';
 	}
-	$log->lwrite('dprv_html_integrity=' . $dprv_html_integrity);
+	//$log->lwrite('dprv_html_integrity=' . $dprv_html_integrity);
 	$dprv_files_integrity_yes_checked = '';
 	$dprv_files_integrity_no_checked = ' checked="checked"';
 	if ($dprv_files_integrity == 'Yes')
@@ -1327,7 +1417,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_subscription_expired = "Yes";
 	}
 	$dprv_days_to_expiry = floor((strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') - time())/86400);
-	$log->lwrite("dprv_days_to_expiry = " . $dprv_days_to_expiry);
+	//$log->lwrite("dprv_days_to_expiry = " . $dprv_days_to_expiry);
 
 	// Default Values
 	$subscription_enabled_se = ' onclick="return false" onchange="this.selectedIndex=0;"';
@@ -1377,7 +1467,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 	print('
 			<div class="wrap">
-				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="' . WP_PLUGIN_URL. '/digiproveblog/digiprove_logo_278x69.png" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2>  
+				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="' . plugins_url("Digiprove_logo_2013_298x81.png", __FILE__ ) .'" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2>  
 				<form id="dprv_cp" name="dprv_AnyOldThing" action="'.get_bloginfo('wpurl').'/wp-admin/options-general.php?page=copyright_proof_admin.php" method="post" onsubmit="return SubmitSelected();">
 					<input type="hidden" name="dprv_cp_action" value="dprv_cp_update_settings" />
 						<fieldset class="options">
@@ -1800,6 +1890,11 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														<td></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
+													<tr id="Certify`featured images" ' . $sub_enabled_title . $sub_enabled_onclick . '>
+														<td><em>' . __('Featured Images:', 'dprv_cp') . '</em></td>
+														<td><input id="dprv_featured_images" name="dprv_featured_images"' . $subscription_enabled_cb . ' style="' . $sub_enabled_style . '" type="checkbox" ' . $dprv_featured_images_checked . '/></td><td></td>
+													</tr>
+													<tr><td style="height:6px"></td></tr>
 													<tr><td colspan="3" align="right"><input class="button" type="button" onclick="clear_html_tags();" value="' . __('Clear all', 'dprv_cp') . '"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input class="button" type="button" onclick="default_html_tags();" value="' . __('Reset to default values', 'dprv_cp') . '"/></td></tr>
 													<tr><td style="height:6px"></td></tr>
 												</table>
@@ -1970,11 +2065,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				</form>' );
 
 	
-	//$jsfile = WP_PLUGIN_URL . '/digiproveblog/jscolor.js?v='.DPRV_VERSION;
 	$jsfile = plugins_url("jscolor.js", __FILE__ ) . '?v=' . DPRV_VERSION;
 	print('<script type="text/javascript" src="' . $jsfile . '"></script>');
 
-	//$jsfile = WP_PLUGIN_URL . '/digiproveblog/copyright_proof_settings.js?v='.DPRV_VERSION;
 	$jsfile = plugins_url("copyright_proof_settings.js", __FILE__ ) . "?v=" . DPRV_VERSION;
 	print('<script type="text/javascript" src="' . $jsfile . '"></script>');
 	$creative_hyperlink = "<a href=\"http://www.digiprove.com/creative-and-copyright.aspx\" target=\"_blank\">";
@@ -2194,11 +2287,11 @@ function dprv_ValidateRegistration()
 		// Check User Id
 		if (isset($_POST['dprv_user_id']))
 		{
-			if (strlen($_POST['dprv_user_id']) < 1)
+			if (strlen(trim($_POST['dprv_user_id'])) < 1)
 			{
 				return __('You must specify a User Id', 'dprv_cp');
 			}
-			if (strlen($_POST['dprv_user_id']) > 40)
+			if (strlen(trim($_POST['dprv_user_id'])) > 40)
 			{
 				return __('Sorry, User Id cannot exceed 40 characters', 'dprv_cp');
 			}
@@ -2211,18 +2304,18 @@ function dprv_ValidateRegistration()
 		// Check password(s)
 		if (isset($_POST['dprv_password']))
 		{
-			if (isset($_POST['dprv_pw_confirm']))
+			if (isset($_POST['dprv_pw_confirm']) && $_POST['dprv_pw_confirm'] == $_POST['dprv_password'])
 			{
-				if ($_POST['dprv_pw_confirm'] == $_POST['dprv_password'])
+				if (strlen($_POST['dprv_password']) < 6)
 				{
-					if (strlen($_POST['dprv_password']) < 6)
-					{
-						return __('Password must be at least 6 characters', 'dprv_cp');
-					}
-					return "";
+					return __('Password must be at least 6 characters', 'dprv_cp');
 				}
+				//return "";
 			}
-			return __('Password values do not match', 'dprv_cp');
+			else
+			{
+				return __('Password values do not match', 'dprv_cp');
+			}
 		}
 		else
 		{
@@ -2255,91 +2348,37 @@ function checkEmail($email)
 {
 	if(is_email($email))
 	{
-		list($username,$domain)=split('@',$email);
-		if(!checkdnsrr($domain,'MX'))
+		$email_elements = explode('@', $email);
+		if ($email_elements == false || count($email_elements) <2)
 		{
 			return __("Invalid email address", "dprv_cp");
+		}
+		$domain = end($email_elements);
+		if ($domain == false)
+		{
+			return __("Invalid email address", "dprv_cp");
+		}
+
+		$domain = trim($domain);
+		if ($domain == "")
+		{
+			return __("Invalid email address", "dprv_cp");
+		}
+/*
+		if (substr($domain, strlen($domain)-1) != ".")
+		{
+			$domain .= ".";	// strict interpretation of FQDN should end with .
+		}
+*/
+		if (function_exists("checkdnsrr") && !checkdnsrr($domain, 'MX'))
+		{
+			return sprintf(__("Invalid email - %s not configured to receive email", "dprv_cp"), $domain);
 		}
 		return "";
 	}
 	return __("Invalid email address format", "dprv_cp");
 }
 
-function dprv_register_user($dprv_user_id, $dprv_password, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name,$dprv_email_certs, $dprv_can_contact)
-{
-	global $wp_version, $dprv_blog_host;
-	$log = new DPLog();  
-	$log->lwrite("register_user starts");  
-	
-	if ($dprv_user_id == "") return __('Please specify a desired Digiprove user id','dprv_cp');
-	if ($dprv_password == "") return __('You need to input a password', 'dprv_cp');
-	if (strlen($dprv_password) < 6) return __('Password must be at least 6 characters', 'dprv_cp');
-	if ($dprv_email_address == "") return __('Please input your email address (to which the activation link will be sent)', 'dprv_cp');
-	if ($dprv_first_name == "" && $dprv_last_name == "") return __('You need to complete either first or last name', 'dprv_cp');
-
-	if (trim($dprv_blog_host) == "")
-	{
-		return __('Cannot find the URL of your blog - please check Wordpress Settings (General)', 'dprv_cp');
-	}
-
-	$postText = "<digiprove_register_user>";
-	$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
-	$postText .= "<user_id>" . $dprv_user_id . "</user_id>";
-	$postText .= '<password>' . htmlspecialchars(stripslashes($dprv_password), ENT_QUOTES, 'UTF-8') . '</password>';  // encode password if necessary
-	$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
-	$postText .= '<domain_name>' . $dprv_blog_host . '</domain_name>';
-	$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary if using SOAP
-	$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary if using SOAP
-	if ($dprv_display_name == "Yes")
-	{
-		$postText .= '<display_name>Yes</display_name>';
-	}
-	else
-	{
-		$postText .= '<display_name>No</display_name>';
-	}
-	if ($dprv_email_certs == "No")
-	{
-		$postText .= '<email_certs>No</email_certs>';
-	}
-	else
-	{
-		$postText .= '<email_certs>Yes</email_certs>';
-	}
-	if (isset($dprv_can_contact))
-	{
-		$postText .= '<can_contact>';
-		if ($dprv_can_contact == true)
-		{
-			$postText .= 'Yes';
-		}
-		else
-		{
-			$postText .= 'No';
-		}
-		$postText .= '</can_contact>';
-	}
-    $postText .= '<subscription_plan>' . 'Basic' . '</subscription_plan>';
-	$dprv_event = get_option('dprv_event');
-	if ($dprv_event !== false && $dprv_event != "")
-	{
-		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
-		update_option('dprv_event', '');								// Clear it down
-	}
-	$postText .= '</digiprove_register_user>';
-	$log->lwrite("xml string = " . $postText);
-
-	//TODO try soap_post first, and on exception use http_post
-	//$data = dprv_soap_post($postText, "RegisterUser");
-	$data = Digiprove_HTTP::post($postText, DPRV_HOST, "/secure/service.asmx/", "RegisterUser");
-
-	$pos = strpos($data, "Error:");
-	if ($pos === false)
-	{
-		$log->lwrite("Returning successfully from dprv_register_user");
-	}
-	return $data;  // return;
-}
 function dprv_update_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs,$dprv_renew_api_key)
 {
 	global $wp_version, $dprv_blog_host, $dprv_wp_host;
@@ -2362,7 +2401,7 @@ function dprv_update_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_em
 		$postText .= '<alt_domain_name>' . $dprv_wp_host . '</alt_domain_name>';
 	}
 
-	$dprv_api_key = get_option('dprv_api_key');
+	$dprv_api_key = trim(get_option('dprv_api_key'));
 	if ($dprv_api_key != null && $dprv_api_key != "" && $dprv_renew_api_key != "on")
 	{
 		$postText .= '<api_key>' . $dprv_api_key . '</api_key>';
@@ -2395,7 +2434,7 @@ function dprv_update_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_em
 	$dprv_event = get_option('dprv_event');
 	if ($dprv_event !== false && $dprv_event != "")
 	{
-		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
+		$postText .= "<dprv_event>" . trim(htmlspecialchars($dprv_event)) . "</dprv_event>";
 		update_option('dprv_event', '');								// Clear it down
 	}
 
@@ -2410,58 +2449,6 @@ function dprv_update_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_em
 		$log->lwrite("Returning successfully from dprv_update_user");
 	}
 	return $data;
-}
-
-function dprv_sync_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_renew_api_key)
-{
-	global $wp_version, $dprv_blog_host, $dprv_wp_host;
-	$log = new DPLog();  
-	$log->lwrite("sync_user starts");  
-	if ($dprv_user_id == "") return __('Please input your Digiprove User ID','dprv_cp');
-	if ($dprv_api_key == null || $dprv_api_key == "")
-	{
-		if ($dprv_password == "") return __('No password or API key', 'dprv_cp');
-		if (strlen($dprv_password) < 6) return __('Password must be at least 6 characters', 'dprv_cp');;
-	}
-
-	$postText = "<digiprove_sync_user>";
-	$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
-	$postText .= "<user_id>" . $dprv_user_id . "</user_id>";
-	$postText .= '<domain_name>' . $dprv_blog_host . '</domain_name>';
-	if ($dprv_blog_host != $dprv_wp_host)
-	{
-		$postText .= '<alt_domain_name>' . $dprv_wp_host . '</alt_domain_name>';
-	}
-
-	//$dprv_api_key = get_option('dprv_api_key');
-	if ($dprv_api_key != null && $dprv_api_key != "" && $dprv_renew_api_key != "on")
-	{
-		$postText .= '<api_key>' . $dprv_api_key . '</api_key>';
-	}
-	else
-	{
-		$postText .= '<password>' . htmlspecialchars(stripslashes($dprv_password), ENT_QUOTES, 'UTF-8') . '</password>';  // encode password if necessary
-		$postText .= '<request_api_key>Yes</request_api_key>';
-	}
-
-	$dprv_event = get_option('dprv_event');
-	if ($dprv_event !== false && $dprv_event != "")
-	{
-		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
-		update_option('dprv_event', '');								// Clear it down
-	}
-
-	$postText .= '</digiprove_sync_user>';
-
-	$log->lwrite("xml string = " . $postText);
-	$data = Digiprove_HTTP::post($postText, DPRV_HOST, "/secure/service.asmx/", "SyncUser");
-
-	$pos = strpos($data, "Error:");
-	if ($pos === false)
-	{
-		$log->lwrite("Returning successfully from dprv_sync_user");
-	}
-	return $data;  // return;
 }
 
 
@@ -2484,7 +2471,9 @@ function dprv_resend_activation_email($dprv_user_id, $dprv_email_address)
 					return "Cannot determine user id or email address";
 				}
 			}
+			$dprv_email_address = trim($dprv_email_address);
 		}
+		$dprv_user_id = trim($dprv_user_id);
 	}
 	$postText = '<send_activation_email>';
 	$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
@@ -2493,12 +2482,11 @@ function dprv_resend_activation_email($dprv_user_id, $dprv_email_address)
 	$dprv_event = get_option('dprv_event');
 	if ($dprv_event !== false && $dprv_event != "")
 	{
-		$postText .= "<dprv_event>" . $dprv_event . "</dprv_event>";
+		$postText .= "<dprv_event>" . trim(htmlspecialchars($dprv_event)) . "</dprv_event>";
 		update_option('dprv_event', '');								// Clear it down
 	}
 	$postText .= '</send_activation_email>';
 
-	//$log->lwrite("xml string = " . $postText);
 	$data = Digiprove_HTTP::post($postText, DPRV_HOST, "/secure/service.asmx/", "RequestActivationEmail");
 
 	$pos = strpos($data, "Error");

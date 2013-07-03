@@ -145,9 +145,9 @@ class Digiprove_HTTP
 						$e_message .=  "Communications error with " . $http_host . ": " . $errno . "/" . $errstr;
 					}
 				}
-				if ($dprv_last_error != "")
+				if ($dprv_last_error != "")	// will have been set in error handler
 				{
-					$e_message .= " PHP error " . $dprv_last_error;
+					//$e_message .= " PHP error " . $dprv_last_error;  This just adds to length of message 
 				}
 				$log->lwrite($e_message);
 				return $e_message;
