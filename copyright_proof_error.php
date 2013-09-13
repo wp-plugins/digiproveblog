@@ -11,9 +11,9 @@ class dprvErrors
 	// Below function not used?
 	//function set_handler()
 	//{
-	//	set_error_handler(array("dprvErrors", "catch_error"));
+	//	set_error_handler(array("dprvErrors", "dprv_catch_error"));
 	//}
-	static public function catch_error($errno, $errstr, $errfile, $errline)
+	static public function dprv_catch_error($errno, $errstr, $errfile, $errline)
 	{
 	 	// Note this function can be triggered twice by a single problem e.g. fsockopen dns error generates 2 (seems to try twice)
 		$log = new DPLog();  

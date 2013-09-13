@@ -43,7 +43,8 @@ class Digiprove_HTTP
 			$errno = -1;
 			$errstr = "Unknown";
 
-			if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr, 10) ) ) 
+			//if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr, 10) ) ) 
+			if( false != ( $fs = @fsockopen($http_host, $dprv_port, $errno, $errstr) ) )	// Use default timeout value
 			{                 
 				if ($errno == 0)
 				{

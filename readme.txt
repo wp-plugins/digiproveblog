@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.5.2
-Stable tag: 2.15
+Tested up to: 3.6.1
+Stable tag: 2.16
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -114,9 +114,24 @@ level.  However you can influence some aspects of the appearance using CSS style
 
 Check your user id first; if that is correct, there is a problem with the API key and/or domain. Each API key is associated with a domain (e.g. myinterestingblog.com, or www.myinterestingblog.com).
 On initial installation, Copyright Proof will automatically assign one to you using the domain name recorded in the Wordpress "General" settings of your blog. If you change this domain name, or you
-want to set up the plugin to run in another blog, you can request a new api key for the new domain. The quickest way to do this is to go to Copyright Proof Settings page and tick the box entitled
-"Obtain new API key automatically" and press "Update Settings" (you will be asked for your password).  Note that multiple domains under one user id is only permissible to subscribers.  Free users
-are limited to one domain.
+want to set up the plugin to run in another blog, you can request a new api key for the new domain, as follows:
+
+CHANGE of domain name:
+- Log in at https://www.digiprove.com/secure/login.aspx
+- Go to Preferences, Issue/Renew API keys
+- Remove the existing api key (which will be for your old domain)
+- Request a new api key (use new domain name e.g. example.com)
+- Copy the new api key
+- In Wordpress, go to Settings, Copyright Proof
+- tick the box "Let me input a new API key"
+- Paste the new API key
+- Press Update Settings
+
+ADDITIONAL domain name:
+In Wordpress, go to Settings, Copyright Proof
+- Tick the box entitled "Obtain new API key automatically" and press "Update Settings" (you will be asked for your password).
+- Note that multiple domains under one user id is only permissible to subscribers.  Free users are limited to one domain. 
+
 
 = I get an error message: "daily limit of API requests exceeded - please upgrade Digiprove account" =
 
@@ -140,6 +155,21 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 2.16 =
+* New option to specify whether submitted or generated posts (e.g. via xmlrpc) are to be Digiproved
+* Uses default timeout value for http connection to improve connectivity for some installations
+* Settings page now includes a link to members' area at digiprove.com
+* Fixed bug involving redeclared function in certain circumstances
+* Changed naming conventions to further reduce risk of clash with other plugins and themes
+* Fixed bug where Update button can disappear in settings menu after license maintenance
+* Specifies UTF-8 character encoding in upgrade form - prevents warnings
+* Improved handling of SQL errors
+* Logs time taken to perform MySQL instruction in case of an SQL error
+* Better handling of malformed URLs and bookmarks when parsing for media files
+* Resolved minor error not returning content after a hook function in certain circumstances
+* Resolved minor error showing incorrect value of footer option in certain circumstances
+
 = 2.15 =
 * Now you can see in Post or Page lists a new column indicating whether the page/post has been Digiproved already
 * Number of media files that can be Digiproved within a single post raised to 10 for Personal users (was 5)

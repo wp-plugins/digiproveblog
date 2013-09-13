@@ -172,7 +172,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	$dprv_footer = get_option('dprv_footer');
 	if ($dprv_footer == false)
 	{
-		$dprv__footer = 'No';
+		$dprv_footer = 'No';
 	}
 
 	$dprv_multi_post = get_option('dprv_multi_post');
@@ -187,6 +187,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	if ($dprv_post_types === false)
 	{
 		$dprv_post_types = 'post,page';
+	}
+
+	$dprv_auto_posts = get_option('dprv_auto_posts');
+	if ($dprv_auto_posts == false)
+	{
+		$dprv_auto_posts = 'No';
 	}
 
 	$dprv_html_tags = get_option('dprv_html_tags');
@@ -380,7 +386,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			case "ClearHTMLTags":
 			{
 				//$log->lwrite("about to clear dprv_html_tags");
-				$dprv_html_tags = set_default_html_tags();
+				$dprv_html_tags = dprv_set_default_html_tags();
 				foreach ($dprv_html_tags as $key=>$value)
 				{
 					//$log->lwrite("key=$key");
@@ -394,7 +400,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			case "DefaultHTMLTags":
 			{
 				//$log->lwrite("about to reset dprv_html_tags to default values");
-				$dprv_html_tags = set_default_html_tags();
+				$dprv_html_tags = dprv_set_default_html_tags();
 				$dprv_featured_images = "Yes";
 				$result_message = __('Content settings reset to default', 'dprv_cp');
 				break;
@@ -653,6 +659,16 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					}
 					$dprv_post_types = $new_post_types;
 					update_option('dprv_post_types', $dprv_post_types);
+
+					if (isset($_POST['dprv_auto_posts']) && $_POST['dprv_auto_posts'] =="on")
+					{
+						$dprv_auto_posts = "Yes";
+					}
+					else
+					{
+						$dprv_auto_posts = "No";
+					}
+					update_option('dprv_auto_posts', $dprv_auto_posts);
 
 					//  key = tag, value = array("selected"=>True/False, "incl_excl"=>Include/Exclude,	"notag" or "tag....tag": True/False)
 					foreach ($dprv_html_tags as $tag=>$value)
@@ -1004,6 +1020,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					}
 					$dprv_post_types = $new_post_types;
 
+					if (isset($_POST['dprv_auto_posts']) && $_POST['dprv_auto_posts'] =="on")
+					{
+						$dprv_auto_posts = "Yes";
+					}
+					else
+					{
+						$dprv_auto_posts = "No";
+					}
+
 					
 					foreach ($dprv_html_tags as $tag=>$value)
 					{
@@ -1343,6 +1368,11 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$hash_supported = 'No';
 	}
 
+	$dprv_auto_posts_checked = '';
+	if ($dprv_auto_posts == 'Yes')
+	{
+		$dprv_auto_posts_checked = ' checked="checked"';
+	}
 
 	$dprv_outside_media_selected = '';
 	$dprv_not_outside_media_selected = ' selected="selected"';
@@ -1424,13 +1454,13 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	$subscription_enabled_tb = ' onclick="return false"';
 	$subscription_enabled_cb = ' onclick="return false" onchange="this.checked = false;"';
 	$sub_enabled_title = ' title="This option is available to current subscribers only"';
-	$sub_enabled_onclick = ' onclick="SubscribersOnly(this.id);"';
+	$sub_enabled_onclick = ' onclick="dprv_SubscribersOnly(this.id);"';
 	$sub_enabled_color = ' style="color:#CCCCCC;"';
 	$sub_enabled_style = 'color:#CCCCCC;';
 	$sub_bg_style = ' style="background-color:#CCCCCC;"';
 	$premium_enabled_cb = ' onclick="return false" onchange="this.selectedIndex=0;"';
 	$prem_enabled_title = ' title="This option is available to premium subscribers only"';
-	$prem_enabled_onclick = ' onclick="PremiumOnly(this.id);"';
+	$prem_enabled_onclick = ' onclick="dprv_PremiumOnly(this.id);"';
 	$prem_enabled_style = 'color:#CCCCCC;';
 
 	if ($dprv_subscription_type == "Basic" || $dprv_subscription_type == "" || $dprv_subscription_expired == "Yes")
@@ -1467,8 +1497,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 	print('
 			<div class="wrap">
-				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="' . plugins_url("Digiprove_logo_2013_298x81.png", __FILE__ ) .'" alt="Digiprove"/></a><span style="vertical-align:22px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2>  
-				<form id="dprv_cp" name="dprv_AnyOldThing" action="'.get_bloginfo('wpurl').'/wp-admin/options-general.php?page=copyright_proof_admin.php" method="post" onsubmit="return SubmitSelected();">
+				<h2 style="vertical-align:8px;"><a href="http://www.digiprove.com"><img src="' . plugins_url("Digiprove_logo_2013_298x81.png", __FILE__ ) .'" alt="Digiprove"/></a><span style="vertical-align:36px; padding-left:40px">'.__('Copyright Proof Settings', 'dprv_cp').'</span></h2>  
+				<form id="dprv_cp" name="dprv_AnyOldThing" action="'.get_bloginfo('wpurl').'/wp-admin/options-general.php?page=copyright_proof_admin.php" method="post" onsubmit="return dprv_SubmitSelected();">
 					<input type="hidden" name="dprv_cp_action" value="dprv_cp_update_settings" />
 						<fieldset class="options">
 							<div class="option">
@@ -1478,11 +1508,11 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 											<td colspan="2">
 												<table cellpadding="0" cellspacing="0" border="0" style="width:796px">
 													<tr>
-														<td id="BasicTab" style="height:30px; width:120px; border:1px solid #666666;border-top-right-radius: 5px; border-bottom:0px; background-color:#EEFFEE; cursor:pointer" align="center" onclick="DisplayBasic()"><em>' . __('Basic', 'dprv_cp') . '</em></td>
-														<td id="AdvancedTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#EEEEFF; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayAdvanced()"' . $dprv_tab_title . '><em>' . __('Advanced', 'dprv_cp') . '</em></td>
-														<td id="ContentTab" style="height:30px; width:160px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#CCEEDD; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayContentTab()"' . $dprv_tab_title . '><em>' . __('Certifying Content', 'dprv_cp') . '</em></td>
-														<td id="LicenseTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#FFFFDD; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayLicenseTab()"' . $dprv_tab_title . '><em>' . __('License', 'dprv_cp') . '</em></td>
-														<td id="CopyProtectTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#FFEEEE; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="DisplayCopyProtect()"' . $dprv_tab_title . '><em>' . __('Copy Protect', 'dprv_cp') . '</em></td>
+														<td id="BasicTab" style="height:30px; width:120px; border:1px solid #666666;border-top-right-radius: 5px; border-bottom:0px; background-color:#EEFFEE; cursor:pointer" align="center" onclick="dprv_DisplayBasic()"><em>' . __('Basic', 'dprv_cp') . '</em></td>
+														<td id="AdvancedTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#EEEEFF; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="dprv_DisplayAdvanced()"' . $dprv_tab_title . '><em>' . __('Advanced', 'dprv_cp') . '</em></td>
+														<td id="ContentTab" style="height:30px; width:160px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#CCEEDD; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="dprv_DisplayContentTab()"' . $dprv_tab_title . '><em>' . __('Certifying Content', 'dprv_cp') . '</em></td>
+														<td id="LicenseTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#FFFFDD; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="dprv_DisplayLicenseTab()"' . $dprv_tab_title . '><em>' . __('License', 'dprv_cp') . '</em></td>
+														<td id="CopyProtectTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#FFEEEE; cursor:pointer' . $dprv_tabs_enabled . '" align="center" onclick="dprv_DisplayCopyProtect()"' . $dprv_tab_title . '><em>' . __('Copy Protect', 'dprv_cp') . '</em></td>
 														<td style="border:0px; border-bottom:1px solid #666666;"></td>
 													</tr>
 												</table>
@@ -1493,12 +1523,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 												<table cellpadding="0" cellspacing="0" border="0" style="padding-left:10px; padding-top:7px; padding-right:5px; background-color:#EEFFEE; border:1px solid #666666; border-top:0px; border-bottom:0px; width:796px">
 													<tr><td style="height:6px; width:235px"></td></tr>
 													<tr><td colspan="2"><b>' . __('Personal details and preferences', 'dprv_cp').'</b></td>
-														<td style="padding-left:5px" class="description" ><a href="javascript:ShowPersonalDetailsText()">' .__('How these details are used', 'dprv_cp') . '</a></td>
+														<td style="padding-left:5px" class="description" ><a href="javascript:dprv_ShowPersonalDetailsText()">' .__('How these details are used', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td>' . __('Email address', 'dprv_cp') . '</td>
-														<td style="width:340px"><input name="dprv_email_address" id="dprv_email_address" type="text" value="'.htmlspecialchars(stripslashes($dprv_email_address)).'" style="margin-left:0px;width:290px"/></td>
+														<td style="width:320px"><input name="dprv_email_address" id="dprv_email_address" type="text" value="'.htmlspecialchars(stripslashes($dprv_email_address)).'" style="margin-left:0px;width:290px"/></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
@@ -1513,11 +1543,11 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td>' . __('Display user name:', 'dprv_cp') . '</td>
-														<td><select name="dprv_display_name" style="margin-left:0px;width:300px" onchange="DisplayNameChanged(this);">
+														<td><select name="dprv_display_name" style="margin-left:0px;width:300px" onchange="dprv_DisplayNameChanged(this);">
 																<option value="Yes"' . $dprv_display_name_selected . '>' . __('Yes, display my name', 'dprv_cp') . '</option>
 																<option value="No"' . $dprv_no_display_name_selected . '>' . __('No, keep my name private', 'dprv_cp') . '</option>
 															</select></td>
-														<td style="padding-left:5px" class="description" ><a href="javascript:ShowPrivacyText()">' .__('Note on privacy', 'dprv_cp') . '</a></td>
+														<td style="padding-left:5px" class="description" ><a href="javascript:dprv_ShowPrivacyText()">' .__('Note on privacy', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr id="Email_Digiprove_Certificates"' .  $sub_enabled_title . $sub_enabled_onclick . '>
@@ -1526,7 +1556,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 																<option value="No"' . $dprv_no_email_certs_selected . '>' . __('No, don\'t bother me with emails', 'dprv_cp') . '</option>
 																<option value="Yes"' . $dprv_email_certs_selected . '>' . __('Yes, send my Digiprove certs by email', 'dprv_cp') . '</option>
 															</select></td>
-														<td style="padding-left:5px" class="description" ><a href="javascript:ShowEmailCertText()">' .__('Note on certificates', 'dprv_cp') . '</a></td>
+														<td style="padding-left:5px" class="description" ><a href="javascript:dprv_ShowEmailCertText()">' .__('Note on certificates', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 												</table>
@@ -1538,25 +1568,25 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px; width:235px"></td></tr>
 													<tr style="height:30px;">
 														<td style="font-weight:bold">' . __('Digiprove registration details', 'dprv_cp').'</td>
-														<td style="width:340px"><input type="button" class="button" id="dprv_change_reg" value="' . __('Let me change Registration Info', 'dprv_cp') . '" onclick="return EnableRegistrationInputs()" style="margin-left:0px;display:' . $dprv_reg_button_display . '"/></td>
-														<td style="padding-top:0px; padding-bottom:0px" class="submit" ><input type="button" id="dprv_resend_activation" name="dprv_resend_activation" onclick="ResendEmail();" value="' . __('Re-send activation email', 'dprv_cp') . '" /></td>
+														<td style="width:320px"><input type="button" class="button" id="dprv_change_reg" value="' . __('Let me change Registration Info', 'dprv_cp') . '" onclick="return dprv_EnableRegistrationInputs()" style="margin-left:0px;display:' . $dprv_reg_button_display . '"/></td>
+														<td style="padding-top:0px; padding-bottom:0px" class="submit" ><input type="button" id="dprv_resend_activation" name="dprv_resend_activation" onclick="dprv_ResendEmail();" value="' . __('Re-send activation email', 'dprv_cp') . '" /></td>
 													</tr>
 													<tr><td style="height:10px"></td></tr>
 													<tr>
 														<td>' . __('Registered Digiprove user?:', 'dprv_cp') . '</td>
-														<td><select name="dprv_enrolled" id="dprv_enrolled" onchange="toggleCredentials()" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '>
+														<td><select name="dprv_enrolled" id="dprv_enrolled" onchange="dprv_toggleCredentials()" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '>
 																<option value="Yes" ' . $dprv_enrolled_selected . '>' . __('I am already registered with Digiprove', 'dprv_cp') . '</option>
 																<option value="No" ' . $dprv_not_enrolled_selected . '>' . __('I have not yet registered with Digiprove', 'dprv_cp') . '</option>
 															</select>
 														</td>
-														<td style="padding-left:5px" class="description"><a href="javascript:ShowRegistrationText()">' .__('What&#39;s this about?', 'dprv_cp') . '</a></td>
+														<td style="padding-left:5px" class="description"><a href="javascript:dprv_ShowRegistrationText()">' .__('What&#39;s this about?', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr id="dprv_register_row0" ' . $dprv_display_register_row . '><td style="height:6px"></td></tr>
 													<tr id="dprv_register_row1" ' . $dprv_display_register_row . '>
 														<td>' . __('Do you want to register now?:', 'dprv_cp') . '</td>
-														<td><input type="radio" name="dprv_register" id="dprv_register_yes" onclick="toggleCredentials()" value="Yes" ' . $dprv_register_now_checked . $dprv_reg_disabled . '/>' . __('Yes, register me now', 'dprv_cp') . '&nbsp;&nbsp;&nbsp;
-															<input type="radio" name="dprv_register" id="dprv_register_no" onclick="toggleCredentials()" value="No" ' . $dprv_register_later_checked . $dprv_reg_disabled . '/>' . __('No, do it later', 'dprv_cp') . '</td>
-															<td style="padding-left:5px" class="description" ><a href="javascript:ShowTermsOfUseText()">' .__('Terms of use.', 'dprv_cp') . '</a></td>
+														<td><input type="radio" name="dprv_register" id="dprv_register_yes" onclick="dprv_toggleCredentials()" value="Yes" ' . $dprv_register_now_checked . $dprv_reg_disabled . '/>' . __('Yes, register me now', 'dprv_cp') . '&nbsp;&nbsp;&nbsp;
+															<input type="radio" name="dprv_register" id="dprv_register_no" onclick="dprv_toggleCredentials()" value="No" ' . $dprv_register_later_checked . $dprv_reg_disabled . '/>' . __('No, do it later', 'dprv_cp') . '</td>
+															<td style="padding-left:5px" class="description" ><a href="javascript:dprv_ShowTermsOfUseText()">' .__('Terms of use.', 'dprv_cp') . '</a></td>
 													</tr>');
 											if ($dprv_subscription_type != '')
 											{
@@ -1567,11 +1597,11 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 															{
 																print(' (' . sprintf(__('valid until %s', 'dprv_cp'), $dprv_subscription_expiry) . ')');
 															}
-												print('		&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:SyncUser();" style="vertical-align:-3px;width:16px;height:16px"><img src="' . plugins_url("Refresh-16.png", __FILE__ ) . '" alt=""></a></td>
-															<td style="padding-left:5px"><a class="button" href="' . $dprv_upgrade_link . '&amp;Action=Upgrade" target="_blank" style="font-weight:bold">' . __('Upgrade', 'dprv_cp') . '</a>');
+												print('		&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:dprv_SyncUser();" style="vertical-align:-3px;width:16px;height:16px"><img src="' . plugins_url("Refresh-16.png", __FILE__ ) . '" alt=""></a></td>
+															<td style="padding-left:5px"><a class="button" href="https://' . DPRV_WWW . '/secure/login.aspx" target="_blank" style="font-size:10px;font-weight:bold">' . __('Login', 'dprv_cp') . '</a> / <a class="button" href="' . $dprv_upgrade_link . '&amp;Action=Upgrade" target="_blank" style="font-size:10px;font-weight:bold">' . __('Upgrade', 'dprv_cp') . '</a>');
 															if ($dprv_subscription_type != "Basic" && $dprv_days_to_expiry < 15)
 															{
-																print(' / <a class="button" href="' . $dprv_upgrade_link . '&amp;Action=Renew" target="_blank" style="font-weight:bold">' . __('Renew', 'dprv_cp') . '</a>');
+																print(' / <a class="button" href="' . $dprv_upgrade_link . '&amp;Action=Renew" target="_blank" style="font-size:10px;font-weight:bold">' . __('Renew', 'dprv_cp') . '</a>');
 															}
 												print('		</td>
 														</tr>');
@@ -1579,19 +1609,19 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 											print('	<tr><td style="height:6px"></td></tr>
 													<tr id="dprv_user_id_row1">
 														<td style="vertical-align:top"><label for="dprv_user_id" id="dprv_user_id_labelA">'.__('Digiprove User Id:', 'dprv_cp').'</label><label for="dprv_user_id" id="dprv_user_id_labelB" style="display:none">'.__('Desired Digiprove User Id:', 'dprv_cp').'</label></td>
-														<td><input name="dprv_user_id" id="dprv_user_id" type="text" autocomplete="off" value="'.htmlspecialchars(stripslashes($dprv_user_id)).'" onblur="javascript:ScheduleRestorePassword()" onchange="return UserIdChanged();" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
+														<td><input name="dprv_user_id" id="dprv_user_id" type="text" autocomplete="off" value="'.htmlspecialchars(stripslashes($dprv_user_id)).'" onblur="javascript:dprv_ScheduleRestorePassword()" onchange="return dprv_UserIdChanged();" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
 														<td class="description" id="dprv_email_warning"></td>
 													</tr>
 													<tr id="dprv_user_id_row2"><td style="height:6px"></td></tr>
 													<tr id="dprv_api_key_row_0"' . $dprv_display_api_rows . '>
 														<td style="vertical-align:top"><label for="dprv_api_key" id="dprv_api_key_label" title="' . sprintf(__('Digiprove API key for %s', 'dprv_cp'), $dprv_blog_host) .'">' . __(' Digiprove API Key:', 'dprv_cp').'</label></td>
-														<td><input type="checkbox" id="dprv_renew_api_key" name="dprv_renew_api_key" onclick="renewApiKey()" ' . $dprv_renew_api_key_checked . $dprv_reg_disabled . '/><label for="dprv_renew_api_key">&nbsp;' . $obtain_api_caption . '</label></td>
-														<td style="padding-left:5px" class="description" ><a href="javascript:ShowAPIText(\'' . $dprv_blog_host. '\',\'' . $dprv_password_on_record . '\')">' .__('What&#39;s this?', 'dprv_cp') . '</a></td>
+														<td><input type="checkbox" id="dprv_renew_api_key" name="dprv_renew_api_key" onclick="dprv_renewApiKey()" ' . $dprv_renew_api_key_checked . $dprv_reg_disabled . '/><label for="dprv_renew_api_key">&nbsp;' . $obtain_api_caption . '</label></td>
+														<td style="padding-left:5px" class="description" ><a href="javascript:dprv_ShowAPIText(\'' . $dprv_blog_host. '\',\'' . $dprv_password_on_record . '\')">' .__('What&#39;s this?', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr id="dprv_api_key_row_1"' . $dprv_display_api_rows . '>
 														<td></td>
-														<td><input type="checkbox" id="dprv_input_api_key" name="dprv_input_api_key" title="' . sprintf(__('Select this option only if you already have obtained a Digiprove API key for %s', 'dprv_cp'), $dprv_blog_host) . '" onclick="inputApiKey()" ' . $dprv_input_api_key_checked . $dprv_reg_disabled . '/><label for="dprv_input_api_key">&nbsp;' . $input_api_caption . '</label></td>
-														<td style="padding-left:5px" class="description" ><a href="javascript:ShowAPIFaqText(\'' . $dprv_blog_host. '\',\'' . $dprv_password_on_record . '\')">' .__('More about API keys', 'dprv_cp') . '</a></td>
+														<td><input type="checkbox" id="dprv_input_api_key" name="dprv_input_api_key" title="' . sprintf(__('Select this option only if you already have obtained a Digiprove API key for %s', 'dprv_cp'), $dprv_blog_host) . '" onclick="dprv_inputApiKey()" ' . $dprv_input_api_key_checked . $dprv_reg_disabled . '/><label for="dprv_input_api_key">&nbsp;' . $input_api_caption . '</label></td>
+														<td style="padding-left:5px" class="description" ><a href="javascript:dprv_ShowAPIFaqText(\'' . $dprv_blog_host. '\',\'' . $dprv_password_on_record . '\')">' .__('More about API keys', 'dprv_cp') . '</a></td>
 
 													</tr>
 													<tr id="dprv_api_key_row_2"' . $dprv_display_api_row2 . '>
@@ -1601,8 +1631,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													</tr>
 													<tr id="dprv_password_row1"' . $dprv_display_password_rows . '>
 														<td><label for="dprv_password" id="dprv_password_label">'.__('Select a password:', 'dprv_cp').'</label></td>
-														<td><input name="dprv_password" id="dprv_password" type="password" value="'.htmlspecialchars(stripslashes($dprv_password)).'" onchange="javascript:SavePassword()" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
-														<td style="padding-left:5px" class="description" ><a href="javascript:ShowPasswordText()">' .__('Security note', 'dprv_cp') . '</a></td>
+														<td><input name="dprv_password" id="dprv_password" type="password" value="'.htmlspecialchars(stripslashes($dprv_password)).'" onchange="javascript:dprv_SavePassword()" style="margin-left:0px;width:290px"' . $dprv_reg_disabled . '/></td>
+														<td style="padding-left:5px" class="description" ><a href="javascript:dprv_ShowPasswordText()">' .__('Security note', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr id="dprv_password_row2"' . $dprv_display_password_rows . '><td style="height:6px"></td></tr>
 													<tr id="dprv_password_row3"' . $dprv_display_password_rows . '>
@@ -1634,7 +1664,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td>' . __('Digiprove Notice Text:', 'dprv_cp') . '</td>
-														<td><select name="dprv_notice" id="dprv_notice" onchange="Preview()" style="width:290px">'
+														<td><select name="dprv_notice" id="dprv_notice" onchange="dprv_Preview()" style="width:290px">'
 																	. dprv_options_html(array(__("This content has been Digiproved", "dprv_cp"),
 																							__("This article has been Digiproved", "dprv_cp"),
 																							__("This blog post has been Digiproved", "dprv_cp"),
@@ -1655,7 +1685,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px"></td></tr>
 													<tr id="Custom_notice"' . $sub_enabled_title . $sub_enabled_onclick . '>
 														<td>' . __('Or create your own text:', 'dprv_cp') . '</td>
-														<td><input type="text" name="dprv_custom_notice" id="dprv_custom_notice"' . $subscription_enabled_tb . ' style="width:300px;' . $sub_enabled_style . '" onchange="createOwnText(this);"');
+														<td><input type="text" name="dprv_custom_notice" id="dprv_custom_notice"' . $subscription_enabled_tb . ' style="width:300px;' . $sub_enabled_style . '" onchange="dprv_createOwnText(this);"');
 														if ($currentMatch == 0)
 														{
 															print (' value="' . $dprv_notice . '"');
@@ -1666,7 +1696,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td>' . __('Include a copyright notice:', 'dprv_cp') . '</td>
-														<td><select name="dprv_c_notice" id="dprv_c_notice" onchange="Preview()" style="width:290px">
+														<td><select name="dprv_c_notice" id="dprv_c_notice" onchange="dprv_Preview()" style="width:290px">
 																<option value="DisplayAll"' . $dprv_c_all_selected . '>' . __('Display', 'dprv_cp') . '</option>
 																<option value="Display"' . $dprv_c_selected . '>' . __('Display but leave out my name', 'dprv_cp') . '</option>
 																<option value="NoDisplay"' . $dprv_no_c_selected . '>' . __('Do not display', 'dprv_cp') . '</option>
@@ -1676,9 +1706,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr>
 														<td>' . __('How big should it be:', 'dprv_cp') . '</td>
 														<td>
-															<input type="radio" name="dprv_notice_size" id="dprv_notice_medium" value="Medium" ' . $dprv_notice_medium_checked . ' onclick="Preview()"/>' . __('Medium', 'dprv_cp') . '&nbsp;&nbsp;&nbsp;
-															<input type="radio" name="dprv_notice_size" id="dprv_notice_small" value="Small" ' . $dprv_notice_small_checked . ' onclick="Preview()"/>' . __('Small', 'dprv_cp') . '&nbsp;&nbsp;&nbsp;&nbsp;
-															<input type="radio" name="dprv_notice_size" id="dprv_notice_smaller" value="Smaller" ' . $dprv_notice_smaller_checked . ' onclick="Preview()"/>' . __('Smaller', 'dprv_cp') . '
+															<input type="radio" name="dprv_notice_size" id="dprv_notice_medium" value="Medium" ' . $dprv_notice_medium_checked . ' onclick="dprv_Preview()"/>' . __('Medium', 'dprv_cp') . '&nbsp;&nbsp;&nbsp;
+															<input type="radio" name="dprv_notice_size" id="dprv_notice_small" value="Small" ' . $dprv_notice_small_checked . ' onclick="dprv_Preview()"/>' . __('Small', 'dprv_cp') . '&nbsp;&nbsp;&nbsp;&nbsp;
+															<input type="radio" name="dprv_notice_size" id="dprv_notice_smaller" value="Smaller" ' . $dprv_notice_smaller_checked . ' onclick="dprv_Preview()"/>' . __('Smaller', 'dprv_cp') . '
 														</td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
@@ -1693,15 +1723,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 																	<th align="left">' . __('Border', 'dprv_cp') . '</th>
 																</tr>
 																<tr>
-																	<td width="120" align="left"><input style="width:70px;" value="' . $dprv_notice_color . '" id="dprv_notice_color" name="dprv_notice_color" onchange="Preview()" /></td>
-																	<td width="120" align="left"><input style="width:70px;" value="' . $dprv_hover_color . '" id="dprv_hover_color" name="dprv_hover_color" onchange="Preview()" /></td>
-																	<td width="120" align="left"><input style="width:70px;"  value="' . $dprv_notice_background . '" id="dprv_notice_background" name="dprv_notice_background" onchange="setCheckboxes();Preview()" /></td>
-																	<td width="120" align="left"><input style="width:70px;background-color:' . $dprv_notice_border . '"  value="' . $dprv_notice_border . '" id="dprv_notice_border" name="dprv_notice_border" onchange="setCheckboxes();Preview()" /></td>
+																	<td width="120" align="left"><input style="width:70px;" value="' . $dprv_notice_color . '" id="dprv_notice_color" name="dprv_notice_color" onchange="dprv_Preview()" /></td>
+																	<td width="120" align="left"><input style="width:70px;" value="' . $dprv_hover_color . '" id="dprv_hover_color" name="dprv_hover_color" onchange="dprv_Preview()" /></td>
+																	<td width="120" align="left"><input style="width:70px;"  value="' . $dprv_notice_background . '" id="dprv_notice_background" name="dprv_notice_background" onchange="dprv_setCheckboxes();dprv_Preview()" /></td>
+																	<td width="120" align="left"><input style="width:70px;background-color:' . $dprv_notice_border . '"  value="' . $dprv_notice_border . '" id="dprv_notice_border" name="dprv_notice_border" onchange="dprv_setCheckboxes();dprv_Preview()" /></td>
 																</tr>
 																<tr>
 																	<td colspan="2"></td>
-																	<td  align="left" style="font-size:11px"><input type="checkbox" id="dprv_no_background" name="dprv_no_background" ' . $no_background_checktext . ' onclick="noBackgroundChanged(this);" />' . __('Transparent', 'dprv_cp') . '</td>
-																	<td  align="left" style="font-size:11px"><input type="checkbox" id="dprv_no_border" name="dprv_no_border" ' . $no_border_checktext . ' onclick="noBorderChanged(this);" />' . __('No Border', 'dprv_cp') . '</td>
+																	<td  align="left" style="font-size:11px"><input type="checkbox" id="dprv_no_background" name="dprv_no_background" ' . $no_background_checktext . ' onclick="dprv_noBackgroundChanged(this);" />' . __('Transparent', 'dprv_cp') . '</td>
+																	<td  align="left" style="font-size:11px"><input type="checkbox" id="dprv_no_border" name="dprv_no_border" ' . $no_border_checktext . ' onclick="dprv_noBorderChanged(this);" />' . __('No Border', 'dprv_cp') . '</td>
 																</tr>
 															</table>
 														</td>
@@ -1710,14 +1740,14 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr>
 														<td>' . __('Show notice on multi-post web-pages:&nbsp;&nbsp;', 'dprv_cp') . '</td>
 														<td><input type="checkbox" id="dprv_multi_post" name="dprv_multi_post" ' . $dprv_multi_post_checked . ' />
-														&nbsp;&nbsp;<a href="javascript:ShowMultiPostText()">' . __('Note - for search pages, archive pages etc.', 'dprv_cp') . '</a>
+														&nbsp;&nbsp;<a href="javascript:dprv_ShowMultiPostText()">' . __('Note - for search pages, archive pages etc.', 'dprv_cp') . '</a>
 														</td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td>' . __('Show generic Digiprove notice in footer:&nbsp;&nbsp;', 'dprv_cp') . '</td>
-														<td><input type="checkbox" id="dprv_footer" name="dprv_footer" ' . $dprv_footer_checked . ' onclick="ToggleFooterWarning()" />
-															&nbsp;&nbsp;<a id="footer_warning_link" href="javascript:ShowFooterText()">' . __('Note - appearance depends on theme', 'dprv_cp') . '</a></td>
+														<td><input type="checkbox" id="dprv_footer" name="dprv_footer" ' . $dprv_footer_checked . ' onclick="dprv_ToggleFooterWarning()" />
+															&nbsp;&nbsp;<a id="footer_warning_link" href="javascript:dprv_ShowFooterText()">' . __('Note - appearance depends on theme', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 												</table>
@@ -1732,7 +1762,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 									
 													<tr>
 														<td>' . __('How your content should be described:', 'dprv_cp') . '</td>
-														<td><input name="dprv_content_type" type="text" value="'.htmlspecialchars(stripslashes($dprv_content_type)).'" style="width:290px" onchange="Preview()" /><span class="description">' . __('e.g. &quot;Blog post&quot;, &quot;News article&quot;, &quot;Opinion&quot;', 'dprv_cp') . '</span></td>
+														<td><input name="dprv_content_type" type="text" value="'.htmlspecialchars(stripslashes($dprv_content_type)).'" style="width:290px" onchange="dprv_Preview()" /><span class="description">' . __('e.g. &quot;Blog post&quot;, &quot;News article&quot;, &quot;Opinion&quot;', 'dprv_cp') . '</span></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr>
@@ -1764,12 +1794,13 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 										</tr>
 										<tr id="Content" style="display:none">
 											<td colspan="2">
-												<table cellpadding="0" cellspacing="0" border="0" style="padding-left:10px; padding-top:7px; padding-right:5px; background-color:#CCEEDD; border:1px solid #666666; border-top:0px; border-bottom:0px; width:798px">
+												<table cellpadding="0" cellspacing="0" border="0" style="padding-left:10px; padding-top:7px; padding-right:5px; background-color:#CCEEDD; border:1px solid #666666; border-top:0px; width:798px">
 													<tr><td style="height:6px; width:200px"></td><td style="width:50px"></td><td style="width:530px"></td></tr>
 													<tr>
-														<td id="dprv_post_type_caption" colspan="3"><b><em>' . __('Select Post Types  to be Digiproved:', 'dprv_cp') . '</em></b></td>
+														<td id="dprv_post_type_caption" colspan="2"><b><em>' . __('Select Post Types  to be Digiproved:', 'dprv_cp') . '</em></b></td>
 													</tr>
 													<tr><td style="height:6px" colspan="3"></td></tr>');
+													$row_count = 0;
 													foreach ($dprv_eligible_post_types as $key => $value)
 													{
 														$type_checked = '';
@@ -1777,12 +1808,18 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														{
 															$type_checked = ' checked="checked"';
 														}
-														print('<tr><td style="padding-left:10px">' . $dprv_post_type_labels[$key] . '</td><td><input id="dprv_post_type_' . $key . '" name="dprv_post_type_' . $key . '" type="checkbox" ' . $type_checked . '/></td><td></td></tr>');
+														print('<tr><td style="padding-left:10px">' . $dprv_post_type_labels[$key] . '</td><td><input id="dprv_post_type_' . $key . '" name="dprv_post_type_' . $key . '" type="checkbox" ' . $type_checked . '/></td><td>');
+														if ($row_count == 0)
+														{
+															print ('&nbsp;&nbsp;Submitted &amp; Generated Posts & Pages <input id="dprv_auto_posts" name="dprv_auto_posts" type="checkbox"' . $dprv_auto_posts_checked . '/>&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:dprv_ShowAutoText()"><em>' . __('Explanation', 'dprv_cp') . '</em></a>');
+														}
+														print ('</td></tr>');
+														$row_count++;
 													}
 											print ('<tr><td style="height:6px" colspan="3"></td></tr>
 													<tr><td style="height:20px" colspan="3"><hr/></td></tr>
 													<tr>
-														<td colspan="3"><b><em>' . __('Individually fingerprint files used in your content:', 'dprv_cp') . '</em></b>&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:ShowFingerprintText(\''.$hash_supported . '\')"><em>' . __('What&#039;s this for?', 'dprv_cp') . '</em></a><div style="float:right"><a href="javascript:ShowBetaText()"><em>' . __('Note - Beta functionality', 'dprv_cp') . '</em></a>&nbsp;&nbsp;&nbsp;&nbsp;</div></td>
+														<td colspan="3"><b><em>' . __('Individually fingerprint files used in your content:', 'dprv_cp') . '</em></b>&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:dprv_ShowFingerprintText(\''.$hash_supported . '\')"><em>' . __('What&#039;s this for?', 'dprv_cp') . '</em></a><div style="float:right"><a href="javascript:dprv_ShowBetaText()"><em>' . __('Note - Beta functionality', 'dprv_cp') . '</em></a>&nbsp;&nbsp;&nbsp;&nbsp;</div></td>
 													</tr><tr><td style="height:12px" colspan="3"></td></tr>
 													<tr>
 														<td id="dprv_html_tags_caption" colspan="2"><em>' . __('Files referenced in HTML tags:', 'dprv_cp') . '</em></td>
@@ -1823,9 +1860,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														}
 														print ('<tr' .  $row_style_statement . $sub_enabled_title . $sub_enabled_onclick .'>
 																	<td style="padding-left:10px">' . htmlspecialchars($value["name"]) . '<span style="font-size:10px">&nbsp;' . $descriptor . '</span></td>
-																	<td><input id="dprv_html_tag_' . $key . '" name="dprv_html_tag_' . $key . '" type="checkbox"' . $type_checked . $sub_bg_style . ' onclick="return toggleMedia(this);"/></td>
+																	<td><input id="dprv_html_tag_' . $key . '" name="dprv_html_tag_' . $key . '" type="checkbox"' . $type_checked . $sub_bg_style . ' onclick="return dprv_toggleMedia(this);"/></td>
 																	<td' . $media_style_statement . ' id="dprv_html_tag_' . $key . '_ie_col">
-																		<select name="dprv_html_tag_' . $key . '_ie" style="width:70px" onchange="toggleInclExcl(this);">
+																		<select name="dprv_html_tag_' . $key . '_ie" style="width:70px" onchange="dprv_toggleInclExcl(this);">
 																			<option id="dprv_html_tag_' . $key . '_i" ' . $include_selected . ' value="Include">Include</option>
 																			<option id="dprv_html_tag_' . $key . '_e" ' . $exclude_selected . ' value="Exclude">Exclude</option>
 																		</select>');
@@ -1840,7 +1877,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 																$mime_style_modifier = '';
 																if ($tag_key == "All")
 																{
-																	$onclick=' onclick="toggleMimeTypes(this)"';
+																	$onclick=' onclick="dprv_toggleMimeTypes(this)"';
 																	if ($value["incl_excl"] == "Exclude")
 																	{
 																		$mime_style = ' style="visibility:hidden"';
@@ -1895,7 +1932,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														<td><input id="dprv_featured_images" name="dprv_featured_images"' . $subscription_enabled_cb . ' style="' . $sub_enabled_style . '" type="checkbox" ' . $dprv_featured_images_checked . '/></td><td></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
-													<tr><td colspan="3" align="right"><input class="button" type="button" onclick="clear_html_tags();" value="' . __('Clear all', 'dprv_cp') . '"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input class="button" type="button" onclick="default_html_tags();" value="' . __('Reset to default values', 'dprv_cp') . '"/></td></tr>
+													<tr><td colspan="3" align="right"><input class="button" type="button" onclick="dprv_clear_html_tags();" value="' . __('Clear all', 'dprv_cp') . '"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input class="button" type="button" onclick="dprv_default_html_tags();" value="' . __('Reset to default values', 'dprv_cp') . '"/></td></tr>
 													<tr><td style="height:6px"></td></tr>
 												</table>
 											</td>
@@ -1906,7 +1943,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px; width:280px"></td></tr>
 													<tr>
 														<td colspan="2" style="font-weight:bold; font-style:italic">' . __('Perform Data Integrity verification on your content', 'dprv_cp') . '</td>
-														<td class="description" ><a href="javascript:ShowDataIntegrityText()">' .__('Note', 'dprv_cp') . '</a></td>
+														<td class="description" ><a href="javascript:dprv_ShowDataIntegrityText()">' .__('Note', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px;"></td></tr>
 													<tr>
@@ -1922,7 +1959,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 															<input type="radio" name="dprv_files_integrity" id="dprv_files_integrity_yes" value="Yes" ' . $dprv_files_integrity_yes_checked . '/>&nbsp;' . __('Check Integrity of files used in your content', 'dprv_cp') . '<br/>
 															<input type="radio" name="dprv_files_integrity" id="dprv_files_integrity_no" value="No" ' . $dprv_files_integrity_no_checked . '/>&nbsp;' . __('Don&#39;t Check Integrity of files used in your content', 'dprv_cp') . '
 														</td>
-														<td><a href="javascript:FileIntegrityNote()">' . __('Important note', 'dprv_cp') . '</a></td>
+														<td><a href="javascript:dprv_FileIntegrityNote()">' . __('Important note', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 												</table>
@@ -1937,15 +1974,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px"></td></tr>
 													<tr>
 														<td id="dprv_license_type_caption">' . __('Select License Type:', 'dprv_cp') . '</td>
-														<td><select name="dprv_license" id="dprv_license" onchange="PreviewLicense()" style="width:300px">'
+														<td><select name="dprv_license" id="dprv_license" onchange="dprv_PreviewLicense()" style="width:300px">'
 																	. dprv_options_html($dprv_licenseIds, $dprv_licenseTypes, "", $dprv_license, "0", __("None","dprv_cp"), $currentMatch) .
 															'</select>
 															<input type="text" id="dprv_custom_license" name="dprv_custom_license" autocomplete="off" style="display:none; width:300px" />
 														</td>
 														<td id="License_customization"' . $sub_enabled_title . '>
-															<input type="button"' . $sub_enabled_color . ' value="' . __('Add', 'dprv_cp') . '" onclick="AddLicense();" />&nbsp;&nbsp;
-															<input type="button"' . $sub_enabled_color . ' id="dprv_amend_license_button" value="' . __('Amend', 'dprv_cp') . '" onclick="AmendLicense();" />&nbsp;&nbsp;
-															<input type="button"' . $sub_enabled_color . ' id="dprv_remove_license_button" value="' . __('Remove', 'dprv_cp') . '" onclick="RemoveLicense();" />
+															<input type="button"' . $sub_enabled_color . ' value="' . __('Add', 'dprv_cp') . '" onclick="dprv_AddLicense();" />&nbsp;&nbsp;
+															<input type="button"' . $sub_enabled_color . ' id="dprv_amend_license_button" value="' . __('Amend', 'dprv_cp') . '" onclick="dprv_AmendLicense();" />&nbsp;&nbsp;
+															<input type="button"' . $sub_enabled_color . ' id="dprv_remove_license_button" value="' . __('Remove', 'dprv_cp') . '" onclick="dprv_RemoveLicense();" />
 														</td>
 													</tr>
 													<tr><td style="height:6px"></td></tr>
@@ -1977,9 +2014,9 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													</tr>
 													<tr><td style="height:6px"></td></tr>
 													<tr id="dprv_license_commit_0" style="display:none">
-														<td><input type="button" id="dprv_license_commit" value ="' . __("Add this license", "dprv_cp") . '" onclick="LicenseActionCommit()"/></td>
+														<td><input type="button" id="dprv_license_commit" value ="' . __("Add this license", "dprv_cp") . '" onclick="dprv_LicenseActionCommit()"/></td>
 														<td>
-															<input type="button" value ="' . __('Cancel', 'dprv_cp') . '" onclick="LicenseActionAbandon();" />
+															<input type="button" value ="' . __('Cancel', 'dprv_cp') . '" onclick="dprv_LicenseActionAbandon();" />
 														</td></tr>
 													<tr id="dprv_license_commit_1" style="display:none"><td style="height:6px"></td></tr>
 												</table>
@@ -1992,20 +2029,20 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 													<tr><td style="height:6px; width:280px"></td></tr>
 													<tr>
 														<td></td>
-														<td class="description" ><a href="javascript:ShowFrustrateCopyText()">' .__('Important Note', 'dprv_cp') . '</a></td>
+														<td class="description" ><a href="javascript:dprv_ShowFrustrateCopyText()">' .__('Important Note', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px;"></td></tr>
 													<tr>
 														<td valign="top">' . __('Frustrate copying attempts:&nbsp;&nbsp;', 'dprv_cp') . '</td>
 														<td>
-															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_yes" value="Yes" ' . $dprv_frustrate_yes_checked . ' onclick="toggle_r_c_checkbox()" />&nbsp;' . __('Prevent right-click,&nbsp;select,&nbsp;drag,&nbsp;&amp;&nbsp;Control key combinations', 'dprv_cp') . '<br/>
-															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_no" value="No" ' . $dprv_frustrate_no_checked . ' onclick="toggle_r_c_checkbox()" />&nbsp;' . __('Allow right-click,&nbsp;select,&nbsp;drag,&nbsp;&amp;&nbsp;Control key combinations', 'dprv_cp') . '</td>
+															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_yes" value="Yes" ' . $dprv_frustrate_yes_checked . ' onclick="dprv_toggle_r_c_checkbox()" />&nbsp;' . __('Prevent right-click,&nbsp;select,&nbsp;drag,&nbsp;&amp;&nbsp;Control key combinations', 'dprv_cp') . '<br/>
+															<input type="radio" name="dprv_frustrate_copy" id="dprv_frustrate_no" value="No" ' . $dprv_frustrate_no_checked . ' onclick="dprv_toggle_r_c_checkbox()" />&nbsp;' . __('Allow right-click,&nbsp;select,&nbsp;drag,&nbsp;&amp;&nbsp;Control key combinations', 'dprv_cp') . '</td>
 													</tr>
 													<tr><td style="height:12px"></td></tr>
 													<tr>
 														<td>' . __('Display warning note on right-click? :&nbsp;&nbsp;', 'dprv_cp') . '</td>
 														<td colspan="2">
-															<input type="checkbox" ' . $right_click_checktext . ' id="dprv_right_click_box" name="dprv_right_click_box" onclick="toggle_r_c_text(this);" />
+															<input type="checkbox" ' . $right_click_checktext . ' id="dprv_right_click_box" name="dprv_right_click_box" onclick="dprv_toggle_r_c_text(this);" />
 															&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 															<input type="text" id="dprv_right_click_message" name="dprv_right_click_message" ' . $right_click_message_styletext . ' value="' . $dprv_right_click_message . '"/>
 														</td>
@@ -2052,7 +2089,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														<td id="HelpTextContainer" style="border: 1px solid black; background-color:#FFFFFF; padding: 3px; display:none">
 															<span id="HelpText" style="border: 0px none;"></span>
 															<br style="line-height: 4px;"/>
-															<a href="javascript:HideHelpText()" style="float:right;text-align:right">' . __('Close this window', 'dprv_cp') . '</a>
+															<a href="javascript:dprv_HideHelpText()" style="float:right;text-align:right">' . __('Close this window', 'dprv_cp') . '</a>
 														</td>
 													</tr>
 												</table>
@@ -2133,6 +2170,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			
 			dprv_literals["FileIntegrityNote"] = \'' . __("Only files that are individually fingerprinted and Digiproved can be checked for integrity - this will depend on the settings you chose for Digiproving files above.", "dprv_cp") . '\';
 
+ 			dprv_literals["AutoText"] = \'' . __("For posts and pages entered via Wordpress Edit Post/Page functions, you will be able to choose whether to Digiprove each time you save.  Here you specify the default action which will apply for posts submitted in other ways e.g. via xmlrpc, QuickPress or generated (perhaps by plugins)", "dprv_cp") . '\';
+
 			dprv_literals["Fingerprint_media_help"] = \'' . __("If you include media files (such as images, sounds, video, pdf etc.) within your posts or pages, you may instruct Digiprove to certify the digital fingerprints of the individual files, as well the html and text of the post itself.  Note this will only operate on files that are contained within your own web-site not hyperlinks to other sites.", "dprv_cp") . '\';
 			
 			dprv_literals["Beta_warning"] = \'' . __("Note the media file Digiproving and Data Integrity functions are in Beta form. We have tested them in a number of environments, but we are anxious for your feedback.  If you experience problems, firstly please advise us at support@digiprove.com, so we can fix the underlying problem. To get rid of problems, simply untick all of these boxes, or press &quot;Clear all&quot;.", "dprv_cp") . '\';
@@ -2197,23 +2236,23 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 			if (dprv_result_message.indexOf("License") > -1)
 			{
-				DisplayLicenseTab();
+				dprv_DisplayLicenseTab();
 			}
 
 			if (dprv_result_message.indexOf("' . __("Content settings", "dprv_cp") . '") > -1)
 			{
-				DisplayContentTab();
+				dprv_DisplayContentTab();
 			}
-			Preview();
-			PreviewLicense();
+			dprv_Preview();
+			dprv_PreviewLicense();
 			var lastBackgroundColor="";
 			var lastBackgroundTextColor="";			
 			var lastBorderColor="";
 			var lastBorderTextColor="";
 
-			ToggleFooterWarning();
-			toggle_r_c_checkbox();
-			toggleCredentials();
+			dprv_ToggleFooterWarning();
+			dprv_toggle_r_c_checkbox();
+			dprv_toggleCredentials();
 			if (document.getElementById("dprv_password_row1").style.display == "")
 			{
 				document.getElementById("dprv_password").focus();
@@ -2339,12 +2378,12 @@ function dprv_ValidateRegistration()
 	}
 	if (isset($_POST['dprv_email_address']) && $_POST['dprv_email_address'] != get_option('dprv_email_address'))
 	{
-		return checkEmail(trim($_POST['dprv_email_address']));
+		return dprv_checkEmail(trim($_POST['dprv_email_address']));
 	}
 	return "";
 }
 
-function checkEmail($email)
+function dprv_checkEmail($email)
 {
 	if(is_email($email))
 	{

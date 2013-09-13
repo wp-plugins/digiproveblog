@@ -1,6 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <html>
 	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">	
 		<title>Call to upgrade/renew Digiprove plan</title>
 	</head>
 <body style="text-align:center; margin: 0px; background-color:gray; width:100%">
@@ -33,7 +34,14 @@
 		}
 		else
 		{
-			document.getElementById("Heading2").innerHTML = "Loading digiprove.com secure upgrade session";
+			if (document.getElementById("Action").value == "Upgrade")
+			{
+				document.getElementById("Heading2").innerHTML = "Loading digiprove.com secure upgrade session";
+			}
+			else
+			{
+				document.getElementById("Heading2").innerHTML = "Loading digiprove.com secure member&#39;s session";
+			}
 		}
 		//document.Upgrade.action = getQuerystring("FormAction");
 		document.getElementById('Upgrade').action = getQuerystring("FormAction");

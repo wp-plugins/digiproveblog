@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.15
+Version: 2.16
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -39,7 +39,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.15");
+	define("DPRV_VERSION", "2.16");
 	define("DPRV_WWW", "www.digiprove.com");                       // you may use digiprove1.dyndns.ws for testing
 	//error_reporting(-1);						   // uncomment this for test purposes
 
@@ -191,9 +191,16 @@ License: GPL
 		$log->lwrite("VERSION " . DPRV_VERSION . " ACTIVATED");
 		update_option('dprv_activated_version', DPRV_VERSION);	// If different to installed, activation steps will take place
 		//add_option('dprv_verified_db_version', '');	            // If not up to date, will be checked and updated if necessary
+		// To preserve consistency of behaviour, if this is an upgrade installation but dprv_auto_posts did not exist before set it to yes
+		if (get_option('dprv_user_id') !== false && get_option('dprv_auto_posts') === false)
+		{
+			add_option('dprv_auto_posts', 'Yes');
+		}
+		else						// Otherwise if not already set, set it to the default value we want (No)
+		{
+			add_option('dprv_auto_posts', 'No');
+		}
 		add_option('dprv_email_address', '');
-		//add_option('dprv_first_name', '');
-		//add_option('dprv_last_name', '');
 		add_option('dprv_subscription_type', '');               // Will be empty until activation of membership
 		add_option('dprv_subscription_expiry', '');
 		add_option('dprv_content_type', '');
@@ -215,7 +222,7 @@ License: GPL
 		add_option('dprv_save_content','Nosave');
 		add_option('dprv_post_types','post,page');
 		$subscription_type = get_option('dprv_subscription_type');
-		$dprv_html_tags = set_default_html_tags();
+		$dprv_html_tags = dprv_set_default_html_tags();
 		if ($subscription_type == 'Basic' || $subscription_type == '')
 		{
 			foreach ($dprv_html_tags as $key=>$value)
@@ -249,7 +256,7 @@ License: GPL
 		create_dprv_post_content_files_table();
 	}
 
-	function set_default_html_tags()
+	function dprv_set_default_html_tags()
 	{
 		$dprv_html_tags=array(	"a"=>array("name"=>"Anchor","selected"=>"True","incl_excl"=>"Include", "All"=>"False", "Images"=>"False", "Audio"=>"True", "Video"=>"True", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"False"),
 								"img"=>array("name"=>"Images","selected"=>"True","incl_excl"=>"Include", "All"=>"True", "Images"=>"False", "Audio"=>"False", "Video"=>"False", "Web Pages"=>"False", "Documents"=>"False", "Code"=>"False"), 
@@ -678,20 +685,6 @@ License: GPL
 		}
 
 */
-		function dprv_reminder()
-		{
-			$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
-			$posDot = strrpos($script_name,'.');
-			if ($posDot != false)
-			{
-				$script_name = substr($script_name, 0, $posDot);
-			}
-
-			if ($script_name != "options-general" || strpos($_SERVER['QUERY_STRING'], "copyright_proof_admin.php") === false)
-			{
-				echo "<div id='dprv_reminder' class='updated fade'><p>" . DPRV_REMINDER . "</p></div>";
-			}
-		}
 
 		if (get_option('dprv_enrolled') != "Yes")
 		{
@@ -712,6 +705,21 @@ License: GPL
 			add_action('admin_notices', 'dprv_reminder');
 			update_option('dprv_pending_message', '');
 			return;
+		}
+	}
+
+	function dprv_reminder()
+	{
+		$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+		$posDot = strrpos($script_name,'.');
+		if ($posDot != false)
+		{
+			$script_name = substr($script_name, 0, $posDot);
+		}
+
+		if ($script_name != "options-general" || strpos($_SERVER['QUERY_STRING'], "copyright_proof_admin.php") === false)
+		{
+			echo "<div id='dprv_reminder' class='updated fade'><p>" . DPRV_REMINDER . "</p></div>";
 		}
 	}
 
@@ -840,6 +848,7 @@ License: GPL
 		$result = "29 jump street";	// just to establish variable scope
 		//$prev_db_error = $wpdb->last_error;
 		$wpdb->last_error = "";
+		$dprv_time_before = time();
 		switch ($action)
 		{
 			case "get_var":
@@ -867,6 +876,7 @@ License: GPL
 				return false;
 			}
 		}
+		$dprv_seconds_taken = time() - $dprv_time_before;
 		$dprv_db_error = $wpdb->last_error;
 		$dprv_sql_error = mysql_error();
 		if (trim($dprv_db_error) != "")
@@ -878,16 +888,16 @@ License: GPL
 			//	$error_status = "suspected ";
 			//}
 			// Note "SHOW COLUMNS" rather than "show columns" used in this plugin indicates not a critical point (normal everyday check)
-			//$dprv_this_event = $error_status . "wpdb SQL error " . $dprv_db_error . " on " . $sql;
 			$dprv_this_event = "wpdb SQL error " . $dprv_db_error . " on " . $sql;
 			if ((stripos($dprv_db_error, "Incorrect key file for table") !== false || stripos($dprv_db_error, "Got error 28 from storage engine") !== false || stripos($dprv_db_error, "Errcode: 28") !== false) && strpos($sql, "SHOW COLUMNS FROM") !== false && is_null($result))
 			{
 				// Not good but (for now) ignore it, maybe other instructions will work:-)
 				// Calling code will recognise false and ignore error
 				// Also don't bother with logging all that backtrace stuff
+				
+				$dprv_this_event .= "; Result of dprv_db_ok()=" . dprv_db_ok();
 				dprv_record_event($dprv_this_event);
-				$secondary_result = "Result of dprv_db_ok()=" . dprv_db_ok();
-				dprv_record_event($secondary_result);
+				//dprv_record_event($secondary_result);
 				return false;
 			}
 			if (trim($dprv_sql_error) != "" && $dprv_sql_error != $dprv_db_error)
@@ -911,6 +921,14 @@ License: GPL
 				}
 			}
 			$dprv_this_event .= $more_eval . " ";
+			if ($dprv_seconds_taken > 0)
+			{
+				$dprv_this_event .= "; took " . $dprv_seconds_taken . " seconds ";
+			}
+			if (stripos($dprv_db_error, "MySQL server has gone away") !== false)
+			{
+				$dprv_this_event .= '; mysql.connect_timeout=' . ini_get('mysql.connect_timeout') . " ";
+			}
 			$counter = 0;
 			if (is_array($bt))
 			{
@@ -934,10 +952,8 @@ License: GPL
 					}
 				}
 			}
+			$dprv_this_event .= "; Result of dprv_db_ok()=" . dprv_db_ok();
 			dprv_record_event($dprv_this_event);
-			$dprv_db_ok = dprv_db_ok();
-			$secondary_result = "Result of dprv_db_ok()=" . $dprv_db_ok;
-			dprv_record_event($secondary_result);
 			if (stripos($sql, "SHOW COLUMNS FROM") === false)  // Do not display SQL error message if the problem occurred on Show columns from
 			{
 				$log->lwrite("mysql_info=" . mysql_info());
