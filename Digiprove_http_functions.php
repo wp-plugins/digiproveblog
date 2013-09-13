@@ -66,7 +66,7 @@ class Digiprove_HTTP
 			$dprv_last_error = "";
 			if (class_exists('dprvErrors'))
 			{
-				set_error_handler(array("dprvErrors", "catch_error"));     // Note that before php 4.3 this array reference will not work
+				set_error_handler(array("dprvErrors", "dprv_catch_error"));     // Note that before php 4.3 this array reference will not work
 			}
 			// Test Instructions:
 			//$fs = fsockopen($http_host, $dprv_port, $errno, $errstr, 10, 20, 30, 100);		// warning error
@@ -75,7 +75,8 @@ class Digiprove_HTTP
 			//$fs = fsockopen("www.digiprovedoesnotexist.com", $dprv_port, $errno, $errstr, 10);// dns error
 
 			// Correct instruction
-			$fs = fsockopen($http_host, $dprv_port, $errno, $errstr, 10);						
+			//$fs = fsockopen($http_host, $dprv_port, $errno, $errstr, 10);						
+			$fs = fsockopen($http_host, $dprv_port, $errno, $errstr);						// Use default timeout value
 			if (class_exists('dprvErrors'))
 			{
 				restore_error_handler();
@@ -149,6 +150,7 @@ class Digiprove_HTTP
 				{
 					//$e_message .= " PHP error " . $dprv_last_error;  This just adds to length of message 
 				}
+
 				$log->lwrite($e_message);
 				return $e_message;
 			}

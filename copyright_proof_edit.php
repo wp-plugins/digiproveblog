@@ -197,7 +197,6 @@ function dprv_show_postbox($post_info)
 			dprv_record_event($dprv_this_event);
 		}
 	}
-
 	// OK Values have been set, start preparing HTML
 	$dprv_this_yes_checked = " checked='checked'";
 	$dprv_this_no_checked = "";
@@ -740,7 +739,7 @@ function dprv_add_digiprove_submit_button()
 					document.getElementById("publish").click();
 					return false;
 				}
-				function renameButton(newval)
+				function dprv_renameButton(newval)
 				{
 					document.getElementById("publish_dp").value = newval + "' . __(' & Digiprove', 'dprv_cp') . '";
 				}
@@ -753,7 +752,7 @@ function dprv_add_digiprove_submit_button()
 					{
 						function dprv_timestamp_changed(property, oldval, newval)
 						{
-							renameButton(newval);
+							dprv_renameButton(newval);
 							return newval;
 						}
 						setTimeout(\'document.getElementById("publish").watch("value", dprv_timestamp_changed)\',1500);
@@ -765,7 +764,7 @@ function dprv_add_digiprove_submit_button()
 							var newval = document.getElementById("publish").value;
 							if (newval != dprv_oldval)
 							{
-								renameButton(newval);
+								dprv_renameButton(newval);
 							}
 							dprv_oldval = newval;
 							return true;
@@ -776,16 +775,16 @@ function dprv_add_digiprove_submit_button()
 				}
 				else
 				{
-					function AddOnchangeEvent()
+					function dprv_AddOnchangeEvent()
 					{
 						document.getElementById("publish").onpropertychange = function onpropertychange(){dprv_property_changed()};
 					}
 					function dprv_property_changed()
 					{
-						renameButton(document.getElementById("publish").value);
+						dprv_renameButton(document.getElementById("publish").value);
 						return true;
 					}
-					setTimeout(\'AddOnchangeEvent();\',500);
+					setTimeout(\'dprv_AddOnchangeEvent();\',500);
 				}
 				</script>');
 	}
@@ -813,6 +812,7 @@ function dprv_parse_post ($data, $raw_data)
 	//$log->lwrite("data[post_status] = " . $data['post_status']);
 	if ($data['post_status'] != "publish" && $data['post_status'] != "private" && $data['post_status'] != "future")
 	{
+		// TODO: check whether $_POST['dprv_publish_dp_action'] is set to avoid PHP Notices in logfile
 		if ($data['post_status'] == "draft" && $_POST['dprv_publish_dp_action'] == "Yes")
 		{
 			$log->lwrite("draft but user has explicitly requested Digiproving, then we can proceed beyond this point");
@@ -832,7 +832,7 @@ function dprv_parse_post ($data, $raw_data)
 		if ($search_result == "function")
 		{
 			$log->lwrite("dprv_parse_post not starting because called via _fix_attachment_links, means this already processed");
-			return;
+			return $data;
 		}
 	}
 
@@ -862,6 +862,7 @@ function dprv_parse_post ($data, $raw_data)
 		$dprv_post_id = -1;
 	}
 	
+	// TODO: check whether $_POST['dprv_this'] is set to avoid PHP Notices in logfile
 	$dprv_digiprove_this_post = $_POST['dprv_this'];
 	if ($dprv_digiprove_this_post == "No")
 	{
@@ -891,6 +892,13 @@ function dprv_parse_post ($data, $raw_data)
 		}
 		return $data;
 	}
+	
+	//if (get_option('dprv_auto_posts') != "Yes" && ($dprv_post_id == -1 || ($script_name != "post-new" && $script_name != "post" && $script_name != "post")))
+	if (get_option('dprv_auto_posts') != "Yes" && !isset($_POST['dprv_publish_dp_action']))	// If no dprv_publish_action, then the user had no opportunity to choose Digiprove por No
+	{
+		$log->lwrite("dprv_parse_post not starting for post $dprv_post_id in script $script_name because Digiproving of auto-posts is not selected");
+		return $data;
+	}
 
 	update_option('dprv_last_action', 'Digiprove id=' . $dprv_post_id);     // Why?
 	$dprv_title = $data['post_title'];
@@ -904,6 +912,7 @@ function dprv_parse_post ($data, $raw_data)
 		dprv_record_copyright_details($dprv_post_id);
 	}
 
+	// TODO: check whether $_POST['dprv_publish_dp_action'] is set to avoid PHP Notices in logfile
 	$dprv_publish_dp_action = $_POST['dprv_publish_dp_action'];
 	if ($dprv_publish_dp_action == "No")
 	{
@@ -1085,6 +1094,7 @@ function dprv_digiprove_post($dprv_post_id)
 	}
 
 	// TODO: Change this to not return, but just skip Digiproving part
+	// TODO: check whether $_POST['dprv_publish_dp_action'] is set to avoid PHP Notices in logfile
 	$dprv_publish_dp_action = $_POST['dprv_publish_dp_action'];
 	if ($dprv_publish_dp_action == "No")
 	{
@@ -1094,7 +1104,7 @@ function dprv_digiprove_post($dprv_post_id)
 		//update_option('dprv_last_result', '');
 		return;
 	}
-
+	// TODO: check whether $_POST['dprv_this'] is set to avoid PHP Notices in logfile
 	$dprv_digiprove_this_post = $_POST['dprv_this'];
 	if ($dprv_digiprove_this_post == "No")
 	{
@@ -1128,6 +1138,18 @@ function dprv_digiprove_post($dprv_post_id)
 		$log->lwrite("dprv_digiprove_post not starting because content is empty");
 		update_option('dprv_last_result', __('Content is empty', 'dprv_cp'));
 		update_option('dprv_pending_message', __('Content is empty', 'dprv_cp'));
+		return;
+	}
+	if (trim($dprv_post_id) == "")
+	{
+		$log->lwrite("dprv_digiprove_post not starting because dprv_id is empty");
+		return;
+	}
+
+	//if (get_option('dprv_auto_posts') != "Yes" && ($dprv_post_id == -1 || ($script_name != "post-new" && $script_name != "post" && $script_name != "post")))
+	if (get_option('dprv_auto_posts') != "Yes" && !isset($_POST['dprv_publish_dp_action']))	// If no dprv_publish_action, then the user had no opportunity to choose Digiprove por No
+	{
+		$log->lwrite("dprv_digiprove_post not starting for post $dprv_post_id in script $script_name because Digiproving of auto-posts is not selected");
 		return;
 	}
 
@@ -1170,12 +1192,6 @@ function dprv_digiprove_post($dprv_post_id)
 			update_option('dprv_pending_message', $dprv_last_result);
 			return;
 		}
-	}
-
-	if (trim($dprv_post_id) == "")
-	{
-		$log->lwrite("dprv_digiprove_post not starting because dprv_id is empty");
-		return;
 	}
 
 	$log->lwrite("dprv_digiprove_post STARTS");
@@ -1474,6 +1490,7 @@ function dprv_record_copyright_details($dprv_post_id)
 	$log = new DPLog();
 	$log->lwrite("dprv_record_copyright_details starts");
 
+	// TODO: check whether $_POST['dprv_this'] is set to avoid PHP Notices in logfile
 	if ($_POST['dprv_this'] == "Yes")
 	{
 		$digiprove_this_post = true;
@@ -1483,6 +1500,7 @@ function dprv_record_copyright_details($dprv_post_id)
 		$digiprove_this_post = false;
 	}
 
+	// TODO: check whether $_POST['dprv_all_original'] is set to avoid PHP Notices in logfile
 	if ($_POST['dprv_all_original'] == "Yes")
 	{
 		$this_all_original = true;
@@ -1491,6 +1509,8 @@ function dprv_record_copyright_details($dprv_post_id)
 	{
 		$this_all_original = false;
 	}
+
+	// TODO: check whether $_POST['dprv_attributions'] is set to avoid PHP Notices in logfile
 	$attributions = $_POST['dprv_attributions'];
 
 	$using_default_license = true;
@@ -1501,6 +1521,7 @@ function dprv_record_copyright_details($dprv_post_id)
 
 	if (!isset($_POST['dprv_custom_license']) || $_POST['dprv_custom_license'] != "on")
 	{
+		// TODO: check whether $_POST['dprv_license_type'] is set to avoid PHP Notices in logfile
 		$license = $_POST['dprv_license_type'];
 		$custom_license_caption = null;
 		$custom_license_abstract = null;
@@ -1909,204 +1930,6 @@ function dprv_alt_getContentFiles($dprv_post_id, $content, &$content_files, $max
 // Examine HTML to find all references to files
 function dprv_getContentFiles($dprv_post_id, $content, &$content_files, &$content_file_names, $max_file_count, &$file_count, &$total_url_count, $alltags = false)
 {
-	function str_findAny($haystack, $needles, $offset=0)
-	{
-		for ($i=$offset; $i<strlen($haystack); $i++)
-		{
-			if (array_search($haystack[$i], $needles))
-			{
-				return $i;
-			}
-		}
-		return false;
-	}
-	function processUrl($url, $dprv_html_tags, $tag, &$content_files, &$content_file_names, &$t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, &$file_count, &$total_url_count)
-	{
-		$log = new DPLog();
-		$url = rtrim($url);
-		//$log->lwrite("tag is $tag processurl $url");
-		if (!is_array($content_files))
-		{
-			$content_files = array();
-		}
-		if (!is_array($content_file_names))
-		{
-			$content_file_names = array();
-		}
-		$log->lwrite ("processURL for $url, count of content_files = " . count($content_files));
-		global $dprv_mime_types;
-		$dprv_outside_media = get_option('dprv_outside_media');
-		$url_info = parse_url($url);
-		$url_string = $url;
-		$blog_url_string = $blog_host . $blog_path;
-
-		if (!isset($url_info["host"]))
-		{
-			//$log->lwrite("url_info[host] is not set");
-			if (strpos($url, "/") == 0)
-			{
-				$full_path = addPaths($root_path, $url_info["path"]);
-			}
-			else
-			{
-				$full_path = addPaths(ABSPATH, $url_info["path"]);
-			}
-		}
-		else
-		{
-			if ($url_info["host"] != $blog_host)
-			{
-				// first check for partial matches
-				$partial_match = false;
-				if	(
-						$url_info["host"] == ("www." . $blog_host)
-						||
-						("www." . $url_info["host"]) == $blog_host
-						||
-						(strripos($url_info["host"], $blog_host) !== false && strripos($url_info["host"], $blog_host) === strlen($url_info["host"]) - strlen($blog_host))
-						||
-						(strripos($blog_host, $url_info["host"]) !== false && strripos($blog_host, $url_info["host"]) === strlen($blog_host) - strlen($url_info["host"]))
-					)
-				{
-					$log->lwrite("suspected match between " . $url_info["host"] . " and " . $blog_host);
-					$partial_match = true;
-					$url_info["host"] = $blog_host;		// use blog host value from now on
-				}
-				else
-				{
-					if ($dprv_outside_media != "Outside")
-					{
-						$log->lwrite("$url is not on this host");
-						return;
-					}
-					else
-					{
-						// what to doo?
-						return;  // don't handle this yet
-					}
-				}
-			}
-			$url_string = $url_info["host"] . $url_info["path"];
-			if (stripos($url_string, $blog_url_string) !== 0)
-			{
-				$log->lwrite("$url is not on this wp web-site");
-				return;
-			}
-
-			if (stripos($url_string, $blog_url_string) === 0 && isset($url_info["query"]) && strpos($url_info["query"], "attachment_id=") === 0)
-			{
-				$full_path = convert_attachment_to_file(substr($url_info["query"],14));
-			}
-			else
-			{
-				$full_path = addPaths($root_path, $url_info["path"]);
-			}
-		}
-		$total_url_count ++;
-		$file_name = basename($full_path);
-		$ext = pathinfo($file_name, PATHINFO_EXTENSION);
-		$file_selected = false;		// default value
-		$selected_reason = "";		// this variable used just for logging / testing
-		if ($dprv_html_tags[$tag]["incl_excl"] == "Include")
-		{
-			if ($dprv_html_tags[$tag]["All"] == "True")
-			{
-				$selected_reason .= "All filetypes included; ";
-				$file_selected = true;
-			}
-			else
-			{
-				foreach ($dprv_html_tags[$tag] as $key=>$value)
-				{
-					if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
-					{
-						if ($value == "True")
-						{
-							if (array_search($ext, $dprv_mime_types[$key]))
-							{
-								$selected_reason .= "$ext included in $key list; ";
-								$file_selected = true;
-							}
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			$file_selected = true;		// default value if using Exclude
-			$selected_reason .= "$ext not excluded";
-			foreach ($dprv_html_tags[$tag] as $key=>$value)
-			{
-				if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
-				{
-					if ($value == "True")
-					{
-						if (array_search($ext, $dprv_mime_types[$key]))
-						{
-							$selected_reason .= "$ext excluded (in $key list)";
-							$file_selected = false;
-						}
-					}
-				}
-			}
-		}
-		if ($file_selected == true)
-		{
-			if (file_exists($full_path))
-			{
-				if (array_search($full_path, $content_files) === false)		// prevent duplicate references
-				{
-					if($t < $max_file_count)
-					{
-						$content_file_names[$t] = $file_name;
-						$content_files[$t] = $full_path;
-						$log->lwrite("content_file_names[" . $t . "]=" . $content_file_names[$t] . " (from " . $tag . " tag), included because " . $selected_reason);
-						$t++;
-					}
-					$file_count++;
-				}
-				else
-				{
-					$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag - encountered earlier)");
-				}
-			}
-			else
-			{
-				$log->lwrite("File does not exist: $full_path");
-			}
-		}
-		else
-		{
-			$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag) - $ext not a selected media type");
-		}
-	}
-
-	function addPaths($root, $path)
-	{
-		if ($path[0] == "/" && $root[strlen($root)-1] == "/")
-		{
-			$path = substr($path,1);
-		}
-		return $root . $path;
-	}
-
-	function convert_attachment_to_file($attach_id)
-	{
-		$id = "";
-		for ($i=0; $i<strlen($attach_id); $i++)
-		{
-			if (strpos("0123456789",$attach_id[$i]) !== false)
-			{
-				$id .= $attach_id[$i];
-			}
-			else
-			{
-				break;
-			}
-		}
-		return get_attached_file($id);
-	}
 	$start_marker = 'started dprv_getContentFiles';
 	if (!is_array($content_files))
 	{
@@ -2256,7 +2079,7 @@ function dprv_getContentFiles($dprv_post_id, $content, &$content_files, &$conten
 						}
 						else
 						{
-							$pos2 = str_findAny($no_tag_content, array(" ","\t","\r","\f","\v","\n","<",">"), $pos1+1);
+							$pos2 = dprv_str_findAny($no_tag_content, array(" ","\t","\r","\f","\v","\n","<",">"), $pos1+1);
 						}
 						if ($pos2 !== false)
 						{
@@ -2268,7 +2091,7 @@ function dprv_getContentFiles($dprv_post_id, $content, &$content_files, &$conten
 							$url = substr($no_tag_content,$pos1);
 							$no_tag_content = "";
 						}
-						processUrl($url, $dprv_html_tags, "notag", $content_files, $content_file_names, $t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, $file_count, $total_url_count);
+						dprv_processUrl($url, $dprv_html_tags, "notag", $content_files, $content_file_names, $t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, $file_count, $total_url_count);
 					}
 					else
 					{
@@ -2325,7 +2148,7 @@ function dprv_getContentFiles($dprv_post_id, $content, &$content_files, &$conten
 								if ($pos1 !== false && $pos1 != 0)
 								{
 									$url = substr($modifiers, 0, $pos1);
-									processUrl($url, $dprv_html_tags, $tag, $content_files, $content_file_names, $t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, $file_count, $total_url_count);
+									dprv_processUrl($url, $dprv_html_tags, $tag, $content_files, $content_file_names, $t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, $file_count, $total_url_count);
 								}
 							}
 							else
@@ -2399,6 +2222,211 @@ function dprv_getContentFiles($dprv_post_id, $content, &$content_files, &$conten
 	dprv_unrecord_event($start_marker, $dprv_event);						// remove start marker from dprv event
 	$log->lwrite('unrecord_event just ran');
 }
+function dprv_str_findAny($haystack, $needles, $offset=0)
+{
+	for ($i=$offset; $i<strlen($haystack); $i++)
+	{
+		if (array_search($haystack[$i], $needles))
+		{
+			return $i;
+		}
+	}
+	return false;
+}
+function dprv_processUrl($url, $dprv_html_tags, $tag, &$content_files, &$content_file_names, &$t, $root_path, $blog_url, $blog_host, $blog_path, $max_file_count, &$file_count, &$total_url_count)
+{
+	$log = new DPLog();
+	$url = rtrim($url);
+	//$log->lwrite("tag is $tag dprv_processUrl $url");
+	if (!is_array($content_files))
+	{
+		$content_files = array();
+	}
+	if (!is_array($content_file_names))
+	{
+		$content_file_names = array();
+	}
+	$log->lwrite ("dprv_processUrl for $url, count of content_files = " . count($content_files));
+	if (strpos($url, "#") === 0)
+	{
+		$log->lwrite ("just a link to bookmark on same page ($url), ignore");
+		return;		// just a link to bookmark on same page, ignore
+	}
+	global $dprv_mime_types;
+	$dprv_outside_media = get_option('dprv_outside_media');
+	$url_info = parse_url($url);
+	$url_string = $url;
+	$blog_url_string = $blog_host . $blog_path;
+	if (!isset($url_info["host"]))
+	{
+		if (!isset($url_info["path"]))
+		{
+			$log->lwrite("Could not get either host or path from $url");	// malformed url
+			return;
+		}
+		if (strpos($url, "/") == 0)
+		{
+			$full_path = dprv_addPaths($root_path, $url_info["path"]);
+		}
+		else
+		{
+			$full_path = dprv_addPaths(ABSPATH, $url_info["path"]);
+		}
+	}
+	else
+	{
+		if ($url_info["host"] != $blog_host)
+		{
+			// first check for partial matches
+			$partial_match = false;
+			if	(
+					$url_info["host"] == ("www." . $blog_host)
+					||
+					("www." . $url_info["host"]) == $blog_host
+					||
+					(strripos($url_info["host"], $blog_host) !== false && strripos($url_info["host"], $blog_host) === strlen($url_info["host"]) - strlen($blog_host))
+					||
+					(strripos($blog_host, $url_info["host"]) !== false && strripos($blog_host, $url_info["host"]) === strlen($blog_host) - strlen($url_info["host"]))
+				)
+			{
+				$log->lwrite("suspected match between " . $url_info["host"] . " and " . $blog_host);
+				$partial_match = true;
+				$url_info["host"] = $blog_host;		// use blog host value from now on
+			}
+			else
+			{
+				if ($dprv_outside_media != "Outside")
+				{
+					$log->lwrite("$url is not on this host");
+					return;
+				}
+				else
+				{
+					// what to doo?
+					return;  // don't handle this yet
+				}
+			}
+		}
+		$url_string = $url_info["host"] . $url_info["path"];
+		if (stripos($url_string, $blog_url_string) !== 0)
+		{
+			$log->lwrite("$url is not on this wp web-site");
+			return;
+		}
+
+		if (stripos($url_string, $blog_url_string) === 0 && isset($url_info["query"]) && strpos($url_info["query"], "attachment_id=") === 0)
+		{
+			$full_path = dprv_convert_attachment_to_file(substr($url_info["query"],14));
+		}
+		else
+		{
+			$full_path = dprv_addPaths($root_path, $url_info["path"]);
+		}
+	}
+	$total_url_count ++;
+	$file_name = basename($full_path);
+	$ext = pathinfo($file_name, PATHINFO_EXTENSION);
+	$file_selected = false;		// default value
+	$selected_reason = "";		// this variable used just for logging / testing
+	if ($dprv_html_tags[$tag]["incl_excl"] == "Include")
+	{
+		if ($dprv_html_tags[$tag]["All"] == "True")
+		{
+			$selected_reason .= "All filetypes included; ";
+			$file_selected = true;
+		}
+		else
+		{
+			foreach ($dprv_html_tags[$tag] as $key=>$value)
+			{
+				if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
+				{
+					if ($value == "True")
+					{
+						if (array_search($ext, $dprv_mime_types[$key]))
+						{
+							$selected_reason .= "$ext included in $key list; ";
+							$file_selected = true;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		$file_selected = true;		// default value if using Exclude
+		$selected_reason .= "$ext not excluded";
+		foreach ($dprv_html_tags[$tag] as $key=>$value)
+		{
+			if ($key != "All" && $key != "name" && $key != "selected" && $key != "incl_excl")
+			{
+				if ($value == "True")
+				{
+					if (array_search($ext, $dprv_mime_types[$key]))
+					{
+						$selected_reason .= "$ext excluded (in $key list)";
+						$file_selected = false;
+					}
+				}
+			}
+		}
+	}
+	if ($file_selected == true)
+	{
+		if (file_exists($full_path))
+		{
+			if (array_search($full_path, $content_files) === false)		// prevent duplicate references
+			{
+				if($t < $max_file_count)
+				{
+					$content_file_names[$t] = $file_name;
+					$content_files[$t] = $full_path;
+					$log->lwrite("content_file_names[" . $t . "]=" . $content_file_names[$t] . " (from " . $tag . " tag), included because " . $selected_reason);
+					$t++;
+				}
+				$file_count++;
+			}
+			else
+			{
+				$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag - encountered earlier)");
+			}
+		}
+		else
+		{
+			$log->lwrite("File does not exist: $full_path");
+		}
+	}
+	else
+	{
+		$log->lwrite("ignoring - " . $file_name . " (from " . $tag . " tag) - $ext not a selected media type");
+	}
+}
+function dprv_addPaths($root, $path)
+{
+	if ($path[0] == "/" && $root[strlen($root)-1] == "/")
+	{
+		$path = substr($path,1);
+	}
+	return $root . $path;
+}
+function dprv_convert_attachment_to_file($attach_id)
+{
+	$id = "";
+	for ($i=0; $i<strlen($attach_id); $i++)
+	{
+		if (strpos("0123456789",$attach_id[$i]) !== false)
+		{
+			$id .= $attach_id[$i];
+		}
+		else
+		{
+			break;
+		}
+	}
+	return get_attached_file($id);
+}
+
 
 // GET FEATURED IMAGE  
 function dprv_get_featured_image($dprv_post_id) 
