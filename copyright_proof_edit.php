@@ -1846,7 +1846,6 @@ function dprv_certify($dprv_post_id, $title, $content, &$digital_fingerprint, &$
 		$dprv_content_type = "Blog post";
 	}
 
-	//$credentials = array("user_id" => get_option('dprv_user_id'), "domain_name" => $dprv_blog_host, "api_key" => get_option('dprv_api_key'));
 	$credentials = array("user_id" => trim(get_option('dprv_user_id')), "domain_name" => $dprv_blog_host, "api_key" => get_option('dprv_api_key'));
 	if ($dprv_blog_host != $dprv_wp_host)
 	{
