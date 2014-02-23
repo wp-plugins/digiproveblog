@@ -3,12 +3,12 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.16
+Version: 2.17
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
 */
-/*  Copyright 2008-2011  Digiprove (email : cian.kinsella@digiprove.com)
+/*  Copyright 2008-2014  Digiprove (email : cian.kinsella@digiprove.com)
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -39,7 +39,7 @@ License: GPL
 	include_once('Digiprove.php');									// Digiprove SDK functions
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.16");
+	define("DPRV_VERSION", "2.17");
 	define("DPRV_WWW", "www.digiprove.com");                       // you may use digiprove1.dyndns.ws for testing
 	//error_reporting(-1);						   // uncomment this for test purposes
 

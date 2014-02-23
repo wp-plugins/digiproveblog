@@ -3,23 +3,47 @@
 // THIS VERSION USES TRY/CATCH BLOCKS AND NEEDS PHP5 OR LATER
 class Digiprove_HTTP
 {
-	function makePost($request, $host, $path, $service, $ip=null)
+	static public function post($request, $host, $path, $service, $ip=null)
 	{
-		// In this primitive version, just handles a single level of redirect...
-		$dprv_response = post($request, $host, $path, $service, $ip);
-		if (substr($dprv_response,0,8) == "Redirect")
-		{	
-			$pos = strpos($dprv_response, " ");
-			if (substr($dprv_response, $pos+1, 3) != "301" && substr($dprv_response, $pos+1, 3) != "302" && substr($dprv_response, $pos+1, 3) != "307")
-			{
-				return $dprv_response;
+		$log = new DPLog();  
+		while ($host != "")
+		{
+			$dprv_response = self::doPost($request, $host, $path, $service, $ip);
+			if (substr($dprv_response,0,9) == "Redirect ")
+			{	
+				$dprv_response = substr($dprv_response, 9);
+				//$log->lwrite("stripped response=" . $dprv_response);
+				$pos = strpos($dprv_response, "Location:");
+				if ($pos === false)
+				{
+					break;
+				}
+				$pos2 = strpos($dprv_response, "\n", $pos + 9);
+				if ($pos2 === false)
+				{
+					$pos2 = strpos($dprv_response, "\r", $pos + 9);
+					if ($pos2 === false)
+					{
+						break;
+					}
+				}
+				$newLocation = substr($dprv_response, $pos + 9, $pos2 - ($pos+9));
+				//$log->lwrite("newLocation(" . strlen($newLocation) . ")=" . $newLocation);
+				$newLocation = trim($newLocation);
+				if (strpos($newLocation, "/") === 0)
+				{
+					$path = $newLocation;
+					$log->lwrite("Have been redirected to " . $path);
+					continue;
+				}
+				// TODO: handle new host situation here
 			}
-			$host = substr($dprv_response, $pos+1, 3);	// change this to find new hostname
-			return post($request, $host, $path, $service, $ip);
+			break;
 		}
+		return $dprv_response;
 	}
 
-	static public function post($request, $host, $path, $service, $ip=null) 
+	static private function doPost($request, $host, $path, $service, $ip=null) 
 	{
 		$log = new DPLog();  
 		$request = "xml_string=" . urlencode($request);
@@ -159,14 +183,44 @@ class Digiprove_HTTP
 			if (substr($response,0,4) == "HTTP")			// error starts like this: HTTP/1.1 404 Not Found
 			{	
 				$pos = strpos($response, " ");
-				if (substr($response, $pos+1, 3) == "301" || substr($response, $pos+1, 3) == "302" || substr($response, $pos+1, 3) == "307")
+				$response_code = substr($response, $pos+1, 3);
+				if ($response_code == "301" || $response_code == "302" || $response_code == "307")
 				{
-					return "Redirect " . substr($response, $pos+1, 3);
+					return "Redirect " . $response;
 				}
-				// TODO - return the actual message if one supplied
-				if (substr($response, $pos+1, 3) != "200" && strpos(strtolower($response), "<title>digiprove service temporarily offline</title>") != false)
+				if ($response_code != "200" || $pos === false)
 				{
-					return "The Digiprove service is temporarily offline for maintenance, please try again in a few minutes";
+					if (strpos(strtolower($response), "<title>digiprove service temporarily offline</title>") != false)		// HTTP response code 503 is given in this case
+					{
+						return "Error: The Digiprove service is temporarily offline for maintenance, please try again in a few minutes";
+					}
+					$httpError = "";
+					$pos2 = strpos($response, "\n", $pos + 4);
+					if ($pos2 === false)
+					{
+						$pos2 = strpos($response, "\r", $pos + 4);
+					}
+					if ($pos2 !== false)
+					{
+						$httpError = substr($response, $pos + 4, $pos2 - ($pos + 4));
+						//$log->lwrite("httpError(" . strlen($httpError) . ")=" . $httpError);
+					}
+					return "Error: " . $response_code . " " . trim($httpError);
+				}
+				$pos = strpos($response, "<?xml ");
+				if ($pos === false)	// response does not contain xml (e.g. a redirect to friendly error site for 404)
+				{
+					$error_title = "";
+					$pos = strpos($response, "<title>");
+					if ($pos !== false)
+					{
+						$pos2 =  strpos($response, "</title>", $pos + 7);
+						if ($pos2 !== false)
+						{
+							$error_title = substr($response, $pos + 7, $pos2-$pos-7);
+						}
+					}
+					return "Error: " . $error_title;
 				}
 			}
 			$log->lwrite("Digiprove_HTTP::post response:");

@@ -1,5 +1,5 @@
 <?php
-define("DPRV_SDK_VERSION", '1.00');
+define("DPRV_SDK_VERSION", '1.01');
 define("DPRV_HOST", "api.digiprove.com");                // you may use digiprove1.dyndns.ws for testing
 define("DPRV_VERIFY_HOST", "verify.digiprove.com");                // you may use digiprove1.dyndns.ws for testing
 define("DPRV_SSL", "No");
@@ -20,7 +20,7 @@ class Digiprove
 	// $error_message               a string - indirect reference - will contain error message if something went wrong
 	// $credentials                 an object containing EITHER "user_id" and "password" properties (with optional "domain_name"),
 	//													 OR "user_id", "domain_name", and "api_key" properties (recommended).  "alt_domain_name" property is optional. 
-	//                              indirect reference - on successful return, will also contain up to date "subscription_type" and "subscription_expiry_date" properties (also included in the return array);
+	//                              indirect reference - on successful return, will also contain up to date "subscription_type" and "subscription_expiry" properties (also included in the return array);
 	//                              if "api_key" was not supplied but "domain_name" was, a new api key will be generated on the server and will be returned as a property of credentials and in the return array
 	// $content                     Optional (but either this or $content_files must be supplied) - content to be digiproved; can be a string, array, or object
 	// $digiproved_content          indirect reference - if $content was not a string, it will be serialized into a string and that is what will be Digiproved; $digiproved_content contains this string value
@@ -169,38 +169,32 @@ class Digiprove
 	{
 		$log = new DPLog();  
 		$log->lwrite("prepareXML starts");
-		// TODO: get rid of the clunky twin arrays and just use the $content_file_table which has key=filename and value=digital fingerprint
-		//$content_file_names = array();
-		//$content_file_fingerprints = array();
 		$content_file_table = array();
 		if (function_exists("hash") && $content_files !== null)
 		{
-			//self::parseContentFiles($error_message, $content_files, $content_file_names, $content_file_fingerprints, $content_file_table);
 			self::parseContentFiles($error_message, $content_files, $content_file_table);
 		}
 		
-		$content = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
-		
+		//$content = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
+		$content = self::prepareForXML($content);
 		// Statement below inserted as vertical tabs not converted and cause a problem in XML .net server process
 		// TODO: there are probably other characters that will trip it up - review whole XML-encoding to create more systemic solution
 		$content = str_replace("\v", " ", $content);			// vertical tab           11 0013 0x0b
 		$content = str_replace(chr(1), '&#x1;', $content);	// soh - start of header   1 0001 0x01
 		$content = str_replace(chr(22), ' ', $content);		// SYN - Synchronous Idle 22  026 0x16
 
-		
-
 		// following instruction inserted to prevent problems with unescaped character '&' causing server-side XML parsing error
-		$content_type = trim(htmlspecialchars(stripslashes($content_type), ENT_QUOTES, 'UTF-8'));
+		// $content_type = trim(htmlspecialchars(stripslashes($content_type), ENT_QUOTES, 'UTF-8'));
 		
 		$postText = "<digiprove_certify_request>";
-		$postText .= "<user_id>" . $credentials['user_id'] . "</user_id>";
+		$postText .= "<user_id>" . self::prepareForXML($credentials['user_id']) . "</user_id>";
 		if (isset($credentials['domain_name']) && $credentials['domain_name'] != "")
 		{
-			$postText .= '<domain_name>' . $credentials['domain_name'] . '</domain_name>';
+			$postText .= '<domain_name>' . self::prepareForXML($credentials['domain_name']) . '</domain_name>';
 		}
 		if (isset($credentials['alt_domain_name']) && $credentials['alt_domain_name'] != "")
 		{
-			$postText .= '<alt_domain_name>' . $credentials['alt_domain_name'] . '</alt_domain_name>';
+			$postText .= '<alt_domain_name>' . self::prepareForXML($credentials['alt_domain_name']) . '</alt_domain_name>';
 		}
 
 		if (isset($credentials['api_key']) && $credentials['api_key'] != "")
@@ -220,14 +214,14 @@ class Digiprove
 		}
 		if 	(isset($credentials['dprv_event']) && $credentials['dprv_event'] != "")
 		{
-			//$postText .= "<dprv_event>" . $credentials['dprv_event'] . "</dprv_event>";
-			$postText .= "<dprv_event>" . htmlspecialchars($credentials['dprv_event']) . "</dprv_event>";
+			//$postText .= "<dprv_event>" . htmlspecialchars($credentials['dprv_event']) . "</dprv_event>";
+			$postText .= "<dprv_event>" . self::prepareForXML($credentials['dprv_event']) . "</dprv_event>";
 		}
 
 		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Digiprove SDK ' . DPRV_SDK_VERSION;
 		if ($user_agent != "")
 		{
-			$postText .= ' / ' . $user_agent;
+			$postText .= ' / ' . self::prepareForXML($user_agent);
 		}
 		$postText .= '</user_agent>';
 
@@ -236,22 +230,23 @@ class Digiprove
 			foreach ($metadata as $k=>$v)
 			{
 				// Prepare value for XML transmission
-				if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
-				{
-					$v = html_entity_decode($v, ENT_QUOTES, 'UTF-8');   // first go back to basic string (have seen WLW-sourced titles with html-encoding embedded)
-				}
-				$v = htmlspecialchars(stripslashes($v), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
-				$postText .= "<$k>$v</$k>";
+				// if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
+				// {
+				//	$v = html_entity_decode($v, ENT_QUOTES, 'UTF-8');   // first go back to basic string (have seen WLW-sourced titles with html-encoding embedded)
+				// }
+				// $v = htmlspecialchars(stripslashes($v), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
+				//$postText .= "<$k>$v</$k>";
+				$postText .= "<$k>" . self::prepareForXML($v) . "</$k>";
 			}
 		}
 		//$postText .= '<content_title>' . $title . '</content_title>';
 
-		//if (count($content_file_names) > 0)
 		if (count($content_file_table) > 0)
 		{
 			$postText .= "<content_wrapper>";
 		}
-		$postText .= '<content_type>' . $content_type . '</content_type>';
+		//$postText .= '<content_type>' . $content_type . '</content_type>';
+		$postText .= '<content_type>' . self::prepareForXML($content_type) . '</content_type>';
 
 		// if digital fingerprint could not be calculated (PHP4), or if requested, send content as well as fingerprint
 		if ($digital_fingerprint == "" || $save_content == true)
@@ -260,11 +255,11 @@ class Digiprove
 		}
 		else
 		{
-			$postText .= '<content_fingerprint>' . $digital_fingerprint . '</content_fingerprint>';
+			$postText .= '<content_fingerprint>' . self::prepareForXML($digital_fingerprint) . '</content_fingerprint>';
 		}
 		if ($content_url != "")
 		{
-			$postText .= '<content_url>' . $content_url . '</content_url>';
+			$postText .= '<content_url>' . self::prepareForXML($content_url) . '</content_url>';
 			$postText .= "<linkback>";
 			if ($linkback == true)
 			{
@@ -277,24 +272,19 @@ class Digiprove
 			$postText .= "</linkback>";
 
 		}
-		//if (count($content_file_names) > 0)
 		if (count($content_file_table) > 0)
 		{
 			$postText .= "</content_wrapper>";
 		}
 
-		//for ($t = 0; $t <count($content_file_names); $t++)
 		$t=0;
 		foreach ($content_file_table as $f_name=>$f_fingerprint)
 		{
-			//$log->lwrite("doing xml for file " . $t . ": " .  $content_file_names[$t]);
 			$log->lwrite("doing xml for file " . $t . ": " .  $f_name);
 			$postText .= "<content_wrapper>";
 			$postText .= '<content_type>File</content_type>';
-			//$postText .= '<content_filename>' . $content_file_names[$t] . '</content_filename>';
-			$postText .= '<content_filename>' . $f_name . '</content_filename>';
-			//$postText .= '<content_fingerprint>' . $content_file_fingerprints[$t] . '</content_fingerprint>';
-			$postText .= '<content_fingerprint>' . $f_fingerprint . '</content_fingerprint>';
+			$postText .= '<content_filename>' . self::prepareForXML($f_name) . '</content_filename>';
+			$postText .= '<content_fingerprint>' . self::prepareForXML($f_fingerprint) . '</content_fingerprint>';
 			$postText .= "</content_wrapper>";
 			$t++;
 		}
@@ -304,12 +294,13 @@ class Digiprove
 			foreach ($document_tracking as $k=>$v)
 			{
 				// Prepare value for XML transmission
-				if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
-				{
-					$v = html_entity_decode($v, ENT_QUOTES, 'UTF-8');   // first go back to basic string (have seen WLW-sourced titles with html-encoding embedded)
-				}
-				$v = htmlspecialchars(stripslashes($v), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
-				$postText .= "<$k>$v</$k>";
+				//if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
+				//{
+				//	$v = html_entity_decode($v, ENT_QUOTES, 'UTF-8');   // first go back to basic string (have seen WLW-sourced titles with html-encoding embedded)
+				//}
+				//$v = htmlspecialchars(stripslashes($v), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
+				//$postText .= "<$k>$v</$k>";
+				$postText .= "<$k>" . self::prepareForXML($v) . "</$k>";
 			}
 		}
 
@@ -338,6 +329,16 @@ class Digiprove
 		return $postText;
 	}
 
+	// encode for XML (may be unnecessary if using SOAP)
+	static function prepareForXML($v)
+	{
+		if (intval(substr(PHP_VERSION,0,1)) > 4)	// Skip this step if before PHP 5 as PHP4 cannot cope with it - not the end of the world in this case
+		{
+			$v = html_entity_decode($v, ENT_QUOTES, 'UTF-8');   // first go back to basic string (in case html-encoding already done)
+		}
+		$v = htmlspecialchars(stripslashes(trim($v)), ENT_QUOTES, 'UTF-8');	// Now encode the characters necessary for XML (Note this may not be necessary if using SOAP)
+		return $v;
+	}
 
 	// This function verifies a previously Digiproved piece of content
 	// $error_message               a string - indirect reference - will contain error message if something went wrong
@@ -497,7 +498,8 @@ class Digiprove
 			self::parseContentFiles($error_message, $content_files, $content_file_table);
 		}
 
-		$content = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
+		//$content = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
+		$content = self::prepareForXML($content);
 		
 		// Statement below inserted at 0.75 as vertical tabs not converted and cause a problem in XML .net server process
 		// TODO: there are probably other characters that will trip it up - review whole XML-encoding to create more systemic solution
@@ -509,10 +511,12 @@ class Digiprove
 
 		if ($credentials != null && isset($credentials) && isset($credentials['user_id']) && $credentials['user_id'] != "")
 		{
-			$postText .= "<user_id>" . $credentials['user_id'] . "</user_id>";
+			//$postText .= "<user_id>" . $credentials['user_id'] . "</user_id>";
+			$postText .= "<user_id>" . self::prepareForXML($credentials['user_id']) . "</user_id>";
 			if (isset($credentials['domain_name']) && $credentials['domain_name'] != "")
 			{
-				$postText .= '<domain_name>' . $credentials['domain_name'] . '</domain_name>';
+				//$postText .= '<domain_name>' . $credentials['domain_name'] . '</domain_name>';
+				$postText .= '<domain_name>' . self::prepareForXML($credentials['domain_name']) . '</domain_name>';
 			}
 
 			if (isset($credentials['api_key']) && $credentials['api_key'] != "")
@@ -533,15 +537,16 @@ class Digiprove
 		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Digiprove SDK ' . DPRV_SDK_VERSION;
 		if ($user_agent != "")
 		{
-			$postText .= ' / ' . $user_agent;
+			//$postText .= ' / ' . $user_agent;
+			$postText .= ' / ' . self::prepareForXML($user_agent);
 		}
 		$postText .= '</user_agent>';
 		if ($certificate_id != null && $certificate_id != "")
 		{
-			$postText .= '<certificate_id>' . $certificate_id . '</certificate_id>';
+			//$postText .= '<certificate_id>' . $certificate_id . '</certificate_id>';
+			$postText .= '<certificate_id>' . self::prepareForXML($certificate_id) . '</certificate_id>';
 		}
 
-		//if (count($content_file_names) > 0)
 		if (count($content_file_table) > 0)
 		{
 			$postText .= "<content_wrapper>";
@@ -554,26 +559,24 @@ class Digiprove
 		}
 		else
 		{
-			$postText .= '<content_fingerprint>' . $digital_fingerprint . '</content_fingerprint>';
+			//$postText .= '<content_fingerprint>' . $digital_fingerprint . '</content_fingerprint>';
+			$postText .= '<content_fingerprint>' . self::prepareForXML($digital_fingerprint) . '</content_fingerprint>';
 		}
-		//if (count($content_file_names) > 0)
 		if (count($content_file_table) > 0)
 		{
 			$postText .= "</content_wrapper>";
 		}
 
-		//for ($t = 0; $t <count($content_file_names); $t++)
 		$t=0;
 		foreach ($content_file_table as $f_name=>$f_fingerprint)
 		{
-			//$log->lwrite("doing xml for file " . $t . ": " .  $content_file_names[$t]);
 			$log->lwrite("doing xml for file " . $t . ": " .  $f_name);
 			$postText .= "<content_wrapper>";
 			$postText .= '<content_type>File</content_type>';
-			//$postText .= '<content_filename>' . $content_file_names[$t] . '</content_filename>';
-			$postText .= '<content_filename>' . $f_name . '</content_filename>';
-			//$postText .= '<content_fingerprint>' . $content_file_fingerprints[$t] . '</content_fingerprint>';
-			$postText .= '<content_fingerprint>' . $f_fingerprint . '</content_fingerprint>';
+			//$postText .= '<content_filename>' . $f_name . '</content_filename>';
+			$postText .= '<content_filename>' . self::prepareForXML($f_name) . '</content_filename>';
+			//$postText .= '<content_fingerprint>' . $f_fingerprint . '</content_fingerprint>';
+			$postText .= '<content_fingerprint>' . self::prepareForXML($f_fingerprint) . '</content_fingerprint>';
 			$postText .= "</content_wrapper>";
 			$t++;
 		}
@@ -582,7 +585,6 @@ class Digiprove
 	}
 
 
-	//function parseContentfiles(&$error_message, $content_files, &$content_file_names, &$content_file_fingerprints, &$content_file_table=null)
 	static public function parseContentFiles(&$error_message, $content_files, &$content_file_table=null)
 	{
 		$log = new DPLog();
@@ -591,14 +593,6 @@ class Digiprove
 		{
 			$content_file_table = array();
 		}
-		//if (!is_array($content_file_names))
-		//{
-		//	$content_file_names = array();
-		//}
-		//if (!is_array($content_file_fingerprints))
-		//{
-		//	$content_file_fingerprints = array();
-		//}
 
 		foreach($content_files as $full_path)
 		{
@@ -608,7 +602,6 @@ class Digiprove
 			if ($file_data != false)
 			{
 				$file_fingerprint = strtoupper(hash("sha256", $file_data));
-				//if (array_search($file_name,$content_file_names) === false || array_search($file_fingerprint,$content_file_fingerprints) === false)  // prevent duplicate references
 				if (array_key_exists($file_name,$content_file_table) === false || array_search($file_fingerprint, $content_file_table) === false)  // prevent duplicate references
 				{
 					$f = 1;
@@ -618,9 +611,6 @@ class Digiprove
 						$f++;
 						$f_suffix = "(" . $f . ")";
 					}
-					//$content_file_names[$t] = $file_name;
-					//$content_file_fingerprints[$t] = $file_fingerprint;
-					//$content_file_table[$file_name] = $file_fingerprint;
 					$content_file_table[$file_name . $f_suffix] = $file_fingerprint;
 					$log->lwrite("content_file_table[" . $file_name . $f_suffix . "]=" . $content_file_table[$file_name . $f_suffix]);
 					$t++;
@@ -745,7 +735,7 @@ class Digiprove
 	// $user_agent                  Optional = a string describing your software and its version e.g. "Bank Software 1.1" to aid in debugging etc.
 	//
 	// If parameters missing or in error, will return boolean false, while $error_message will contain the explanation
-	// Otherwsie, returns an array:
+	// Otherwise, returns an array:
 	// ["result_code"]				A string with values:
 	//              				'0' -   User registered OK
 	//								Other value - user was not registered (see ['result'] for explanation
@@ -753,7 +743,7 @@ class Digiprove
 	// ['api_key']					Will only exist if result code was '0': a string containing the api key for the supplied domain
 	// ['subscription_type']		Will only exist if result code was '0': a string containing the subscription type (at present will always be "Basic")
 
-	static public function register_user(&$error_message, $credentials, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs, $dprv_can_contact, $user_agent)
+	static public function register_user(&$error_message, &$credentials, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs, $dprv_can_contact, $user_agent)
 	{
 		$log = new DPLog();  
 		$log->lwrite("register_user starts");  
@@ -791,29 +781,37 @@ class Digiprove
 		}
 
 		$postText = "<digiprove_register_user>";
-		//$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
 		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Digiprove SDK ' . DPRV_SDK_VERSION;
 		if ($user_agent != "")
 		{
-			$postText .= ' / ' . $user_agent;
+			//$postText .= ' / ' . $user_agent;
+			$postText .= ' / ' . self::prepareForXML($user_agent);
 		}
 		$postText .= '</user_agent>';
 
-		$postText .= "<user_id>" . trim($credentials['user_id']) . "</user_id>";
-		$postText .= '<password>' . htmlspecialchars(stripslashes($credentials['password']), ENT_QUOTES, 'UTF-8') . '</password>';  // encode password if necessary
-		$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
+		//$postText .= "<user_id>" . trim($credentials['user_id']) . "</user_id>";
+		$postText .= "<user_id>" . self::prepareForXML($credentials['user_id']) . "</user_id>";
+		//$postText .= '<password>' . htmlspecialchars(stripslashes($credentials['password']), ENT_QUOTES, 'UTF-8') . '</password>';  // encode password if necessary
+		$postText .= '<password>' . self::prepareForXML($credentials['password']) . '</password>';
+		//$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
+		$postText .= '<email_address>' . self::prepareForXML($dprv_email_address) . '</email_address>';
 		$dprv_domain = "";
 		if (isset($credentials['alt_domain_name']))
 		{
-			$dprv_domain = trim($credentials['alt_domain_name']);
+			//$dprv_domain = trim($credentials['alt_domain_name']);
+			$dprv_domain = $credentials['alt_domain_name'];
 		}
 		if (isset($credentials['domain_name']))
 		{
-			$dprv_domain = trim($credentials['domain_name']);
+			//$dprv_domain = trim($credentials['domain_name']);
+			$dprv_domain = $credentials['domain_name'];
 		}
-		$postText .= '<domain_name>' . $dprv_domain . '</domain_name>';
-		$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary if using SOAP
-		$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary if using SOAP
+		//$postText .= '<domain_name>' . $dprv_domain . '</domain_name>';
+		$postText .= '<domain_name>' . self::prepareForXML($dprv_domain) . '</domain_name>';
+		//$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary if using SOAP
+		$postText .= '<first_name>' . self::prepareForXML($dprv_first_name) . '</first_name>';
+		//$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary if using SOAP
+		$postText .= '<last_name>' . self::prepareForXML($dprv_last_name) . '</last_name>';
 		if ($dprv_display_name == true)
 		{
 			$postText .= '<display_name>Yes</display_name>';
@@ -846,7 +844,8 @@ class Digiprove
 		$postText .= '<subscription_plan>' . 'Basic' . '</subscription_plan>';	// Can upgrade later
 		if (isset($credentials['dprv_event']) && trim($credentials['dprv_event']) != "")
 		{
-			$postText .= "<dprv_event>" . trim(htmlspecialchars($credentials['dprv_event'])) . "</dprv_event>";
+			//$postText .= "<dprv_event>" . trim(htmlspecialchars($credentials['dprv_event'])) . "</dprv_event>";
+			$postText .= "<dprv_event>" . self::prepareForXML($credentials['dprv_event']) . "</dprv_event>";
 		}
 		$postText .= '</digiprove_register_user>';
 		$log->lwrite("xml string = " . $postText);
@@ -862,6 +861,10 @@ class Digiprove
 			$pos2 = strpos($data, "<digiprove_register_user_response>", $pos); 
 			$pos3 = strpos($data, "</digiprove_register_user_response>", $pos2+34);
 			$return_table = self::parseResponse(substr($data,$pos2+34,$pos3-$pos2-34));
+			if (isset($return_table['api_key']) && trim($return_table['api_key']) != "")
+			{
+				$credentials['api_key'] = trim($return_table['api_key']);
+			}
 
 			//$log->lwrite("Returning successfully from dprv_register_user, response = " . substr($data,$pos2+34,$pos3-$pos2-34));
 			return $return_table;
@@ -870,42 +873,80 @@ class Digiprove
 		return false;
 	}
 
-	static public function update_user($dprv_user_id, $dprv_password, $dprv_api_key, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs,$dprv_renew_api_key)
+	// This function updates information for an existing user
+	// $error_message               a string - indirect reference - will contain error message if something went wrong
+	// $credentials                 an object containing EITHER "user_id" and "password" properties (with optional "domain_name"),
+	//													 OR "user_id", "domain_name", and "api_key" properties (recommended).  "alt_domain_name" property is optional. 
+	//                              indirect reference - on successful return, will also contain up to date "subscription_type" and "subscription_expiry" properties (also included in the return array);
+	//                              if "api_key" was not supplied but "domain_name" was, or if $dprv_renew_api_key was set to "on", a new api key will be generated on the server and will be returned as a 
+	//                              property of credentials and in the return array
+	//			
+	// $dprv_email_address			string = User's email address
+	// $dprv_first_name				string = User's first name
+	// $dprv_last_name				string = User's last name
+	// $dprv_display_name			boolean: if true, the user's name will be shown publicly whenever his certifications are being shown, otherwise it will be kept private
+	// $dprv_email_certs			boolean: if false, Digiprove certificates will not be emailed automatically to user, otherwise they will (although note that the Basic plan does not email these certs)
+	// $dprv_renew_api_key          Optional = a boolean if this is set to true, a new api key will be generated to replace any previous one for the given domain and returned
+	// $user_agent                  Optional = a string describing your software and its version e.g. "Bank Software 1.1" to aid in debugging etc.
+	//
+	// If parameters missing or in error, will return boolean false, while $error_message will contain the explanation
+	// Otherwise, returns an array:
+	// ["result_code"]				A string with values:
+	//              				'0' -   User registered OK
+	//								Other value - user was not registered (see ['result'] for explanation
+	// ['result']					a string containing description of result (e.g. "Success", "User already exists")
+	// ['api_key']					Will only exist if result code was '0': a string containing the api key for the supplied domain
+	// ['subscription_type']		Will only exist if result code was '0': a string containing the subscription type (at present will always be "Basic")
+
+	static public function update_user(&$error_message, &$dprv_credentials, $dprv_email_address, $dprv_first_name, $dprv_last_name, $dprv_display_name, $dprv_email_certs, $dprv_renew_api_key_bool, $dprv_user_agent)
 	{
-		global $wp_version, $dprv_blog_host, $dprv_wp_host;
 		$log = new DPLog();
 		$log->lwrite("update_user starts"); 
-
-		if ($dprv_user_id == "") return __('Please input your Digiprove User ID','dprv_cp');
-		if ($dprv_api_key == null || $dprv_api_key == "")
+		$cred_check = self::check_Credentials($dprv_credentials);
+		if ($cred_check !== true)
 		{
-			if ($dprv_password == "") return __('No password or API key', 'dprv_cp');
-			if (strlen($dprv_password) < 6) return __('Password must be at least 6 characters', 'dprv_cp');
+			$error_message = $cred_check;
+			return false;
 		}
 
 		$postText = "<digiprove_update_user>";
-		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
-		$postText .= "<user_id>" . $dprv_user_id . "</user_id>";
-		$postText .= '<domain_name>' . $dprv_blog_host . '</domain_name>';
-		if ($dprv_blog_host != $dprv_wp_host)
+		//$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Wordpress ' . $wp_version . ' / Copyright Proof ' . DPRV_VERSION . '</user_agent>';
+		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Digiprove SDK ' . DPRV_SDK_VERSION;
+		if ($dprv_user_agent != "")
 		{
-			$postText .= '<alt_domain_name>' . $dprv_wp_host . '</alt_domain_name>';
+			$postText .= ' / ' . self::prepareForXML($dprv_user_agent);
 		}
+		$postText .= '</user_agent>';
+		//$postText .= "<user_id>" . $dprv_user_id . "</user_id>";
+		$postText .= "<user_id>" . self::prepareForXML($dprv_credentials['user_id']) . "</user_id>";
 
-		$dprv_api_key = trim(get_option('dprv_api_key'));
-		if ($dprv_api_key != null && $dprv_api_key != "" && $dprv_renew_api_key != "on")
+		$dprv_domain = "";
+		if (isset($dprv_credentials['alt_domain_name']))
 		{
-			$postText .= '<api_key>' . $dprv_api_key . '</api_key>';
+			$dprv_domain = $dprv_credentials['alt_domain_name'];
+		}
+		if (isset($dprv_credentials['domain_name']))
+		{
+			$dprv_domain = $dprv_credentials['domain_name'];
+		}
+		$postText .= '<domain_name>' . self::prepareForXML($dprv_domain) . '</domain_name>';
+
+		if (isset($dprv_credentials['api_key']) && $dprv_credentials['api_key'] != "" && $dprv_renew_api_key_bool == false)
+		{
+			$postText .= '<api_key>' . self::prepareForXML($dprv_credentials['api_key']) . '</api_key>';
 		}
 		else
 		{
-			$postText .= '<password>' . htmlspecialchars(stripslashes($dprv_password), ENT_QUOTES, 'UTF-8') . '</password>';  // encode password if necessary
+			$postText .= '<password>' . self::prepareForXML($dprv_credentials['password']) . '</password>';
 			$postText .= '<request_api_key>Yes</request_api_key>';
 		}
-		
-		$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
-		$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary if using SOAP
-		$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary if using SOAP
+
+		//$postText .= '<email_address>' . $dprv_email_address . '</email_address>';
+		$postText .= '<email_address>' . self::prepareForXML($dprv_email_address) . '</email_address>';
+		//$postText .= '<first_name>' . htmlspecialchars(stripslashes($dprv_first_name), ENT_QUOTES, 'UTF-8') . '</first_name>';	// transformation may be unnecessary if using SOAP
+		$postText .= '<first_name>' . self::prepareForXML($dprv_first_name) . '</first_name>';	// transformation may be unnecessary if using SOAP
+		//$postText .= '<last_name>' . htmlspecialchars(stripslashes($dprv_last_name), ENT_QUOTES, 'UTF-8') . '</last_name>';		// transformation may be unnecessary if using SOAP
+		$postText .= '<last_name>' . self::prepareForXML($dprv_last_name) . '</last_name>';		// transformation may be unnecessary if using SOAP
 		if ($dprv_display_name == "Yes")
 		{
 			$postText .= '<display_name>Yes</display_name>';
@@ -922,32 +963,47 @@ class Digiprove
 		{
 			$postText .= '<email_certs>Yes</email_certs>';
 		}
-		$dprv_event = get_option('dprv_event');
-		if ($dprv_event !== false && $dprv_event != "")
+		if (isset($dprv_credentials['dprv_event']) && trim($dprv_credentials['dprv_event']) != "")
 		{
-			$postText .= "<dprv_event>" . trim(htmlspecialchars($dprv_event)) . "</dprv_event>";
-			update_option('dprv_event', '');								// Clear it down
+			$postText .= "<dprv_event>" . self::prepareForXML(htmlspecialchars($dprv_credentials['dprv_event'])) . "</dprv_event>";
 		}
-
 		$postText .= '</digiprove_update_user>';
 
 		$log->lwrite("xml string = " . $postText);
 		$data = Digiprove_HTTP::post($postText, DPRV_HOST, "/secure/service.asmx/", "UpdateUser");
-
 		$pos = strpos($data, "Error:");
 		if ($pos === false)
 		{
+			$pos = strpos($data, "<?xml ");
 			// NOTE that the API seems to return <digiprove_register_user_response> instead of more logical <digiprove_update_user_response>
-			$log->lwrite("Returning successfully from dprv_update_user");
+			$pos2 = strpos($data, "<digiprove_register_user_response>", $pos); 
+			$pos3 = strpos($data, "</digiprove_register_user_response>", $pos2+34);
+			$return_table = self::parseResponse(substr($data,$pos2+34,$pos3-$pos2-34));
+
+			if (isset($return_table['api_key']) && trim($return_table['api_key']) != "")
+			{
+				$dprv_credentials['api_key'] = trim($return_table['api_key']);
+			}
+			if (isset($return_table['subscription_type']) && trim($return_table['subscription_type']) != "")
+			{
+				$dprv_credentials['subscription_type'] = trim($return_table['subscription_type']);
+			}
+			if (isset($return_table['subscription_expiry']) && trim($return_table['subscription_expiry']) != "")
+			{
+				$dprv_credentials['subscription_expiry'] = trim($return_table['subscription_expiry']);
+			}
+			//$log->lwrite("Returning successfully from update_user, response = " . substr($data,$pos2+34,$pos3-$pos2-34));
+			return $return_table;
 		}
-		return $data;
+		$error_message = $data;
+		return false;
 	}
 
 	// This function gets the latest subscription information for a user
 	// $error_message               a string - indirect reference - will contain error message if something went wrong
 	// $credentials                 an object containing EITHER "user_id" and "password" properties (with optional "domain_name"),
 	//													 OR "user_id", "domain_name", and "api_key" properties (recommended).  "alt_domain_name" property is optional. 
-	//                              indirect reference - on successful return, will also contain up to date "subscription_type" and "subscription_expiry_date" properties (also included in the return array);
+	//                              indirect reference - on successful return, will also contain up to date "subscription_type" and "subscription_expiry" properties (also included in the return array);
 	//                              if "api_key" was not supplied but "domain_name" was, or if $dprv_renew_api_key was set to "on", a new api key will be generated on the server and will be returned as a 
 	//                              property of credentials and in the return array
 	//			
@@ -960,13 +1016,12 @@ class Digiprove
 	//              				'0' -   User registered OK
 	//								Other value - user was not registered (see ['result'] for explanation
 	// ['result']					a string containing description of result (e.g. "Success", "User not found")
-	// ['subscription_type']		Will only exist if result code was '0': a string containing the subscription type (at present will always be "Basic")
+	// ['subscription_type']		Will only exist if result code was '0': a string containing the subscription type 
 	// ['subscription_expiry']		Will only exist if result code was '0': a string containing the subscription expiry date (or '' if subscription type is Basic)
 	// ['api_key']					Will only exist if $dprv_renew_api_key was set to true OR no api_key was supplied but domain_name was
 
 	static public function get_user(&$error_message, &$credentials, $dprv_renew_api_key, $user_agent)
 	{
-		//global $wp_version, $dprv_blog_host, $dprv_wp_host;
 		$log = new DPLog();  
 		$log->lwrite("get_user starts");
 		$error_message = "";
@@ -976,29 +1031,33 @@ class Digiprove
 			$error_message = $cred_check;
 			return false;
 		}
-
 		$postText = "<digiprove_sync_user>";
 		$postText .= '<user_agent>PHP ' . PHP_VERSION . ' / Digiprove SDK ' . DPRV_SDK_VERSION;
 		if ($user_agent != "")
 		{
-			$postText .= ' / ' . $user_agent;
+			//$postText .= ' / ' . $user_agent;
+			$postText .= ' / ' . self::prepareForXML($user_agent);
 		}
 		$postText .= '</user_agent>';
-		$postText .= "<user_id>" . trim($credentials['user_id']) . "</user_id>";
-		$postText .= '<domain_name>' . trim($credentials['domain_name']) . '</domain_name>';
+		//$postText .= "<user_id>" . trim($credentials['user_id']) . "</user_id>";
+		$postText .= "<user_id>" . self::prepareForXML($credentials['user_id']) . "</user_id>";
+		//$postText .= '<domain_name>' . trim($credentials['domain_name']) . '</domain_name>';
+		$postText .= '<domain_name>' . self::prepareForXML($credentials['domain_name']) . '</domain_name>';
 		if (isset($credentials['alt_domain_name']) && trim($credentials['alt_domain_name']) != "")
 		{
-			$postText .= '<alt_domain_name>' .  trim($credentials['alt_domain_name']) . '</alt_domain_name>';
+			//$postText .= '<alt_domain_name>' .  trim($credentials['alt_domain_name']) . '</alt_domain_name>';
+			$postText .= '<alt_domain_name>' . self::prepareForXML($credentials['alt_domain_name']) . '</alt_domain_name>';
 		}
 
-		//$dprv_api_key = get_option('dprv_api_key');
 		if (isset($credentials['api_key']) && trim($credentials['api_key']) != "")  // && $dprv_renew_api_key != "on")
 		{
-			$postText .= '<api_key>' . trim($credentials['api_key']) . '</api_key>';
+			//$postText .= '<api_key>' . trim($credentials['api_key']) . '</api_key>';
+			$postText .= '<api_key>' . self::prepareForXML($credentials['api_key']) . '</api_key>';
 		}
 		else
 		{
-			$postText .= '<password>' . htmlspecialchars(stripslashes($credentials['password'], ENT_QUOTES, 'UTF-8')) . '</password>';  // encode password if necessary
+			//$postText .= '<password>' . htmlspecialchars(stripslashes($credentials['password'], ENT_QUOTES, 'UTF-8')) . '</password>';  // encode password if necessary
+			$postText .= '<password>' . self::prepareForXML($credentials['password']) . '</password>';  // encode password if necessary
 		}
 		if ($dprv_renew_api_key == true)
 		{
@@ -1006,7 +1065,8 @@ class Digiprove
 		}
 		if (isset($credentials['dprv_event']) && trim($credentials['dprv_event']) != "")
 		{
-			$postText .= "<dprv_event>" . trim(htmlspecialchars($credentials['dprv_event'])) . "</dprv_event>";
+			//$postText .= "<dprv_event>" . trim(htmlspecialchars($credentials['dprv_event'])) . "</dprv_event>";
+			$postText .= "<dprv_event>" . self::prepareForXML(htmlspecialchars($credentials['dprv_event'])) . "</dprv_event>";
 		}
 
 		$postText .= '</digiprove_sync_user>';
@@ -1026,6 +1086,14 @@ class Digiprove
 			{
 				$credentials['api_key'] = trim($return_table['api_key']);
 			}
+			if (isset($return_table['subscription_type']) && trim($return_table['subscription_type']) != "")
+			{
+				$credentials['subscription_type'] = trim($return_table['subscription_type']);
+			}
+			if (isset($return_table['subscription_expiry']) && trim($return_table['subscription_expiry']) != "")
+			{
+				$credentials['subscription_expiry'] = trim($return_table['subscription_expiry']);
+			}
 			$log->lwrite("Returning successfully from Digiprove::get_user");
 			return $return_table;
 		}
@@ -1035,7 +1103,7 @@ class Digiprove
 
 	static private function check_Credentials($credentials)
 	{
-		if (!isset($credentials['user_id']) || trim($credentials['user_id']) == "") return __('Please specify a Digiprove user id','dprv_cp');
+		if (!isset($credentials['user_id']) || trim($credentials['user_id']) == "") return __('Please supply a Digiprove user id','dprv_cp');
 		if (!isset($credentials['api_key']) || trim($credentials['api_key']) == "")
 		{
 			if (!isset($credentials['password']) || trim($credentials['password']) == "") return __('No password or API key', 'dprv_cp');
@@ -1043,8 +1111,6 @@ class Digiprove
 		}
 		return true;
 	}
-
-
 }
 
 class DPLog

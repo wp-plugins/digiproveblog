@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
-Tested up to: 3.6.1
-Stable tag: 2.16
+Tested up to: 3.8.1
+Stable tag: 2.17
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -156,6 +156,15 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 == Changelog ==
 
+= 2.17 =
+* Uses Digiprove SDK 1.01 (more secure, better XML-encoding)
+* Removed unnecessary XML-encoding from calling functions
+* Uses new update_user function from Digiprove SDK 1.01 instead of inside plugin
+* (SDK 1.01) Removed password-encoding bug in Sync-User function
+* (SDK 1.01) Handles 301/302/307 redirects (for future use)
+* (SDK 1.01)Fixed bug - informs user when Digiprove website offline for maintenance 
+* SEO - alt attribute is no longer empty in img tag for Digiprove symbol
+
 = 2.16 =
 * New option to specify whether submitted or generated posts (e.g. via xmlrpc) are to be Digiproved
 * Uses default timeout value for http connection to improve connectivity for some installations
@@ -164,7 +173,7 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Changed naming conventions to further reduce risk of clash with other plugins and themes
 * Fixed bug where Update button can disappear in settings menu after license maintenance
 * Specifies UTF-8 character encoding in upgrade form - prevents warnings
-* Improved handling of SQL errors
+* Logs mysql.connect_timeout value in case of 'MySQL server has gone away' error
 * Logs time taken to perform MySQL instruction in case of an SQL error
 * Better handling of malformed URLs and bookmarks when parsing for media files
 * Resolved minor error not returning content after a hook function in certain circumstances
