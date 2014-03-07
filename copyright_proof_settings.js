@@ -78,7 +78,8 @@ function dprv_DisplayContentTab()
 	document.getElementById("AdvancedPart2").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("Content").style.display="";
-	//document.getElementById("ContentPart2").style.display="";
+	// TODO: Restore instruction below when implementing data integrity checking
+	// document.getElementById("ContentPart2").style.display="";
 	document.getElementById("CopyProtect").style.display="none";
 	document.getElementById('dprv_submit').style.display='';	
 	dprv_HideHelpText();

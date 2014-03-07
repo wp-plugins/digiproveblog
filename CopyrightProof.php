@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.17
+Version: 2.18
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -37,9 +37,10 @@ License: GPL
 		include_once('copyright_proof_error.php');					// Functions for handling errors
 	}
 	include_once('Digiprove.php');									// Digiprove SDK functions
+	include_once('copyright_proof_integrity.php');					// Functions for Verification
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.17");
+	define("DPRV_VERSION", "2.18");
 	define("DPRV_WWW", "www.digiprove.com");                       // you may use digiprove1.dyndns.ws for testing
 	//error_reporting(-1);						   // uncomment this for test purposes
 
@@ -81,9 +82,8 @@ License: GPL
 
 	add_action('admin_menu', 'dprv_settings_menu');
 	add_action('admin_head', 'dprv_admin_head');
-	//add_action('admin_footer', 'dprv_admin_footer');		// No longer used, new strategy for displaying messages
+	add_action('admin_footer', 'dprv_admin_footer');
 
-	//add_action('post_submitbox_misc_actions', 'dprv_verify_box');
 	add_action('post_submitbox_start', 'dprv_add_digiprove_submit_button');
 	add_filter('wp_insert_post_data', 'dprv_parse_post', 99, 2);
 	add_filter('wp_insert_page_data', 'dprv_parse_post', 99, 2);
@@ -105,9 +105,15 @@ License: GPL
 	}
 
 	add_action("wp_head", "dprv_head");
-	add_filter( "the_content", "dprv_display_content" );
-	add_action( "wp_footer", "dprv_footer" );
+	add_filter("the_content", "dprv_display_content" );
+	add_action("wp_footer", "dprv_footer" );
+	add_action('wp_ajax_dprv_verify_revision', 'dprv_verify_revision_callback');
 
+	// Hooks for Integrity checking:
+	// TODO - Reinstate these hooks when implementing integrity checking
+	// add_action('post_submitbox_misc_actions', 'dprv_verify_box');			// Displays verify info on edit screen
+	// add_action('wp_ajax_dprv_verify', 'dprv_verify_callback');				// 
+	// add_action('wp_ajax_nopriv_dprv_verify', 'dprv_verify_callback' );		// as above but for not-logged-in users
 
 	if(!function_exists("strripos"))
 	{

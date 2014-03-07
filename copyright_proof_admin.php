@@ -16,6 +16,10 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 	{
 		$script_name = substr($script_name, 0, $posDot);
 	}
+	if ($script_name == "revision")
+	{
+		echo "<style type='text/css'>#dprv_verify_panel{width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed;}#dprv_verify_panel tr td {border:1px solid #BB6; padding-left:3px; vertical-align:top}</style>";
+	}
 
 	if ($script_name != "post" && $script_name != "page" && $script_name != "post-new" && $script_name != "page-new" && ($script_name != "options-general" || strpos($_SERVER['QUERY_STRING'], "copyright_proof_admin.php") === false))
 	{
@@ -24,6 +28,64 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 	}
 	dprv_populate_licenses();
 	dprv_populate_licenses_js();
+}
+function dprv_admin_footer($value)
+{
+	global $revision_id;
+	$script_name = pathinfo($_SERVER['PHP_SELF'], PATHINFO_BASENAME);
+	$posDot = strrpos($script_name,'.');
+	if ($posDot != false)
+	{
+		$script_name = substr($script_name, 0, $posDot);
+	}
+	if (strpos($script_name, "revision") === false)
+	{
+		return;
+	}
+
+	// Modify revision template to include a button for verifying a post, and a box to show the result in
+	echo ("<script type='text/javascript'>
+			var revisionTemplate = document.getElementById('tmpl-revisions-meta');
+			if ((typeof revisionTemplate).toLowerCase() == 'object')
+			{
+				var dprv_verifyButtonHtml = '<button class=\"button\" style=\"margin-top:4px;margin-left:20px\" onclick=\"dprv_verify_revision(\'{{ data.attributes.id }}\')\">Check Digiprove Status</button>';
+				var dprv_verifyBoxHtml = '<div id=\"dprv_verifyResultBox\" style=\"width:330px; height:300px; padding:7px; padding-top:10px; background-color:#EEF; border: 1px solid #99A; border-radius:16px;position: absolute; top:89px; left:414px; z-index:1; display:none\"></div>';
+				revisionTemplate.innerHTML = revisionTemplate.innerHTML.replace('<input', dprv_verifyButtonHtml + dprv_verifyBoxHtml + '<input');
+			}
+
+			function dprv_verify_revision(p_id)
+			{
+				jQuery(document).ready(function($) 
+				{
+					var data = {action: 'dprv_verify_revision', dprv_post_id: p_id};
+					// since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
+					$.post(ajaxurl, data, function(response) {
+					dprv_showVerifyBox(response);
+				});
+			});
+			}
+			function dprv_showVerifyBox(content)
+			{
+				var dprv_boxContents = '<img src=\"" . plugins_url("digiprove_logo_112x28.png", __FILE__ ) . "\" alt=\"Digiprove\"/><span style=\"padding-left:10px; font-weight:bold; vertical-align:top;\">Verification result</span>';
+				dprv_boxContents += '<div style=\"margin-top:10px\">' + content + '</div>';
+				if (content.indexOf('verifyMessage') != -1)
+				{
+					dprv_boxContents += '<button style=\"margin-top:20px;float:left\"onclick=\"copyVerifyMessage()\">Show certificate text</button>';
+				}
+				dprv_boxContents += '<button style=\"margin-top:20px;float:right\" onclick=\"dprv_offVerifyBox();\">Close</button>';
+				dprv_boxContents += '</div>';
+				document.getElementById(\"dprv_verifyResultBox\").innerHTML = dprv_boxContents;
+				document.getElementById(\"dprv_verifyResultBox\").style.display=\"block\";
+			}
+			function dprv_offVerifyBox()
+			{
+				document.getElementById('dprv_verifyResultBox').style.display='none';
+			}
+			function copyVerifyMessage()
+			{
+				alert(document.getElementById('verifyMessage').innerHTML);
+			}
+			</script>");
 }
 
 function dprv_settings()		// Run when Digiprove selected from Settings menu
@@ -1411,6 +1473,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_featured_images_checked = ' checked = "checked"';
 	}
 
+	// APPLIES ACROSS TABS:
+	$dprv_subscription_expired = "No";
+	$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 864000;			// add 10-day grace period (Also handles any unforeseen timezone issues)
+	if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
+	{
+		$dprv_subscription_expired = "Yes";
+	}
+	$dprv_days_to_expiry = floor((strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') - time())/86400);
+
 	// LICENSE TAB:
 	$dprv_all_rights_selected = ' selected="selected"';
 	$dprv_some_rights__selected = '';
@@ -1423,19 +1494,24 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	// DATA INTEGRITY TAB:
 	$dprv_html_integrity_yes_checked = '';
 	$dprv_html_integrity_no_checked = ' checked="checked"';
-	if ($dprv_html_integrity == 'Yes')
-	{
-		$dprv_html_integrity_no_checked = '';
-		$dprv_html_integrity_yes_checked = ' checked="checked"';
-	}
-	//$log->lwrite('dprv_html_integrity=' . $dprv_html_integrity);
+	$dprv_integrity_display = ' style="display:none"';
 	$dprv_files_integrity_yes_checked = '';
 	$dprv_files_integrity_no_checked = ' checked="checked"';
-	if ($dprv_files_integrity == 'Yes')
+	if ($dprv_subscription_type != "Basic" && $dprv_subscription_type != "" && $dprv_subscription_expired != "Yes")
 	{
-		$dprv_files_integrity_no_checked = '';
-		$dprv_files_integrity_yes_checked = ' checked="checked"';
+		if ($dprv_html_integrity == 'Yes')
+		{
+			$dprv_html_integrity_no_checked = '';
+			$dprv_html_integrity_yes_checked = ' checked="checked"';
+			$dprv_integrity_display = '';
+		}
+		if ($dprv_files_integrity == 'Yes')
+		{
+			$dprv_files_integrity_no_checked = '';
+			$dprv_files_integrity_yes_checked = ' checked="checked"';
+		}
 	}
+	$log->lwrite('dprv_html_integrity=' . $dprv_html_integrity);
 
 	// COPY-PROTECT TAB:
 	$dprv_frustrate_yes_checked = '';
@@ -1462,16 +1538,6 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	}
 
 
-	// APPLIES ACROSS TABS:
-	$dprv_subscription_expired = "No";
-	$dprv_expiry_timestamp = strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') + 864000;			// add 10-day grace period (Also handles any unforeseen timezone issues)
-	if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
-	{
-		$dprv_subscription_expired = "Yes";
-	}
-	$dprv_days_to_expiry = floor((strtotime($dprv_subscription_expiry . ' 23:59:59 +0000') - time())/86400);
-	//$log->lwrite("dprv_days_to_expiry = " . $dprv_days_to_expiry);
-
 	// Default Values
 	$subscription_enabled_se = ' onclick="return false" onchange="this.selectedIndex=0;"';
 	$subscription_enabled_tb = ' onclick="return false"';
@@ -1482,6 +1548,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	$sub_enabled_style = 'color:#CCCCCC;';
 	$sub_bg_style = ' style="background-color:#CCCCCC;"';
 	$premium_enabled_cb = ' onclick="return false" onchange="this.selectedIndex=0;"';
+	$premium_enabled_radio = ' onclick="return false" onchange="this.checked=false;"';   // inserted
 	$prem_enabled_title = ' title="This option is available to premium subscribers only"';
 	$prem_enabled_onclick = ' onclick="dprv_PremiumOnly(this.id);"';
 	$prem_enabled_style = 'color:#CCCCCC;';
@@ -1504,6 +1571,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		if ($dprv_subscription_type != "Personal")
 		{
 			$premium_enabled = '';
+			$premium_enabled_cb = '';
+			$premium_enabled_radio = '';
 			$prem_enabled_title = '';
 			$prem_enabled_onclick = '';
 			$prem_enabled_style = '';
@@ -1965,22 +2034,22 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 												<table cellpadding="0" cellspacing="0" border="0" style="padding-left:10px; padding-top:7px; padding-right:5px; background-color:#FFDDCC; border:1px solid #666666; border-top:0px; width:798px">
 													<tr><td style="height:6px; width:280px"></td></tr>
 													<tr>
-														<td colspan="2" style="font-weight:bold; font-style:italic">' . __('Perform Data Integrity verification on your content', 'dprv_cp') . '</td>
+														<td colspan="2" style="font-weight:bold; font-style:italic">' . __('Data Integrity verification on your content', 'dprv_cp') . '</td>
 														<td class="description" ><a href="javascript:dprv_ShowDataIntegrityText()">' .__('Note', 'dprv_cp') . '</a></td>
 													</tr>
 													<tr><td style="height:6px;"></td></tr>
-													<tr>
-														<td valign="top">' . __('HTML Integrity:', 'dprv_cp') . '</td>
+													<tr ' . $sub_enabled_title . $sub_enabled_onclick . '>
+														<td valign="top">' . __('Perform Content Integrity Verification:', 'dprv_cp') . '</td>
 														<td>
-															<input type="radio" name="dprv_html_integrity" id="dprv_html_integrity_yes" value="Yes" ' . $dprv_html_integrity_yes_checked . '/>&nbsp;' . __('Check Integrity of HTML', 'dprv_cp') . '<br/>
-															<input type="radio" name="dprv_html_integrity" id="dprv_html_integrity_no" value="No" ' . $dprv_html_integrity_no_checked . '/>&nbsp;' . __('Don&#39;t Check HTML Integrity', 'dprv_cp') . '</td>
+															<input type="radio" ' . $subscription_enabled_se . 'name="dprv_html_integrity" id="dprv_html_integrity_yes" onclick="dprv_toggleIntegrity()" value="Yes" ' . $dprv_html_integrity_yes_checked . '/><label for="dprv_html_integrity_yes">&nbsp;' . __('Yes', 'dprv_cp') . '</label><br/>
+															<input type="radio" name="dprv_html_integrity" id="dprv_html_integrity_no" onclick="dprv_toggleIntegrity()" value="No" ' . $dprv_html_integrity_no_checked . '/><label for="dprv_html_integrity_no">&nbsp;' . __('No', 'dprv_cp') . '</label></td>
 													</tr>
-													<tr><td style="height:12px"></td></tr>
-													<tr>
-														<td valign="top">' . __('Check Embedded File Integrity:', 'dprv_cp') . '</td>
+													<tr id="integrity_row_0" ' . $dprv_integrity_display . '><td style="height:12px"></td></tr>
+													<tr id="integrity_row_1" ' . $dprv_integrity_display . '>
+														<td valign="top">' . __('Content to be verified:', 'dprv_cp') . '</td>
 														<td>
-															<input type="radio" name="dprv_files_integrity" id="dprv_files_integrity_yes" value="Yes" ' . $dprv_files_integrity_yes_checked . '/>&nbsp;' . __('Check Integrity of files used in your content', 'dprv_cp') . '<br/>
-															<input type="radio" name="dprv_files_integrity" id="dprv_files_integrity_no" value="No" ' . $dprv_files_integrity_no_checked . '/>&nbsp;' . __('Don&#39;t Check Integrity of files used in your content', 'dprv_cp') . '
+															<input type="radio" ' . $subscription_enabled_se . 'name="dprv_files_integrity" id="dprv_files_integrity_no" value="No" ' . $dprv_files_integrity_no_checked . '/><label for="dprv_files_integrity_no">&nbsp;' . __('Just HTML', 'dprv_cp') . '</label><br/>
+															<span id="File Integrity Check" ' .  $prem_enabled_title . $prem_enabled_onclick . '><input type="radio" name="dprv_files_integrity" id="dprv_files_integrity_yes" value="Yes" style="' . $prem_enabled_style . '" ' . $dprv_files_integrity_yes_checked . $premium_enabled_radio . '/><label for="dprv_files_integrity_yes" style="' .  $prem_enabled_style . '">&nbsp;' . __('HTML &amp; embedded files', 'dprv_cp') . '</label></span>
 														</td>
 														<td><a href="javascript:dprv_FileIntegrityNote()">' . __('Important note', 'dprv_cp') . '</a></td>
 													</tr>
@@ -2189,7 +2258,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			dprv_literals["PHP_warning0"] = \'' . __("Your version of PHP does not support this function.", "dprv_cp") . '\';
 			dprv_literals["PHP_warning1"] = \'' . __("Ask your provider to upgrade you to PHP 5.1.2 or later.", "dprv_cp") . '\';
 
-			dprv_literals["DataIntegrity_help"]	= \'' . __("This plugin can check the data integrity of your posts - thus identifying any unauthorised alteration of the content of your posts and pages, whether through deliberate hacking or through accidental corruption", "dprv_cp") . '\';	
+			dprv_literals["DataIntegrity_help"]	= \'' . __("This plugin can check the data integrity of your pages and posts - thus identifying any unauthorised alteration of the content of your posts and pages, whether through deliberate hacking or through accidental corruption", "dprv_cp") . '\';	
 			
 			dprv_literals["FileIntegrityNote"] = \'' . __("Only files that are individually fingerprinted and Digiproved can be checked for integrity - this will depend on the settings you chose for Digiproving files above.", "dprv_cp") . '\';
 

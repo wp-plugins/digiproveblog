@@ -90,7 +90,6 @@ function dprv_head()
 		function dprv_HideLicense(post_id)
 		{
 			document.getElementById('license_panel' + post_id).style.display='none';
-			//document.getElementById('license_panel' + post_id).style.zIndex='0';
 		}");
 
 	echo ("
@@ -151,7 +150,8 @@ function dprv_display_content($content)
 	// Do Data Integrity Check and get statement for the Digiprove notice
 	$dprv_integrity_headline="";
 	$dprv_integrity_message="";
-	//dprv_integrity_statement($dprv_post_id, $dprv_integrity_headline, $dprv_integrity_message);
+	// TODO - Reinstate instruction below when implementing integrity checking
+	//	dprv_integrity_statement($dprv_post_id, $dprv_integrity_headline, $dprv_integrity_message);
 
 	if (($in_auto_excerpt == true || !is_singular()) && get_option('dprv_multi_post') == "No")
 	{
@@ -329,7 +329,7 @@ function dprv_integrity_statement($dprv_post_id, &$dprv_integrity_headline,  &$d
 				$digital_fingerprint = "";
 				// Might need to get from db, but try this:
 				$check_content = $post->post_content;
-				$log->lwrite("post->post_content=" . $post->post_content);
+				//$log->lwrite("post->post_content=" . $post->post_content);
 				$check_content = dprv_getRawContent($check_content, $digital_fingerprint);
 				$dprv_html_integrity_headline = "";
 				$dprv_html_integrity_message = "";
