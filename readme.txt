@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.8.1
-Stable tag: 2.17
+Stable tag: 2.18
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -156,13 +156,18 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 == Changelog ==
 
+= 2.18 =
+* New function - Verify Digiprove status of any previous revision
+* Introduces server-side version tracking
+
 = 2.17 =
 * Uses Digiprove SDK 1.01 (more secure, better XML-encoding)
 * Removed unnecessary XML-encoding from calling functions
 * Uses new update_user function from Digiprove SDK 1.01 instead of inside plugin
 * (SDK 1.01) Removed password-encoding bug in Sync-User function
 * (SDK 1.01) Handles 301/302/307 redirects (for future use)
-* (SDK 1.01)Fixed bug - informs user when Digiprove website offline for maintenance 
+* Text "Did you notice the Copyright Panel" in License settings
+* Fixed bug - informs user when Digiprove website offline for maintenance 
 * SEO - alt attribute is no longer empty in img tag for Digiprove symbol
 
 = 2.16 =

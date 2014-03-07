@@ -454,7 +454,7 @@ class Digiprove
 		{
 			$log->lwrite("There was a problem in Digiprove_HTTP::post");
             $return_table["result_code"] = "111";
-            $return_table["result"] =  "Error while attempting to contact server";
+            $return_table["result"] = "Error while attempting to contact server";
 			$error_message = $data;
 			return $return_table;
 		}

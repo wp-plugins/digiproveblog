@@ -677,7 +677,6 @@ function dprv_add_digiprove_submit_button()
 		$can_publish = current_user_can("publish_posts");
 	}
 
-
 	echo ('<input name="dprv_publish_dp_action" type="hidden" id="dprv_publish_dp_action" value="No" />');
 	$dprv_publish_text = "default";
 	if ( !in_array( $post->post_status, array('publish', 'future', 'private') ) || 0 == $post->ID )
@@ -712,7 +711,8 @@ function dprv_add_digiprove_submit_button()
 			$today_count = intval(get_option('dprv_last_date_count'));
 		}
 		$dprv_subscription_type = get_option('dprv_subscription_type');
-		$today_limit = dprv_daily_limit($dprv_subscription_type);
+		$max_file_count = 0;
+		$today_limit = dprv_daily_limit($dprv_subscription_type, $max_file_count);
 		$color = "";
 		if ($today_limit != -1)
 		{
@@ -1092,6 +1092,11 @@ function dprv_digiprove_post($dprv_post_id)
 		$log->lwrite("dprv_digiprove_post not starting because user not registered yet");
 		return;
 	}
+	// Determine limits
+	$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
+	$dprv_subscription_type = get_option('dprv_subscription_type');
+	$max_file_count = 0;
+	$today_limit = dprv_daily_limit($dprv_subscription_type, $max_file_count);
 
 	// TODO: Change this to not return, but just skip Digiproving part
 	// TODO: check whether $_POST['dprv_publish_dp_action'] is set to avoid PHP Notices in logfile
@@ -1099,7 +1104,7 @@ function dprv_digiprove_post($dprv_post_id)
 	if ($dprv_publish_dp_action == "No")
 	{
 		$log->lwrite("dprv_digiprove_post not starting - user selected publish/update without Digiprove for post Id " . $dprv_post_id);
-		dprv_record_non_dp_action($dprv_post_id, $content);
+		dprv_record_non_dp_action($dprv_post_id, $content, $max_file_count);
 		// Test whether commenting out below causes spurious messages, if so, restore
 		//update_option('dprv_last_result', '');
 		return;
@@ -1109,7 +1114,7 @@ function dprv_digiprove_post($dprv_post_id)
 	if ($dprv_digiprove_this_post == "No")
 	{
 		$log->lwrite("dprv_digiprove_post not starting - digiprove_this_post set to No for post Id " . $dprv_post_id);
-		dprv_record_non_dp_action($dprv_post_id, $content);
+		dprv_record_non_dp_action($dprv_post_id, $content, $max_file_count);
 		// Test whether commenting out below causes spurious messages, if so, restore
 		//update_option('dprv_last_result', '');
 		return;
@@ -1118,9 +1123,8 @@ function dprv_digiprove_post($dprv_post_id)
 	if ($dprv_digiprove_this_post != "Yes")
 	{
 		$log->lwrite("dprv_digiprove_this_post = " . $dprv_digiprove_this_post);
-		global $wpdb;
-		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $dprv_post_id;
-		$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
+		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
+		$dprv_post_info = dprv_wpdb("get_row", $sql, $dprv_post_id);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
 		{
 			if ($dprv_post_info["digiprove_this_post"] == false)
@@ -1147,7 +1151,7 @@ function dprv_digiprove_post($dprv_post_id)
 	}
 
 	//if (get_option('dprv_auto_posts') != "Yes" && ($dprv_post_id == -1 || ($script_name != "post-new" && $script_name != "post" && $script_name != "post")))
-	if (get_option('dprv_auto_posts') != "Yes" && !isset($_POST['dprv_publish_dp_action']))	// If no dprv_publish_action, then the user had no opportunity to choose Digiprove por No
+	if (get_option('dprv_auto_posts') != "Yes" && !isset($_POST['dprv_publish_dp_action']))	// If no dprv_publish_action, then the user had no opportunity to choose Digiprove or No
 	{
 		$log->lwrite("dprv_digiprove_post not starting for post $dprv_post_id in script $script_name because Digiproving of auto-posts is not selected");
 		return;
@@ -1166,9 +1170,9 @@ function dprv_digiprove_post($dprv_post_id)
 
 	$today_count += 1;
 
-	$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
-	$dprv_subscription_type = get_option('dprv_subscription_type');
-	$today_limit = dprv_daily_limit($dprv_subscription_type);
+	//$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
+	//$dprv_subscription_type = get_option('dprv_subscription_type');
+	//$today_limit = dprv_daily_limit($dprv_subscription_type);
 
 	if ($today_count > 5)
 	{
@@ -1200,7 +1204,8 @@ function dprv_digiprove_post($dprv_post_id)
 	$newContent = stripslashes($content);
 	$notice = "";
 	
-	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $digital_fingerprint, $content_file_names, $dprv_subscription_type, $dprv_subscription_expiry, $dprv_last_time, $notice);
+
+	$certifyResponse = dprv_certify($dprv_post_id, $post_record->post_title, $newContent, $digital_fingerprint, $content_file_names, $max_file_count, $dprv_subscription_type, $dprv_subscription_expiry, $dprv_last_time, $notice);
 	if (!is_array($certifyResponse))
 	{
 		// Could be "Content unchanged since last edit", "Content is empty", or
@@ -1301,7 +1306,7 @@ function dprv_digiprove_post($dprv_post_id)
 	return;
 }
 
-function dprv_daily_limit($dprv_subscription_type)
+function dprv_daily_limit($dprv_subscription_type, &$max_file_count)
 {
 	$today_limit = 5;
 	switch ($dprv_subscription_type)
@@ -1309,21 +1314,25 @@ function dprv_daily_limit($dprv_subscription_type)
 		case "Personal":
 		{
 			$today_limit = 20;
+			$max_file_count = 10;
 			break;
 		}
 		case "Professional":
 		{
 			$today_limit = 100;
+			$max_file_count = 40;
 			break;
 		}
 		case "Corporate Light":
 		{
 			$today_limit = 500;
+			$max_file_count = 100;
 			break;
 		}
 		case "Corporate":
 		{
 			$today_limit = -1;
+			$max_file_count = 999;
 			break;
 		}
 		default:
@@ -1678,7 +1687,9 @@ function dprv_record_dp_action($dprv_post_id, $certifyResponse, $dprv_post_statu
 	}
 }
 
-function dprv_record_non_dp_action($dprv_post_id, $content)
+
+// TODO: Complete implementation of $max_file_count (was added in integrity check upgrade)
+function dprv_record_non_dp_action($dprv_post_id, $content, $max_file_count)
 {
 	global $wpdb;
 	$log = new DPLog();  
@@ -1707,6 +1718,8 @@ function dprv_record_non_dp_action($dprv_post_id, $content)
 				$dprv_this_event = $wpdb->last_error . ' updating non_dp action for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
 				dprv_record_event($dprv_this_event);
 			}
+			$sql="DELETE FROM ". get_option('dprv_prefix') . "dprv_post_content_files WHERE post_id = %d";
+			dprv_wpdb("query", $sql, $dprv_post_id);
 		}
 		else
 		{
@@ -1716,11 +1729,42 @@ function dprv_record_non_dp_action($dprv_post_id, $content)
 				dprv_record_event($dprv_this_event);
 			}
 		}
+		if (function_exists("hash") && get_option('dprv_files_integrity') == "Yes" && $max_file_count > 0)		// Scan for files if local integrity-checking required)
+		{
+			$content_files = array();
+			$content_file_names = array();
+			$file_count = 0;							// Initialise just to avoid a notice message, not essential
+			dprv_getContentFiles($dprv_post_id, $rawContent, $content_files, $content_file_names, $max_file_count, $file_count);
+			// now write that stuff to db
+			if ($file_count > 0)
+			{
+				$log->lwrite(dprv_eval($content_files));
+				//foreach($content_files as $filename => $file_fingerprint)
+				for ($i=0; $i<count($content_files); $i++)
+				{
+					$full_path = $content_files[$i];
+					$file_name = basename($full_path);
+					$file_data = @file_get_contents($full_path);
+					if ($file_data != false)
+					{
+						$file_fingerprint = strtoupper(hash("sha256", $file_data));
+						$log->lwrite("filepath=$filename, fingerprint=$fingerprint");
+						if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_post_content_files", array('post_id'=>$dprv_post_id, 'filename'=>$file_name, 'digital_fingerprint'=>$file_fingerprint)))
+						{
+							$dprv_this_event = $wpdb->last_error . ' inserting dprv_post_content_files for ' . $dprv_post_id . ', last_query ' . $wpdb->last_query;
+							dprv_record_event($dprv_this_event);
+							break;
+						}
+					}
+				}
+
+			}
+		}
 	}
 }
 
 
-function dprv_certify($dprv_post_id, $title, $content, &$digital_fingerprint, &$content_file_names, $dprv_subscription_type, $dprv_subscription_expiry, &$dprv_last_time,&$notice)
+function dprv_certify($dprv_post_id, $title, $content, &$digital_fingerprint, &$content_file_names, $max_file_count, $dprv_subscription_type, $dprv_subscription_expiry, &$dprv_last_time,&$notice)
 {
 	$log = new DPLog();  
 	global $wp_version, $wpdb, $dprv_blog_host, $dprv_wp_host;
@@ -1751,39 +1795,9 @@ function dprv_certify($dprv_post_id, $title, $content, &$digital_fingerprint, &$
 	if ($dprv_expiry_timestamp != false && $dprv_expiry_timestamp != -1 && time() > $dprv_expiry_timestamp)
 	{
 		$dprv_subscription_expired = "Yes";
+		$max_file_count = 0;
 	}
 
-	$max_file_count = 0;
-	if ($dprv_subscription_expired != "Yes")
-	{
-		switch ($dprv_subscription_type)
-		{
-			case "Personal":
-			{
-				$max_file_count = 10;
-				break;
-			}
-			case "Professional":
-			{
-				$max_file_count = 40;
-				break;
-			}
-			case "Corporate Light":
-			{
-				$max_file_count = 100;
-				break;
-			}
-			case "Corporate":
-			{
-				$max_file_count = 999;
-				break;
-			}
-			default:
-			{
-				break;
-			}
-		}
-	}
 	$content_files = array();
 	$content_file_names = array();
 	$file_count = 0;							// Initialise just to avoid a notice message, not essential
@@ -1893,7 +1907,8 @@ function dprv_certify($dprv_post_id, $title, $content, &$digital_fingerprint, &$
 		$save_content_flag = true;
 	}
 	$metadata = array("content_title"=>$title);
-	$return_value = Digiprove::certify($error_message, $credentials, $rawContent, $digiproved_content, $content_files, $dprv_content_type, $metadata, null, $user_agent, $permalink, $linkback_flag, $obscure_url, false, $email_certs_flag, $save_content_flag);
+	$document_tracking = array("original_document_id"=>$dprv_post_id);
+	$return_value = Digiprove::certify($error_message, $credentials, $rawContent, $digiproved_content, $content_files, $dprv_content_type, $metadata, $document_tracking, $user_agent, $permalink, $linkback_flag, $obscure_url, false, $email_certs_flag, $save_content_flag);
 	if (!$return_value)
 	{
 		return $error_message;
