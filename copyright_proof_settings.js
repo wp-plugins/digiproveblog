@@ -1106,6 +1106,7 @@ function dprv_SubmitSelected()
 
 function dprv_SubscribersOnly(f)
 {
+	f=f.replace(/_/g," ");
 	if (dprv_subscription_type == "Basic")
 	{
 		// 'The ' + f + ' function is available only to Digiprove subscribers.  <a href=\"' + dprv_upgrade_link + '&Action=Upgrade\" target=\"_blank\">Select a subscription plan</a>.'
@@ -1128,6 +1129,7 @@ function dprv_SubscribersOnly(f)
 
 function dprv_PremiumOnly(f)
 {
+	f=f.replace(/_/g," ");
 	if (dprv_subscription_type == "")
 	{
 		// 'The ' + f + ' function is available only to Digiprove subscribers at Professional level or above. Please complete registration first.'

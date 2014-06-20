@@ -4,7 +4,7 @@ Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
 Requires at least: 2.7
 Tested up to: 3.9.1
-Stable tag: 2.18
+Stable tag: 2.19
 
 Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
 
@@ -155,6 +155,11 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 2.19 =
+* Permits saving of license/attribution data for draft posts/pages (will display in notice after being Digiproved)
+* Includes link to "Cease and Desist" instruction page
+* Removed a PHP warning being generated in certain circumstances
+* Minor improvements
 
 = 2.18 =
 * New function - Verify Digiprove status of any previous revision

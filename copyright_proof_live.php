@@ -11,7 +11,6 @@ function dprv_head()
 
 	if ($dprv_frustrate_copy == "Yes")
 	{
-		//echo ("<script type='text/javascript' src='" . WP_PLUGIN_URL . "/digiproveblog/frustrate_copy.js?v=".DPRV_VERSION."'></script>");
 		echo ("<script type='text/javascript' src='" . plugins_url("frustrate_copy.js", __FILE__ ) . "?v=" . DPRV_VERSION. "'></script>");
 	}
 
@@ -95,7 +94,9 @@ function dprv_head()
 	echo ("
 	//]]>
 	</script>");
-
+	echo ('	<style type="text/css">	.dprv{border-collapse:collapse;border-spacing:0px;border:0px;border-style:solid;padding:0px;}
+									.dprv tr td{border:0px;padding:0px;}
+			</style>');
 	dprv_populate_licenses();
 	
 	$dprv_record_IP = get_option('dprv_record_IP');
@@ -570,8 +571,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 
 		$DigiproveNotice .= '<a href="' . $dprv_certificate_url . '" target="_blank" rel="copyright" style="height:' . $dprv_a_height . '; line-height: ' . $dprv_a_height . '; border:0px; padding:0px; margin:0px; float:none; display:inline; text-decoration: none; background:transparent none; line-height:normal; font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . ';">';
 		
-		//$DigiproveNotice .= '<img src="' . WP_PLUGIN_URL . '/digiproveblog/dp_seal_trans_16x16.png" style="max-width:none !important;' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" border="0" alt=""/>';
-		$DigiproveNotice .= '<img src="' . plugins_url("dp_seal_trans_16x16.png", __FILE__ ) . '" style="max-width:none !important;' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" border="0" alt="Digiprove seal"/>';
+		$DigiproveNotice .= '<img src="' . plugins_url("dp_seal_trans_16x16.png", __FILE__ ) . '" style="max-width:none !important;' . $dprv_image_scale . 'vertical-align:' . $dprv_img_valign . '; display:inline; border:0px; margin:0px; padding:0px; float:none; background:transparent none" alt="Digiprove seal"/>';
 
 		$DigiproveNotice .= '<span style="font-family: Tahoma, MS Sans Serif; font-style:normal; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . '; border:0px; float:none; display:inline; text-decoration:none; letter-spacing:normal; padding:0px; padding-left:' . $dprv_notice_pad_left0 . '; vertical-align:' . $dprv_txt_valign . ';margin-bottom:' . $dprv_line_margin . '" ';
 
@@ -650,7 +650,7 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 				//$log->lwrite("calculated background color of " . $background_color . " from foreground " . $dprv_notice_color);
 			}
 			$dprv_license_html = '<div id="license_panel' . $dprv_post_id . '" style="position: absolute; display:none ; font-family: Tahoma, MS Sans Serif; font-style:normal; font-size:' . $dprv_font_size . '; font-weight:normal; color:' . $dprv_notice_color . ';' . $dprv_border_css . ' float:none; max-width:640px; text-decoration:none; letter-spacing:normal; line-height:' . $dprv_line_height . '; vertical-align:' . $dprv_txt_valign . '; padding:0px;' . $background_css . '">';
-			$dprv_license_html .= '<table cellpadding="0" cellspacing="0" border="0" style="line-height:17px;margin:0px;padding:0px;background-color:transparent;font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . '; color:' . $dprv_notice_color . '"><tbody>';
+			$dprv_license_html .= '<table class="dprv" style="line-height:17px;margin:0px;background-color:transparent;font-family: Tahoma, MS Sans Serif; font-style:normal; font-weight:normal; font-size:' . $dprv_font_size . '; color:' . $dprv_notice_color . '"><tbody>';
 			$dprv_license_html .= '<tr><td colspan="2" style="background-color:transparent;border:0px;font-weight:bold;padding:0px;padding-left:6px; text-align:left">' . __("Original content here is published under these license terms", "dprv_cp") . ':</td><td style="width:20px;background-color:transparent;border:0px;padding:0px"><span style="float:right; background-color:black; color:white; width:20px; text-align:center; cursor:pointer" onclick="dprv_HideLicense(\'' . $dprv_post_id . '\')">&nbsp;X&nbsp;</span></td></tr>';
 			$dprv_license_html .= '<tr><td colspan="3" style="height:4px;padding:0px;background-color:transparent;border:0px"></td></tr>';
 			$dprv_license_html .= '<tr><td style="width:130px;background-color:transparent;padding:0px;padding-left:4px;border:0px; text-align:left">' . __('License Type', 'dprv_cp') . ':</td><td style="width:300px;background-color:transparent;border:0px;padding:0px; text-align:left">' . htmlspecialchars(stripslashes($licenseType), ENT_QUOTES, "UTF-8") . '</td><td style="border:0px; background-color:transparent"></td></tr>';

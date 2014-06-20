@@ -357,7 +357,6 @@ function dprv_show_postbox($post_info)
 	$a .= "</tbody></table>";
 	echo $a;
 	
-	//$jsfile = WP_PLUGIN_URL . '/digiproveblog/copyright_proof_cr_panel.js?v='.DPRV_VERSION;
 	$jsfile = plugins_url("copyright_proof_cr_panel.js", __FILE__) . "?v=" . DPRV_VERSION;
 	echo('<script type="text/javascript" src="' . $jsfile . '"></script>');
 
@@ -791,8 +790,8 @@ function dprv_add_digiprove_submit_button()
 }
 
 // Write Copyright Panel details
-// Examine post content prior to Digiproving
-// Remove old notice if there, and write information from it into custom post fields 
+// Remove old notice if there and trim remainder, and write information from it into custom post fields 
+
 function dprv_parse_post ($data, $raw_data)
 {
 	global $wpdb, $dprv_digiprove_this_post;
@@ -809,20 +808,18 @@ function dprv_parse_post ($data, $raw_data)
 		$log->lwrite("parse_post not starting because this is ajax");
 		return $data;
 	}
-	//$log->lwrite("data[post_status] = " . $data['post_status']);
-	if ($data['post_status'] != "publish" && $data['post_status'] != "private" && $data['post_status'] != "future")
+	if ($data['post_status'] != "publish" && $data['post_status'] != "private" && $data['post_status'] != "future" && $data['post_status'] != "draft")
 	{
-		// TODO: check whether $_POST['dprv_publish_dp_action'] is set to avoid PHP Notices in logfile
-		if ($data['post_status'] == "draft" && $_POST['dprv_publish_dp_action'] == "Yes")
-		{
-			$log->lwrite("draft but user has explicitly requested Digiproving, then we can proceed beyond this point");
+		//if ($data['post_status'] == "draft" && $_POST['dprv_publish_dp_action'] == "Yes")
+		//{
+		//	$log->lwrite("draft but user has explicitly requested Digiproving, then we can proceed beyond this point");
 			// If the status is set to draft but user has explicitly requested Digiproving, then we can proceed beyond this point
-		}
-		else
-		{
-			$log->lwrite("dprv_parse_post not starting because status (" . $data['post_status'] . ") is not publish, private or future");
+		//}
+		//else
+		//{
+			$log->lwrite("dprv_parse_post not starting because status (" . $data['post_status'] . ") is not publish, private, future or draft");
 			return $data;
-		}
+		//}
 	}
 
 	$my_arrays = debug_backtrace();
@@ -862,8 +859,12 @@ function dprv_parse_post ($data, $raw_data)
 		$dprv_post_id = -1;
 	}
 	
-	// TODO: check whether $_POST['dprv_this'] is set to avoid PHP Notices in logfile
-	$dprv_digiprove_this_post = $_POST['dprv_this'];
+	// If "Digiprove this post" set to No, record this fact
+	$dprv_digiprove_this_post = "";
+	if (isset($_POST['dprv_this']))
+	{
+		$dprv_digiprove_this_post = $_POST['dprv_this'];
+	}
 	if ($dprv_digiprove_this_post == "No")
 	{
 		$log->lwrite("dprv_parse_post not starting - digiprove_this_post set to No for post Id " . $dprv_post_id);
@@ -893,18 +894,17 @@ function dprv_parse_post ($data, $raw_data)
 		return $data;
 	}
 	
-	//if (get_option('dprv_auto_posts') != "Yes" && ($dprv_post_id == -1 || ($script_name != "post-new" && $script_name != "post" && $script_name != "post")))
-	if (get_option('dprv_auto_posts') != "Yes" && !isset($_POST['dprv_publish_dp_action']))	// If no dprv_publish_action, then the user had no opportunity to choose Digiprove por No
+	if (get_option('dprv_auto_posts') != "Yes" && !isset($_POST['dprv_publish_dp_action']))	// If no dprv_publish_action, then the user had no opportunity to choose Digiprove or Not
 	{
 		$log->lwrite("dprv_parse_post not starting for post $dprv_post_id in script $script_name because Digiproving of auto-posts is not selected");
 		return $data;
 	}
 
-	update_option('dprv_last_action', 'Digiprove id=' . $dprv_post_id);     // Why?
+	//update_option('dprv_last_action', 'Digiprove id=' . $dprv_post_id);
 	$dprv_title = $data['post_title'];
 	//$log->lwrite("title=" . $dprv_title . ", id=" . $dprv_post_id);  
 	$log->lwrite("");  
-	$log->lwrite("dprv_parse_post STARTS");  
+	$log->lwrite("dprv_parse_post STARTS for " . $dprv_post_id);  
 	// if post_id = -1, means new post coming from xmlrpc (or postie) - in either case there is no copyright panel so no problem that this function does not get executed
 	if ($dprv_post_id != -1  && isset($_POST['dprv_this']))
 	{
@@ -1099,8 +1099,11 @@ function dprv_digiprove_post($dprv_post_id)
 	$today_limit = dprv_daily_limit($dprv_subscription_type, $max_file_count);
 
 	// TODO: Change this to not return, but just skip Digiproving part
-	// TODO: check whether $_POST['dprv_publish_dp_action'] is set to avoid PHP Notices in logfile
-	$dprv_publish_dp_action = $_POST['dprv_publish_dp_action'];
+	$dprv_publish_dp_action = "";
+	if (isset($_POST['dprv_publish_dp_action']))
+	{
+		$dprv_publish_dp_action = $_POST['dprv_publish_dp_action'];
+	}
 	if ($dprv_publish_dp_action == "No")
 	{
 		$log->lwrite("dprv_digiprove_post not starting - user selected publish/update without Digiprove for post Id " . $dprv_post_id);
