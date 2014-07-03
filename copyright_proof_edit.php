@@ -97,8 +97,6 @@ function dprv_show_postbox($post_info)
 		}
 		$log->lwrite("Edit $script_name, global post_id = " . $post_id);
 		
-		//$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = " . $post_id;
-		//$dprv_post_info = $wpdb->get_row($sql, ARRAY_A);
 		$sql="SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
 		$dprv_post_info = dprv_wpdb("get_row", $sql, $post_id);
 		if (!is_null($dprv_post_info) && count($dprv_post_info) > 0)
@@ -879,7 +877,6 @@ function dprv_parse_post ($data, $raw_data)
 				{
 					$dprv_this_event = $wpdb->last_error . ' inserting no-digiprove for ' . $dprv_post_id;
 					dprv_record_event($dprv_this_event);
-					$log->lwrite("last query was " .  mysql_info());
 				}
 			}
 			else
@@ -1248,6 +1245,7 @@ function dprv_digiprove_post($dprv_post_id)
 		$log->lwrite("Digiproving failed, response: " . $certifyResponse['result']);
 		update_option('dprv_last_result', $admin_message);
 		update_option('dprv_pending_message', $admin_message);
+		update_option('dprv_registration_status', 'Problem');
 	}
 	else
 	{
@@ -1303,6 +1301,7 @@ function dprv_digiprove_post($dprv_post_id)
 		$admin_message = __('Digiprove certificate id', 'dprv_cp') . ': ' . $certifyResponse['certificate_id'] . ' ' . $notice;
 		update_option('dprv_last_result', $admin_message);
 		update_option('dprv_pending_message', $admin_message);
+		update_option('dprv_registration_status', 'OK');
 	}
 
 	$log->lwrite("finishing dprv_digiprove_post " . $dprv_post_id);
@@ -1910,6 +1909,17 @@ function dprv_certify($dprv_post_id, $title, $content, &$digital_fingerprint, &$
 		$save_content_flag = true;
 	}
 	$metadata = array("content_title"=>$title);
+	if (get_option('dprv_submitter_is_author') == "Yes")
+	{
+		$dprv_post_object = get_post($dprv_post_id);
+		if (is_object($dprv_post_object) && isset($dprv_post_object->post_author))
+		{
+			$dprv_post_author = $dprv_post_object->post_author;
+			$dprv_author_object = get_user_by('id', $dprv_post_author);
+			$dprv_author = trim($dprv_author_object->first_name . ' ' . $dprv_author_object->last_name);
+			$metadata["authors"] = $dprv_author;
+		}
+	}
 	$document_tracking = array("original_document_id"=>$dprv_post_id);
 	$return_value = Digiprove::certify($error_message, $credentials, $rawContent, $digiproved_content, $content_files, $dprv_content_type, $metadata, $document_tracking, $user_agent, $permalink, $linkback_flag, $obscure_url, false, $email_certs_flag, $save_content_flag);
 	if (!$return_value)
