@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.19
+Version: 2.20
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -40,8 +40,8 @@ License: GPL
 	include_once('copyright_proof_integrity.php');					// Functions for Verification
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.19");
-	define("DPRV_WWW", "www.digiprove.com");                       // you may use digiprove1.dyndns.ws for testing
+	define("DPRV_VERSION", "2.20");
+	define("DPRV_WWW", "www.digiprove.com");
 	//error_reporting(-1);						   // uncomment this for test purposes
 
 
@@ -71,6 +71,10 @@ License: GPL
 								"Web Pages"=>array("","htm","html","php","asp","aspx"),
 								"Documents"=>array("csv","doc","docx","odt","ods","odp","pdf","ppt","pptx","rtf","txt","xls","xlsx"),
 								"Code"=>array("js","jar"));
+
+
+
+
 
 
 	// Register hooks
@@ -186,6 +190,7 @@ License: GPL
 			{
 				$dprv_last_error = "Error on activation: " . $dprv_last_error;
 				dprv_record_event($dprv_last_error);
+
 			}
 		}
 	}
@@ -206,12 +211,24 @@ License: GPL
 		{
 			add_option('dprv_auto_posts', 'No');
 		}
+		if (get_option('dprv_user_id') === false)
+		{
+			// New installation of plugin
+			add_option('dprv_registration_status', 'Not registered');
+		}
+		else
+		{
+			// Previously existing installation, if option doesn't exist, add it
+			add_option('dprv_registration_status', 'Unknown');
+		}
 		add_option('dprv_email_address', '');
 		add_option('dprv_subscription_type', '');               // Will be empty until activation of membership
 		add_option('dprv_subscription_expiry', '');
 		add_option('dprv_content_type', '');
 		add_option('dprv_notice', '');
 		add_option('dprv_c_notice', 'DisplayAll');
+		add_option('dprv_submitter_is_author', 'No');
+		add_option('dprv_submitter_has_copyright', 'No');
 		add_option('dprv_notice_size', '');
 		add_option('dprv_license', '0');
 		add_option('dprv_frustrate_copy', '');
@@ -328,7 +345,8 @@ License: GPL
 					);";
 
 			//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
-			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+			//require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 			dbDelta($sql);
 			$dprv_sql_error = mysql_error();				
@@ -407,12 +425,13 @@ License: GPL
 				);";
 
 		//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
-		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+		//require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 		dbDelta($sql);
 
 		// TODO: statements below may be pointless and do not capture dbDelta info.  Test to determine facts
 		$dprv_sql_error = mysql_error();				
-		$dprv_sql_info = mysql_info();
+		//$dprv_sql_info = mysql_info();
 		$dprv_db_error = $wpdb->last_error;
 
 		$log->lwrite ("Executed create table " . $dprv_posts . ", last_error " . $dprv_db_error);
@@ -447,10 +466,10 @@ License: GPL
 					{
 						$message .= ", mysql_error " .  $dprv_sql_error;
 					}
-					if ($dprv_sql_info != "")
-					{
-						$message .= ", mysql_info " .  $dprv_sql_info;
-					}
+					//if ($dprv_sql_info != "")
+					//{
+					//	$message .= ", mysql_info " .  $dprv_sql_info;
+					//}
 					
 					$message .= ", will try adding with wpdb";
 					dprv_record_event($message);
@@ -504,7 +523,8 @@ License: GPL
 					digital_fingerprint varchar(64)
 					);";
 			//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
-			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+			//require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 			dbDelta($sql);
 			$dprv_db_error =$wpdb->last_error;
 			$log->lwrite("just created posts table " . $dprv_post_content_files . "; error text = " . $dprv_db_error);
@@ -694,13 +714,13 @@ License: GPL
 
 		if (get_option('dprv_enrolled') != "Yes")
 		{
-			define("DPRV_REMINDER", "<strong>".__("Copyright Proof is almost ready.", "dprv_cp")."</strong> <span style=\"color:red\">".sprintf(__('You must %1$s Configure Copyright Proof and Register %2$s to get it working', 'dprv_cp'), '<a href="options-general.php?page=copyright_proof_admin.php"><b>', '</b></a>') . "</span>");
+			define("DPRV_REMINDER", "<strong>".__("Copyright Proof is almost ready.", "dprv_cp")."</strong> <span style=\"color:red\">".sprintf(__('You must %1$s Configure Copyright Proof and Register %2$s to get it working', 'dprv_cp'), '<a href="options-general.php?page=copyright-proof-settings"><b>', '</b></a>') . "</span>");
 			add_action('admin_notices', 'dprv_reminder');
 			return;
 		}
 		if (trim(get_option('dprv_api_key')) == '')
 		{	
-			define("DPRV_REMINDER", "<strong>".__("Copyright Proof needs configuration.", "dprv_cp")."</strong> ".sprintf(__('Please %s obtain a new api key %s to get it working', 'dprv_cp'), '<a href="options-general.php?page=copyright_proof_admin.php"><b>', '</b></a>'));
+			define("DPRV_REMINDER", "<strong>".__("Copyright Proof needs configuration.", "dprv_cp")."</strong> ".sprintf(__('Please %s obtain a new api key %s to get it working', 'dprv_cp'), '<a href="options-general.php?page=copyright-proof-settings"><b>', '</b></a>'));
 			add_action('admin_notices', 'dprv_reminder');
 			return;
 		}
@@ -723,7 +743,7 @@ License: GPL
 			$script_name = substr($script_name, 0, $posDot);
 		}
 
-		if ($script_name != "options-general" || strpos($_SERVER['QUERY_STRING'], "copyright_proof_admin.php") === false)
+		if ($script_name != "options-general" || strpos($_SERVER['QUERY_STRING'], "copyright-proof-settings") === false)
 		{
 			echo "<div id='dprv_reminder' class='updated fade'><p>" . DPRV_REMINDER . "</p></div>";
 		}
@@ -802,13 +822,29 @@ License: GPL
 			</script>');
 	}
 
-	function dprv_createUpgradeLink()
+	function dprv_createUpgradeLink($dprv_User = null)
 	{
 		global $dprv_blog_host;
-		//$dprv_upgrade_link = WP_PLUGIN_URL . '/digiproveblog/UpgradeRenew.html?FormAction=' . $protocol . DPRV_HOST . '/secure/upgrade.aspx&amp;UserId='  . get_option('dprv_user_id') . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
+		//$dprv_upgrade_link = plugins_url("UpgradeRenew.html", __FILE__) . '?FormAction=https://' . DPRV_WWW . '/secure/upgrade.aspx&amp;UserId='  . trim(get_option('dprv_user_id')) . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
+		//return $dprv_upgrade_link;
 
-		$dprv_upgrade_link = plugins_url("UpgradeRenew.html", __FILE__) . '?FormAction=https://' . DPRV_WWW . '/secure/upgrade.aspx&amp;UserId='  . trim(get_option('dprv_user_id')) . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
-		return $dprv_upgrade_link;
+		if ($dprv_User == null)
+		{
+			if (trim(get_option('dprv_user_id')) != "")
+			{
+				$dprv_qs = '?UserId='  . trim(get_option('dprv_user_id')) . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright+Proof+' . DPRV_VERSION;
+				return "https://" . DPRV_WWW . '/secure/UpgradeRenew.html' . $dprv_qs;
+			}
+			else
+			{
+				return "https://" . DPRV_WWW . "/members/members_area.aspx?content=subscription_topup.aspx";
+			}
+		}
+		else
+		{
+			$dprv_qs = '?UserId=' . $dprv_User . '&amp;UserAgent=Copyright+Proof+' . DPRV_VERSION;
+			return "https://" . DPRV_WWW . '/secure/UpgradeRenew.html' . $dprv_qs;
+		}
 	}
 
 	function dprv_post_sync($pid)
@@ -837,7 +873,7 @@ License: GPL
 		}
 		if ($file == $this_plugin)
 		{
-			$settings_link = '<a href="options-general.php?page=copyright_proof_admin.php">'.__("Settings", "dprv_cp").'</a>';
+			$settings_link = '<a href="options-general.php?page=copyright-proof-settings">'.__("Settings", "dprv_cp").'</a>';
 			array_push($links, $settings_link);
 		}
 		return $links;
@@ -962,7 +998,6 @@ License: GPL
 			dprv_record_event($dprv_this_event);
 			if (stripos($sql, "SHOW COLUMNS FROM") === false)  // Do not display SQL error message if the problem occurred on Show columns from
 			{
-				$log->lwrite("mysql_info=" . mysql_info());
 				$dprv_pending_message = get_option('dprv_pending_message');
 				$dprv_new_message = "MySQL Error occurred: " . $dprv_db_error;
 				if (strpos($dprv_pending_message, $dprv_new_message) === false)		// Avoid repeating the same message over and over

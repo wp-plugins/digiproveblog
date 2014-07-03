@@ -595,9 +595,25 @@ function dprv_composeNotice($dprv_certificate_id, $dprv_utc_date_and_time, $dprv
 				$dprv_year = $dprv_first_year . "-" . $dprv_year;
 			}
 			$DigiproveNotice .= '&nbsp;&copy;&nbsp;' . $dprv_year;
-			if ($dprv_c_notice == "DisplayAll" && $dprv_full_name != "")
+			//if ($dprv_c_notice == "DisplayAll" && $dprv_full_name != "")
+			//{
+			//	$DigiproveNotice .= '&nbsp;' . 	str_replace(" ", "&nbsp;", htmlspecialchars(stripslashes($dprv_full_name), ENT_QUOTES, 'UTF-8'));
+			//}
+			if ($dprv_c_notice == "DisplayAll")
 			{
-				$DigiproveNotice .= '&nbsp;' . 	str_replace(" ", "&nbsp;", htmlspecialchars(stripslashes($dprv_full_name), ENT_QUOTES, 'UTF-8'));
+				$dprv_copyright_owner = $dprv_full_name;
+				if (get_option('dprv_submitter_has_copyright') == "Yes")
+				{
+					$dprv_post_object = get_post($dprv_post_id);
+					if (is_object($dprv_post_object) && isset($dprv_post_object->post_author))
+
+					{
+						$dprv_post_author = $dprv_post_object->post_author;
+						$dprv_author_object = get_user_by('id', $dprv_post_author);
+						$dprv_copyright_owner = trim($dprv_author_object->first_name . ' ' . $dprv_author_object->last_name);
+					}
+				}
+				$DigiproveNotice .= '&nbsp;' . 	str_replace(" ", "&nbsp;", htmlspecialchars(stripslashes($dprv_copyright_owner), ENT_QUOTES, 'UTF-8'));
 			}
 		}
 		$DigiproveNotice .= '</span></a>';

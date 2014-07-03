@@ -1,16 +1,16 @@
 ﻿=== Copyright Proof ===
 Contributors: Digiprove
 Donate link: http://www.digiprove.com/
-Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership
+Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership, digital certification
 Requires at least: 2.7
 Tested up to: 3.9.1
-Stable tag: 2.19
+Stable tag: 2.20
 
-Digitally certify your original content - proving authorship and protecting copyright. Inserts a combined copyright/licensing notice in your posts. 
+Digitally certify your original content - creates tamper-proof record of authorship to establish and protect copyright. Inserts a combined copyright/licensing notice in your posts. Prevents copy-paste of your content.
 
 == Description ==
 
-A copyright notice with teeth!  Prove ownership, protect your copyright, and copy protect.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts combined certification. copyright, licensing, and attribution notice at end of post. At your option, your post's url will be shown on digiprove.com (will be a hyperlink for Digiprove subscribers) to your post. Optional anti-theft feature to copy protect your content.
+A copyright notice with teeth!  Prove ownership, protect your copyright, and copy protect.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts combined certification, copyright, licensing, and attribution notice at end of post. At your option, your post's url will be shown on digiprove.com (will be a hyperlink for Digiprove subscribers) to your post. Optional anti-theft feature to copy protect your content.  Supports multiple users.
 
 [Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
 
@@ -155,6 +155,15 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+= 2.20 =
+* Now supports copyright protection at individual user level
+* Improved stability of Upgrade/Renew link
+* Made HTML5 conformant
+* Resists browser forcing erroneous values based on autocomplete
+* Improved sequence of javascript loading
+* Removed WP deprecated functions
+* Minor error corrections
+
 = 2.19 =
 * Permits saving of license/attribution data for draft posts/pages (will display in notice after being Digiproved)
 * Includes link to "Cease and Desist" instruction page
@@ -526,6 +535,8 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Minor bug-fixes
 
 == Upgrade Notice ==
+= 2.20 = 
+Strongly recommended, includes a lot of small fixes, now supports multi-user
 
 = 2.10 = 
 Strongly recommended, required to support Wordpress 3.5

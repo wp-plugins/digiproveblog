@@ -1,4 +1,3 @@
-//<![CDATA[
 // FUNCTIONS TO SUPPORT COPYRIGHT PROOF SETTINGS PAGE
 
 // Tab Display Functions
@@ -28,7 +27,6 @@ function dprv_DisplayAdvanced()
 	document.getElementById('dprv_submit').style.display='';	
 	dprv_HideHelpText();
 }
-
 
 function dprv_DisplayLicenseTab()
 {
@@ -311,7 +309,7 @@ function dprv_ApiKeyChange()
 	}
 	if (dprv_lastApiKey == "")
 	{
-		//if (!confirm("You have entered a value for API Key - do this only if the new API key was obtained from Digiprove"))
+		// You have entered a value for API Key - do this only if the new API key was obtained from Digiprove
 		if (!confirm(dprv_literals["No_touch_warning2"]))			// "You have entered a value for API Key - do this only if the new API key was obtained from Digiprove
 		{
 			document.getElementById('dprv_api_key').value = dprv_lastApiKey;
@@ -332,7 +330,6 @@ function dprv_ApiKeyChange()
 			
 			length_message = " " + dprv_literals["API_key_warning1"];		// "That does not look like a valid API key which is normally 22 characters."
 		}
-		
 		if (!confirm(dprv_literals["API_key_warning0"] + length_message + dprv_literals["API_key_warning2"]))
 		{
 			document.getElementById('dprv_api_key').value = dprv_lastApiKey;
@@ -1093,7 +1090,7 @@ function dprv_ShowFrustrateCopyText()
 // GENERIC (CROSS-TAB) FUNCTIONS:
 function dprv_SubmitSelected()
 {
-	if (dprv_ApiKeyChange())
+	if (document.getElementById('dprv_renew_api_key').checked == true || dprv_ApiKeyChange())
 	{
 		if (document.getElementById("message") != null)
 		{
@@ -1117,7 +1114,7 @@ function dprv_SubscribersOnly(f)
 		if (dprv_subscription_type == "")
 		{
 			// 'The ' + f + ' function is available only to Digiprove subscribers. Please complete registration first.'
-			dprv_DisplayHelpText(dprv_literals["Subscribers_only_none"].replace("%1$s", f));
+			dprv_DisplayHelpText(dprv_literals["Subscribers_only_none"].replace("%s", f));
 		}
 		else
 		{
@@ -1188,5 +1185,38 @@ function dprv_trim(str)
 {
 	return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
 }
+function autoCompleteOff(element)
+{
+	if (document.getElementById(element).disabled == false)
+	{
+		document.getElementById(element).disabled = true;
+		var dprv_timer = window.setTimeout( function()
+		{
+			document.getElementById(element).disabled = false;
+			//document.getElementById(element).value = '';
+			clearTimeout(dprv_timer);
+			},
+			800);
+	}
+}
 
-//]]>
+function dprv_addLoadEvent(func)
+{ 
+	if (typeof window.onload != 'function')
+	{ 
+		window.onload = func; 
+	}
+	else
+	{ 
+		var oldonload = window.onload;
+		window.onload = function()
+		{ 
+			if (oldonload)
+			{ 
+				oldonload(); 
+			}
+			func(); 
+		} 
+	} 
+} 
+
