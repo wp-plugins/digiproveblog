@@ -1,10 +1,24 @@
 <?php
 function dprv_settings_menu()	// Runs after the basic admin panel menu structure is in place - add Copyright Proof Settings option.
 {	
-	//$pagename = add_options_page('DigiproveBlog', 'Copyright Proof', 10, basename(__FILE__), 'dprv_settings');
 	$pagename = add_options_page('DigiproveBlog', 'Copyright Proof', 'manage_options', 'copyright-proof-settings', 'dprv_settings');
 }
-
+function dprv_admin_enqueue_scripts()
+{
+	if (array_key_exists('page',$_GET) && $_GET['page'] == "copyright-proof-settings")
+	{
+		wp_enqueue_style('jquery-ui-css','http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/ui-lightness/jquery-ui.min.css', false, DPRV_VERSION, 'all');
+		wp_enqueue_script('jquery');
+		wp_enqueue_script('jquery-ui-core');
+		//wp_enqueue_script('jquery-ui-widget');
+		wp_enqueue_script('jquery-ui-datepicker');
+		wp_enqueue_script('jquery-ui-dialog');
+		$jsfile = plugins_url("jscolor.js", __FILE__ );
+		wp_enqueue_script('dprv_jscolor', $jsfile, null, DPRV_VERSION, false);
+		$jsfile = plugins_url("copyright_proof_settings.js", __FILE__ );
+		wp_enqueue_script('dprv_settings', $jsfile, null, DPRV_VERSION, false);
+	}
+}
 function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - include js file
 {
 	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs;
@@ -24,21 +38,23 @@ function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - 
 		//$log->lwrite("dprv_admin_head returning early, no need for license or other info");
 		return;
 	}
-	if (strpos($_SERVER['QUERY_STRING'], "copyright-proof-settings") !== false)
+	//if (strpos($_SERVER['QUERY_STRING'], "copyright-proof-settings") !== false)
+	if (array_key_exists('page',$_GET) && $_GET['page'] == "copyright-proof-settings")
 	{
-		$jsfile = plugins_url("jscolor.js", __FILE__ ) . '?v=' . DPRV_VERSION;
-		print('
-			<script type="text/javascript" src="' . $jsfile . '"></script>');
 		echo ('<style type="text/css">table{border-collapse:collapse;border-spacing:0px;border:0px;border-style:solid;padding:0px;}
 								tr, td{border:0px;padding:0px;}
 								input, select, textarea {font-size:13px}
 								.dprv tr td{padding-left:10px;}
 								.dprv {font-size:13px}
-			</style>');
-		$jsfile = plugins_url("copyright_proof_settings.js", __FILE__ ) . '?v=' . DPRV_VERSION;
-		print('
-			<script type="text/javascript" src="' . $jsfile . '"></script>
-			');
+								.dprv_log_info {width:100%}
+								.dprv_log_info tr td {padding-left:3px;padding-right:3px;text-align:center}
+								.dprv_log_history {width:100%}
+								.dprv_log_history tr td {padding-left:3px; padding-right:3px}
+								.dprv_log_history tr th {text-align:left;padding-left:8px; padding-right:3px; border-top: 1px dotted}
+								#dprv_log_history {padding-left:3px; padding-right:3px}
+								.dprv_log_row0 {background-color:#DDDDFF}
+								.dprv_log_row1 {background-color:#AAAADD}
+					</style>');
 	}
 	dprv_populate_licenses();
 	dprv_populate_licenses_js();
@@ -344,7 +360,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	$dprv_record_IP = get_option('dprv_record_IP');
 	if ($dprv_record_IP == false)
 	{
-		$dprv_record_IP = 'No';
+		$dprv_record_IP = 'off';
 	}
 
 	$dprv_last_result = get_option('dprv_last_result');
@@ -904,10 +920,16 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					{
 						update_option('dprv_right_click_message', "");
 					}
-					if (isset($_POST['dprv_record_IP']))
+
+					$dprv_record_IP = "off";
+					if (isset($_POST['dprv_record_IP']) && $_POST['dprv_record_IP'] == "on")
 					{
-						$dprv_record_IP = $_POST['dprv_record_IP'];
-						update_option('dprv_record_IP',$_POST['dprv_record_IP']);
+						$dprv_record_IP = "Log";
+						if (isset($_POST['dprv_send_email']) && $_POST['dprv_send_email'] == "on")
+						{
+							$dprv_record_IP = "Log and Email";
+						}
+						update_option('dprv_record_IP',$dprv_record_IP);
 					}
 
 
@@ -1276,7 +1298,15 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					{
 						$dprv_right_click_message = htmlspecialchars(stripslashes($_POST['dprv_right_click_message']), ENT_QUOTES);
 					}
-					$dprv_record_IP = $_POST['dprv_record_IP'];
+					$dprv_record_IP = "off";
+					if (isset($_POST['dprv_record_IP']) && $_POST['dprv_record_IP'] == "on")
+					{
+						$dprv_record_IP = "Log";
+						if (isset($_POST['dprv_send_email']) && $_POST['dprv_send_email'] == "on")
+						{
+							$dprv_record_IP = "Log and Email";
+						}
+					}
 
 					$dprv_last_result = get_option('dprv_last_result');
 				}
@@ -1628,12 +1658,16 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$right_click_message_styletext = ' disabled="disabled" style="width:400px; background-color:#CCCCCC"';
 	}
 
-	$dprv_record_IP_yes_checked = '';
-	$dprv_record_IP_no_checked = ' checked="checked"';
-	if ($dprv_record_IP == 'Yes')
+	$dprv_record_IP_checked = '';
+	$dprv_send_email_checked = '';
+	if ($dprv_record_IP == 'Log')
 	{
-		$dprv_record_IP_no_checked = '';
-		$dprv_record_IP_yes_checked = ' checked="checked"';
+		$dprv_record_IP_checked = ' checked="checked"';
+	}
+	if ($dprv_record_IP == 'Log and Email')
+	{
+		$dprv_send_email_checked = ' checked="checked"';
+		$dprv_record_IP_checked = ' checked="checked"';
 	}
 
 
@@ -2251,14 +2285,28 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 														</td>
 													</tr>
 													<tr><td colspan="2" style="height:6px"></td></tr>
-													<tr style="display:none">
-														<td>' . __('Record IP Address of right-clickers:&nbsp;&nbsp;', 'dprv_cp') . '</td>
-														<td>
-															<input type="radio" name="dprv_record_IP" id="dprv_record_IP_yes" value="Yes" ' . $dprv_record_IP_yes_checked . ' />Record IP Address&nbsp;&nbsp;&nbsp;
-															<input type="radio" name="dprv_record_IP" id="dprv_record_IP_no" value="No" ' . $dprv_record_IP_no_checked . ' />Don\'t bother&nbsp;&nbsp;&nbsp;&nbsp;
+													<tr>
+														<td>' . __('Monitor &amp; Log attempts at content theft:&nbsp;&nbsp;', 'dprv_cp') . '</td>
+														<td id="Monitor_attempted_theft"' . $sub_enabled_title . $sub_enabled_onclick . '>
+															<input type="checkbox" name="dprv_record_IP" id="dprv_record_IP" ' . $dprv_record_IP_checked . $subscription_enabled_cb . ' onclick="dprv_toggle_record_ip()"/>Just Log IP Address&nbsp;&nbsp;&nbsp;
+															<input type="checkbox" name="dprv_send_email" id="dprv_send_email" ' . $dprv_send_email_checked . $subscription_enabled_cb . '/>Send me an email&nbsp;&nbsp;&nbsp;&nbsp;
+														</td>
+													</tr>
+													<tr><td colspan="2" style="height:6px"></td></tr>
+												</table>
+												<table class="dprv" style="padding-right:5px; background-color:#EEEEFF; border:1px solid #666666; border-top:0px; width:796px">
+													<tr><td style="height:6px"></td></tr>
+													<tr><td id="dprv_log_headers" style="text-align:left; vertical-align:top;height:60px">' .
+															dprv_get_log_info() . '
+														</td>
+													</tr>
+													<tr>
+														<td id="dprv_log_history">
 														</td>
 													</tr>
 												</table>
+															
+
 											</td>
 										</tr>
 										');
@@ -2303,7 +2351,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 							</div>
 						</fieldset>
 				</form>' );
-
+	print ('<div id="popupDialog"></div>');
 	
 	$creative_hyperlink = "<a href=\"http://www.digiprove.com/creative-and-copyright.aspx\" target=\"_blank\">";
 	$upgrade_hyperlink = "<a href=\"" . $dprv_upgrade_link . "&Action=Upgrade\" target=\"_blank\">";
@@ -2459,13 +2507,20 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				dprv_PreviewLicense();
 				dprv_ToggleFooterWarning();
 				dprv_toggle_r_c_checkbox();
+				dprv_toggle_record_ip();
 				dprv_toggleCredentials();
+				dprv_draw_log_history_page();
 				//if (document.getElementById("dprv_password_row1").style.display == "")
 				//{
 				//	document.getElementById("dprv_password").focus();
 				//}
 				document.getElementById(\'dprv_email_address\').focus();
 			}
+			jQuery(document).ready(function($)
+				{
+			       		jQuery("#dprv_log_removal_date").datepicker({dateFormat: "d M yy" });
+						jQuery("#popupDialog").dialog({autoOpen:false});
+				});
 			// Set up above code to run after load
 			if (window.addEventListener)
 			{
@@ -2762,5 +2817,139 @@ function dprv_resend_activation_email($dprv_user_id, $dprv_email_address)
 	return substr($data, $pos);
 }
 
+function dprv_get_entries_per_page()
+{
+	return 25;
+}
 
+function dprv_get_log_info()
+{
+	$log = new DPLog();  
+	$log->lwrite("dprv_get_log_info");
+	$dprv_log_entries_per_page = dprv_get_entries_per_page();
+	$sql = "SELECT COUNT(*) FROM " . get_option('dprv_prefix') . "dprv_log";
+	global $wpdb;
+	$total_entries = dprv_wpdb('get_var', $sql);
+	if ($total_entries == 0)
+	{
+		return "Event history log is empty";
+	}
+	$dprv_to_log_entry = $dprv_log_entries_per_page;
+	if ($dprv_to_log_entry > $total_entries)
+	{
+		$dprv_to_log_entry = $total_entries;
+	}
+	$total_pages = intval($total_entries / $dprv_log_entries_per_page);
+	$interim = $total_pages * $dprv_log_entries_per_page;
+	$remainder = floatval($total_entries - ($total_pages * $dprv_log_entries_per_page));
+	if ($remainder > 0)
+	{
+		$total_pages = $total_pages + 1;
+	}
+	$output = '<table class="dprv_log_info">';
+	$output .= '<tr><td colspan="2"></td><td style="font-size:16px">' . __('Event Log', 'dprv_cp') . '</td>';
+	$output .= '<td colspan="2" style="font-size:10px"><a href="#" onclick="return dprv_delete_clicked()">Remove entries before ';
+	$output .= '</a><input type="text" style="height:20px;width:75px;font-size:10px" id="dprv_log_removal_date"/></td></tr>';
+	$output .= '<tr><td rowspan="2" style="width:17%">';
+	$output .= '<button type="button" class="button" id="dprv_first_page_button" onclick="dprv_first_page_clicked()"><< First page</button>&nbsp;&nbsp;&nbsp;';
+	$output .= '</td>';
+	$output .= '<td rowspan="2" style="width:17%">';
+	$output .= '<button type="button" class="button" id="dprv_previous_page_button" onclick="dprv_previous_page_clicked()">< Previous page >></button>';
+	$output .= '</td>';
+	$output .= '<td style="font-size:11px">';
+	$output .= __("Entries ", "dprv_cp") . "<span id='dprv_from_log_entry'>1</span>-<span id='dprv_to_log_entry'>" . $dprv_to_log_entry . "</span>" . __(" of ", "dprv_cp") . "<span id='dprv_number_of_log_entries'>" . $total_entries . "</span>";
+	$output .= '</td>';
+	$output .= '<td rowspan="2" style="width:17%">';
+	$output .= '<button type="button" class="button" id="dprv_next_page_button" onclick="dprv_next_page_clicked()">Next  page ></button>';
+	$output .= '</td>';
+	$output .= '<td rowspan="2" style="width:17%">';
+	$output .= '<button type="button" class="button" id="dprv_last_page_button" onclick="dprv_last_page_clicked()">Last page >></button>';
+	$output .= '</td>';
+	$output .= '<tr><td style="font-size:11px">';
+	$output .= 'Page <span id="dprv_this_page">1</span>/<span id="dprv_total_pages">' . $total_pages . '</span> (<span id="dprv_log_entries_per_page">' . $dprv_log_entries_per_page . '</span> entries per page)';
+	$output .= '</td></tr></table>';
+	return $output;
+}
+
+function dprv_get_log_history($page)
+{
+	$log = new DPLog();  
+	$log->lwrite("dprv_get_log_history starts");  
+	$sql = "SELECT COUNT(*) FROM " . get_option('dprv_prefix') . "dprv_log";
+	global $wpdb;
+	$total_entries = dprv_wpdb('get_var', $sql);
+	$dprv_log_entries_per_page = dprv_get_entries_per_page();
+	$total_pages = intval($total_entries / $dprv_log_entries_per_page);
+	$remainder = $total_entries - ($total_pages * $dprv_log_entries_per_page);
+	if ($remainder > 0)
+	{
+		$total_pages = $total_pages + 1;
+	}
+	$output = "<table class='dprv_log_history'><tr><th>When</th><th>Event</th><th>Page</th><th>IP Address</th></tr>";
+	$start_row = ($page - 1) * $dprv_log_entries_per_page;
+	if ($start_row < 0 || $start_row >= $total_entries)
+	{
+		return false;
+	}
+	$sql = "SELECT * FROM " . get_option('dprv_prefix') . "dprv_log LIMIT " . $start_row .", " . $dprv_log_entries_per_page;
+	$results = $wpdb->get_results($sql, OBJECT);
+	for ($i=0; $i<count($results); $i++)
+	{
+		$class = "dprv_log_row0";
+		if ((intval($i/2)*2) != $i)
+		{
+			$class = "dprv_log_row1";
+		}
+		$log_entry = $results[$i];
+		$when = date("d M Y",  $log_entry->timestamp);
+		$when_full = date("d M Y G:i",  $log_entry->timestamp);
+$output .= "<tr class='" . $class . "'><td title='" . $when_full . "'>" . $when . "</td><td>" . $log_entry->event . "</td><td>" . $log_entry->url . "</td><td>" . $log_entry->ip_address . "</td></tr>";
+	}
+	return $output . "</table>";
+}
+function dprv_remove_log_entries($removal_timestamp)
+{
+	$log = new DPLog();  
+	$log->lwrite("dprv_remove_log_entries starts");
+	$sql = "DELETE FROM " . get_option('dprv_prefix') . "dprv_log" . " WHERE timestamp < " . $removal_timestamp;
+	global $wpdb;
+	$results = dprv_wpdb('query', $sql);
+	if ($results === false)
+	{
+		return __("Failed to delete.", "dprv_cp");
+	}
+	return sprintf(__("Removed %s log entries", "dprv_cp"), $results);
+}
+
+function dprv_log_functions()
+{
+    // The $_REQUEST contains all the data sent via ajax
+    if ( isset($_REQUEST) )
+	{
+		$function = $_REQUEST['function'];
+		if ($function == 'ShowLogPage')
+		{
+			$page = $_REQUEST['page'];
+			// Now we'll return it to the javascript function
+			// Anything outputted will be returned in the response
+			echo dprv_get_log_history($page);
+		}
+		if ($function == 'RemoveLogEntries')
+		{
+			$removal_timestamp = $_REQUEST['timestamp'];
+			echo dprv_remove_log_entries($removal_timestamp);
+		}
+		if ($function == 'ReDrawLogHeaders')
+		{
+			$redrawn_headers = dprv_get_log_info();
+			echo $redrawn_headers;
+		}
+    }
+    // Always die in functions echoing ajax content
+   die();
+}
+if (get_option('dprv_record_IP') != "off")
+{
+	add_action('wp_ajax_dprv_log_functions', 'dprv_log_functions');
+}
 ?>

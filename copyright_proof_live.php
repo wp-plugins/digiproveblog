@@ -1,6 +1,41 @@
 <?php
 // FUNCTIONS CALLED WHEN SERVING PAGES
 include_once('copyright_proof_integrity.php');						// Functions for Integrity Checking
+function dprv_log_event()
+{
+    // The $_REQUEST contains all the data sent via ajax
+    if ( isset($_REQUEST) )
+	{
+		$severity = $_REQUEST['severity'];
+		$message = $_REQUEST['message'];
+		$url = urldecode($_REQUEST['url']);
+		// Now we'll return it to the javascript function
+		// Anything outputted will be returned in the response
+		echo "got message " . $message . " page=" . $url;
+
+		// React ansynchronously to event
+		// Log it
+		$rslt = dprv_log_writeline($severity, $message, $url);
+		// If so configured by user, send an email
+		if (strpos(get_option('dprv_record_IP'), "Email") !== false)
+		{
+			global $dprv_blog_host;
+			$mail_message = __("Digiprove's Copyright Proof plugin detected the following event:", "dprv_cp") . "\r\n\r\n";
+			$mail_message .= $message . __(", page=", "dprv_cp") .$url . "\r\n\r\n";
+			$mail_message .= __("IP address: ", "dprv_cp") . $_SERVER['REMOTE_ADDR'] . "\r\n\r\n";
+			$mail_message .= __("You are receiving this email because of your Wordpress Copyright Proof settings for the site ", "dprv_cp") . $dprv_blog_host . "\r\n\r\n";
+			$mail_message .= __("You can visit your Digiprove account by logging in at https://www.digiprove.com/secure/login.aspx (your user id is ", "dprv_cp") . get_option('dprv_user_id') . ").";
+			wp_mail(get_option('admin_email'), __('Warning - possible attempt to copy content from ', 'dprv_cp') . get_option('blogname'), $mail_message); 
+		}
+    }
+    // Always die in functions echoing ajax content
+   die();
+}
+if (get_option('dprv_record_IP') != "off")
+{
+	add_action( 'wp_ajax_dprv_log_event', 'dprv_log_event' );
+	add_action( 'wp_ajax_nopriv_dprv_log_event', 'dprv_log_event' );
+}
 
 function dprv_head()
 {
@@ -19,10 +54,14 @@ function dprv_head()
 		//<![CDATA[");
 	
 	// Then, create Javascript to do copy-protect functions if necessary
-
+	$dprv_record_IP = get_option('dprv_record_IP');
+	global $dprv_wp_host;
 	if ($dprv_frustrate_copy == "Yes")
 	{
 		echo ("
+		var dprv_record_IP = '" . $dprv_record_IP . "';
+		var dprv_site_url = '" . site_url() . "';
+		var dprv_ajax_url = '" . admin_url( 'admin-ajax.php' ) . "';
 		var dprv_noRightClickMessage='" . addslashes($dprv_right_click_message) . "';
 		var dprv_justDisplayed = 0;
 
@@ -91,6 +130,8 @@ function dprv_head()
 			document.getElementById('license_panel' + post_id).style.display='none';
 		}");
 
+
+
 	echo ("
 	//]]>
 	</script>");
@@ -98,14 +139,6 @@ function dprv_head()
 									.dprv tr td{border:0px;padding:0px;}
 			</style>');
 	dprv_populate_licenses();
-	
-	$dprv_record_IP = get_option('dprv_record_IP');
-	if ($dprv_record_IP == "Yes")
-	{
-		global $dprv_wp_host;
-		$content_prefix .= "<script src='record_IP.js' type='text/javascript'></script>";
-		$content_prefix .= "<form action='http://" . $dprv_wp_host . "/copyright_proof_handler.php' method='post' id='IPAddress'><input type='hidden' value='" . @$REMOTE_ADDR . "' /></form>";
-	}
 }
 
 

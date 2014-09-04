@@ -1,11 +1,9 @@
 //<![CDATA[ 
 // FUNCTIONS
 
-//var inputTags = new Array("input", "textarea", "select", "option", "optgroup", "button");
 var inputTags = new Array("input", "textarea", "select", "option", "optgroup", "button", "canvas");
 function dprv_disableSelection(target)
 {
-	
 	// At present, this function only used in Safari or Chrome:
 	function enableInputElements(target)
 	{
@@ -81,7 +79,7 @@ function dprv_disableSelection(target)
 
 // FUNCTIONS TO PREVENT RIGHT-CLICK:
 
-function dprv_no_right_click_message()
+function dprv_manage_right_click(e)
 {
 	function htmlspecialchars_decode(encodedString)
 	{
@@ -96,8 +94,30 @@ function dprv_no_right_click_message()
 			dprv_justDisplayed = 1;
 			setTimeout("dprv_justDisplayed = 0;", 50);
 		}
+		if (dprv_record_IP != "off")
+		{
+			var message = "A user right-clicked";
+			if (typeof e != "undefined" && typeof e.target != "undefined")
+			{
+				if (typeof e.target.id != "undefined" && e.target.id != null && e.target.id != "")
+				{
+					message += " on " + e.target.tagName + "/" + e.target.id;
+				}
+				if (typeof e.target.src != "undefined" && e.target.src != null && e.target.src != "")
+				{
+					var url = e.target.src.replace(dprv_site_url, "").replace("http://","").replace("https://","");
+					if (url.substr(0,1) == "/")
+					{
+						url = url.substr(1);
+					}
+					message += ", src=" + url;
+				}
+			}
+			dprv_error_log("Low", message);
+		}
 	}
 }
+
 
 function dprv_disableRightClick()
 {
@@ -105,13 +125,13 @@ function dprv_disableRightClick()
 	{
 		if (e.button && e.button == 2 || e.which && e.which == 3)	// Was it a right-click? 
 		{
-			dprv_no_right_click_message();
+			dprv_manage_right_click(e);
 			return false;
 		}
 		return true;
 	}
 	document.onmousedown=clickCheck;		// Works in FF, Chrome, IE, but in Safari, Opera still shows context menu
-	document.oncontextmenu=new Function("dprv_no_right_click_message();return false");	// fallback, works in modern versions of Safari, Chrome, Opera, IE, and FF
+	document.oncontextmenu=new Function("dprv_manage_right_click();return false");	// fallback, works in modern versions of Safari, Chrome, Opera, IE, and FF
 }
 
 function dprv_disableDrag(target)
@@ -128,7 +148,13 @@ function dprv_disableDrag(target)
 		target.ondragstart=function()
 		{
 			if (inputTags.indexOf(event.srcElement.tagName.toLowerCase()) == -1)
-			{return false;}
+			{
+				if (dprv_record_IP != "off")
+				{
+					dprv_error_log("Low", "User tried to drag");
+				}
+				return false;
+			}
 			else
 			{return true;}
 		}
@@ -137,7 +163,7 @@ function dprv_disableDrag(target)
 	{
 		if (typeof target.ondrag != "undefined")
 		{
-			target.ondrag=new Function("return false");		// Doesn't stop the dragging in Chrome or Safari
+			target.ondrag=new Function("if(dprv_record_IP!='off'){dprv_error_log('Low','User tried to drag');}return false;");		// Doesn't stop the dragging in Chrome or Safari
 		}
 		else
 		{
@@ -158,41 +184,46 @@ function dprv_disableCtrlKeys()
 	//alert(navigator.userAgent);
 	function trapCtrlKeyCombination(ev)
 	{
-			var key;
-			var isCtrl;
-			//ev=ev||event;
-			// TODO - change this test to checking whether undefined or not to avoid javascript warning message
-			if(window.event)	// This is true in IE and Safari  - Note ev.which also exists in Safari, Opera and Chrome
+		var key;
+		var isCtrl;
+		//ev=ev||event;
+		// TODO - change this test to checking whether undefined or not to avoid javascript warning message
+		if(window.event)	// This is true in IE and Safari  - Note ev.which also exists in Safari, Opera and Chrome
+		{
+			key = window.event.keyCode;
+			if (key == 17)    // this bit can be removed after testing
 			{
-				key = window.event.keyCode;
-				if (key == 17)    // this bit can be removed after testing
-				{
-					return true;
-				}
-				if(window.event.ctrlKey)
-						isCtrl = true;
-				else
-						isCtrl = false;
-
+				return true;
 			}
+			if(window.event.ctrlKey)
+					isCtrl = true;
 			else
-			{
-				key = ev.which;     //firefox
-				if(ev.ctrlKey)
-						isCtrl = true;
-				else
-						isCtrl = false;
-			}
+					isCtrl = false;
 
-			if(isCtrl)
-			{
-					if (String.fromCharCode(key).toLowerCase() == 'a' || String.fromCharCode(key).toLowerCase() == 'u')
+		}
+		else
+		{
+			key = ev.which;     //firefox
+			if(ev.ctrlKey)
+					isCtrl = true;
+			else
+					isCtrl = false;
+		}
+
+		if(isCtrl)
+		{
+				if (String.fromCharCode(key).toLowerCase() == 'a' || String.fromCharCode(key).toLowerCase() == 'u')
+				{
+					void(0);  // CANCEL LAST EVENT
+					if (dprv_record_IP != "off")
 					{
-						void(0);  // CANCEL LAST EVENT
-						return false;
+						dprv_error_log("Low", "Forbidden CTRL Key combination");
 					}
-			}
-			return true;
+			
+					return false;
+				}
+		}
+		return true;
 	}
 
 	if ((navigator.userAgent.indexOf('Safari') != -1) || navigator.userAgent.indexOf('MSIE') != -1)
@@ -205,5 +236,38 @@ function dprv_disableCtrlKeys()
 	}
 }
 
-
+function dprv_error_log(severity, message)
+{
+	if (severity == null)
+	{
+		severity = "Low";
+	}
+	var url = document.URL.replace(dprv_site_url, "").replace("http://","").replace("https://","");
+	if (url.substr(0,1) == "/")
+	{
+		url = url.substr(1);
+	}
+	url = encodeURIComponent(url);
+	jQuery(document).ready(function($) 
+	{
+		// This does the ajax request
+		$.ajax({
+			url: dprv_ajax_url,
+			data:
+			{
+				'action':'dprv_log_event',
+				'severity':severity,
+				'message' : message,
+				'url':url
+			},
+			success:function(data)
+			{
+				// This outputs the result of the ajax request
+				//alert(data);	(not interested in response, hopefully logged ok
+			},
+			error: function(errorThrown){}
+		});  
+				  
+	});
+}
 //]]>

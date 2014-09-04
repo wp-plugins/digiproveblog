@@ -3,14 +3,14 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership, digital certification
 Requires at least: 2.7
-Tested up to: 3.9.1
-Stable tag: 2.20
+Tested up to: 4.0
+Stable tag: 2.21
 
 Digitally certify your original content - creates tamper-proof record of authorship to establish and protect copyright. Inserts a combined copyright/licensing notice in your posts. Prevents copy-paste of your content.
 
 == Description ==
 
-A copyright notice with teeth!  Prove ownership, protect your copyright, and copy protect.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts combined certification, copyright, licensing, and attribution notice at end of post. At your option, your post's url will be shown on digiprove.com (will be a hyperlink for Digiprove subscribers) to your post. Optional anti-theft feature to copy protect your content.  Supports multiple users.
+A copyright notice with teeth!  Prove ownership, protect your copyright, and copy protect.  Obtain a digitally signed and time-stamped certificate of content of each wordpress post (for proof of copyright).  Inserts combined certification, copyright, licensing, and attribution notice at end of post. At your option, your post's url will be shown on digiprove.com (will be a hyperlink for Digiprove subscribers) to your post. Optional anti-theft feature to copy protect your content, and will record ip addresses of attempted thieves.  Supports multiple users.
 
 [Copyright Proof](http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx)
 
@@ -155,6 +155,17 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 2.21 =
+* New subscriber function:
+*  - to log attempted content theft and record ip address
+*  - to alert administrator via email
+* Fixed minor bugs
+* Fix static/nonstatic problem in verify
+* includes plugin icon
+* includes verification icon
+* uses version 1.02 of Digiprove SDK
+
 = 2.20 =
 * Now supports copyright protection at individual user level
 * Improved stability of Upgrade/Renew link
@@ -173,6 +184,15 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 = 2.18 =
 * New function - Verify Digiprove status of any previous revision
 * Introduces server-side version tracking
+
+TO BE DONE:
+- Offer option to save p7s files somewhere (named by fingerprint) and use for verification
+- Change integrity check to always do HTML check, and only do embedded files check when no update since last digiprove
+- Offer options for live checking: i) publish, but inform me a) next time I log in or b) by email immediately, ii) display message instead of text 
+- Test above
+- Explain with notes etc.
+- change dprv_event clearing down in admin to where we know the server has received
+- count all files so that if NO files, the message "HTML certified and verified" can be "Certified and Verified"
 
 = 2.17 =
 * Uses Digiprove SDK 1.01 (more secure, better XML-encoding)
@@ -535,6 +555,7 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 * Minor bug-fixes
 
 == Upgrade Notice ==
+
 = 2.20 = 
 Strongly recommended, includes a lot of small fixes, now supports multi-user
 

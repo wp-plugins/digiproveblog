@@ -1039,6 +1039,9 @@ function dprv_toggle_r_c_checkbox()
 	{
 		document.getElementById('dprv_right_click_box').disabled = false;
 		document.getElementById('dprv_right_click_box').style.backgroundColor = '#FFFFFF';
+		document.getElementById('dprv_record_IP').disabled = false;
+		document.getElementById('dprv_record_IP').style.backgroundColor = '#FFFFFF';
+		dprv_toggle_record_ip();
 		if (document.getElementById('dprv_right_click_box').checked == true)
 		{
 			document.getElementById('dprv_right_click_message').disabled = false;
@@ -1056,6 +1059,10 @@ function dprv_toggle_r_c_checkbox()
 		document.getElementById('dprv_right_click_box').style.backgroundColor = '#CCCCCC';
 		document.getElementById('dprv_right_click_message').disabled = true;
 		document.getElementById('dprv_right_click_message').style.backgroundColor = '#CCCCCC';
+		document.getElementById('dprv_record_IP').disabled = true;
+		document.getElementById('dprv_record_IP').style.backgroundColor = '#CCCCCC';
+		document.getElementById('dprv_send_email').disabled = true;
+		document.getElementById('dprv_send_email').style.backgroundColor = '#CCCCCC';
 	}
 
 }
@@ -1077,15 +1084,222 @@ function dprv_toggle_r_c_text(element)
 		document.getElementById('dprv_right_click_message').style.backgroundColor = '#CCCCCC';
 	}
 }
-
-
+function dprv_toggle_record_ip()
+{
+	if (document.getElementById('dprv_record_IP').checked == false)
+	{
+		document.getElementById('dprv_send_email').disabled = true;
+		document.getElementById('dprv_send_email').style.backgroundColor = '#CCCCCC';
+	}
+	else
+	{
+		document.getElementById('dprv_send_email').disabled = false;
+		document.getElementById('dprv_send_email').style.backgroundColor = '#FFFFFF';
+	}
+}
 function dprv_ShowFrustrateCopyText()
 {
 	// Selecting this option will prevent a user from right-clicking on your web-page (in order to view the source), selecting content (in order to copy to clipboard), or pressing CTRL/U (to view the source) in most browsers.  This may prevent the unauthorised use of your content by unsophisticated users, but will be a small nuisance to a determined content thief. This is as good as it gets on the web - DO NOT BELIEVE the claims of some other plugin authors that your content cannot be stolen...
 	dprv_DisplayHelpText(dprv_literals["Frustrate_copy_help"]);
 }
 
+// FUNCTIONS FOR DISPLAY OF EVENT LOG HISTORY
+var dprv_log_current_page = 1;
+function dprv_first_page_clicked()
+{
+	dprv_log_current_page = 1;
+	dprv_draw_log_history_page();
+}
+function dprv_previous_page_clicked()
+{
+	if (dprv_log_current_page == 0)
+	{
+		return false;
+	}
+	dprv_log_current_page --;
+	dprv_draw_log_history_page();
+}
+function dprv_next_page_clicked()
+{
+	if (dprv_log_current_page == parseInt(document.getElementById('dprv_total_pages').innerHTML, 10))
+	{
+		return;
+	}
+	dprv_log_current_page ++;
+	dprv_draw_log_history_page();
+}
+function dprv_last_page_clicked()
+{
+	dprv_log_current_page = parseInt(document.getElementById('dprv_total_pages').innerHTML, 10);
+	dprv_draw_log_history_page();
+}
 
+function setLogHeader()
+{
+	//document.getElementById('dprv_next_page_button').style.display = '';
+	//document.getElementById('dprv_previous_page_button').style.display = '';
+	if (document.getElementById('dprv_log_history').innerHTML.indexOf("Event history log is empty") != -1)
+	{
+		document.getElementById('dprv_next_page_button').disabled = true;
+		document.getElementById('dprv_previous_page_button').disabled = true;
+		return;
+	}
+	if (dprv_log_current_page == parseInt(document.getElementById('dprv_total_pages').innerHTML, 10))
+	{
+		document.getElementById('dprv_next_page_button').disabled = true;
+		document.getElementById('dprv_last_page_button').disabled = true;
+	}
+	else
+	{
+		document.getElementById('dprv_next_page_button').disabled = false;
+		document.getElementById('dprv_last_page_button').disabled = false;
+	}
+	if (dprv_log_current_page == 1)
+	{
+		document.getElementById('dprv_previous_page_button').disabled = true;
+		document.getElementById('dprv_first_page_button').disabled = true;
+	}
+	else
+	{
+		document.getElementById('dprv_previous_page_button').disabled = false;
+		document.getElementById('dprv_first_page_button').disabled = false;
+	}
+	document.getElementById('dprv_this_page').innerHTML = dprv_log_current_page.toString();
+	var dprv_log_entries_per_page = parseInt(document.getElementById('dprv_log_entries_per_page').innerHTML, 10);
+	var dprv_number_of_log_entries = parseInt(document.getElementById('dprv_number_of_log_entries').innerHTML, 10);
+	var dprv_from_log_entry = ((dprv_log_current_page -1) * dprv_log_entries_per_page) + 1;
+	var dprv_to_log_entry = dprv_log_current_page * dprv_log_entries_per_page;
+	if (dprv_to_log_entry > dprv_number_of_log_entries)
+	{
+		dprv_to_log_entry = dprv_number_of_log_entries;
+	}
+	document.getElementById('dprv_from_log_entry').innerHTML = dprv_from_log_entry;
+	document.getElementById('dprv_to_log_entry').innerHTML = dprv_to_log_entry;
+}
+function dprv_delete_clicked()
+{
+	var submittedDate = jQuery.trim(document.getElementById('dprv_log_removal_date').value);
+	if (submittedDate == "")
+	{
+		alert("Please select a date");
+		return false;
+	}
+	var dprv_removal_date = new Date(submittedDate);
+	var today = new Date().toJSON().slice(0,10);
+	var today = new Date(today);
+	var formattedDate = jQuery.datepicker.formatDate('d M yy', dprv_removal_date);
+	var dprv_timestamp = parseInt(jQuery.datepicker.formatDate('@', dprv_removal_date), 10) / 1000;
+	var confirm_msg = "This will permanently delete all event log entries prior to " +  formattedDate + ".  Press OK to proceed.";
+	if (dprv_removal_date >= today)
+	{
+		confirm_msg = "Are you sure? This will permanently delete all event log entries.";
+	}
+	if (confirm(confirm_msg))
+	{
+		dprv_remove_log_entries(dprv_timestamp);
+		return true;
+	}
+	return false;
+}
+function dprv_remove_log_entries(dprv_timestamp)
+{	
+	if (document.getElementById('dprv_log_history').innerHTML.indexOf("Event history log is empty") != -1)
+	{
+		return;
+	}
+	jQuery(document).ready(function($) 
+	{
+		// This does the ajax request
+		$.ajax({
+			url: ajaxurl,
+			data:
+			{
+				'action':'dprv_log_functions',
+				'function':'RemoveLogEntries',
+				'timestamp':dprv_timestamp
+			},
+			success:function(data)
+			{
+				// This outputs the result of the ajax request
+				document.getElementById('popupDialog').innerHTML = data;
+				$("#popupDialog").dialog("open");
+				dprv_redraw_log_headers();
+				setTimeout('dprv_tidyUpAfterRedraw()', 2000);
+			},
+			error: function(jqXHR, textStatus, errorThrown)
+			{
+				alert("ajax error: " + textStatus + " " + errorThrown);
+			}
+		});  
+				  
+	});
+}
+function dprv_tidyUpAfterRedraw()
+{
+				jQuery(document).ready(function($)
+				{
+			       		jQuery("#dprv_log_removal_date").datepicker({dateFormat: "d M yy" });
+				});
+				dprv_first_page_clicked();
+}
+
+function dprv_draw_log_history_page()
+{	
+	if (document.getElementById('dprv_log_history').innerHTML.indexOf("Event history log is empty") != -1)
+	{
+		return;
+	}
+	jQuery(document).ready(function($) 
+	{
+		// This does the ajax request
+		$.ajax({
+			url: ajaxurl,
+			data:
+			{
+				'action':'dprv_log_functions',
+				'function':'ShowLogPage',
+				'page':dprv_log_current_page
+			},
+			success:function(data)
+			{
+				// This outputs the result of the ajax request
+				document.getElementById('dprv_log_history').innerHTML = data;
+				setLogHeader();
+			},
+			error: function(jqXHR, textStatus, errorThrown)
+			{
+				alert("ajax error: " + textStatus + " " + errorThrown);
+			}
+		});  
+				  
+	});
+}
+
+function dprv_redraw_log_headers()
+{	
+	jQuery(document).ready(function($) 
+	{
+		// This does the ajax request
+		$.ajax({
+			url: ajaxurl,
+			data:
+			{
+				'action':'dprv_log_functions',
+				'function':'ReDrawLogHeaders'
+			},
+			success:function(data)
+			{
+				// This outputs the result of the ajax request
+				document.getElementById('dprv_log_headers').innerHTML = data;
+			},
+			error: function(jqXHR, textStatus, errorThrown)
+			{
+				alert("ajax error: " + textStatus + " " + errorThrown);
+			}
+		});  
+				  
+	});
+}
 
 // GENERIC (CROSS-TAB) FUNCTIONS:
 function dprv_SubmitSelected()

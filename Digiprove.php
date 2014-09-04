@@ -1,5 +1,5 @@
 <?php
-define("DPRV_SDK_VERSION", '1.01');
+define("DPRV_SDK_VERSION", '1.02');
 define("DPRV_HOST", "api.digiprove.com");
 define("DPRV_VERIFY_HOST", "verify.digiprove.com");
 define("DPRV_SSL", "No");
@@ -426,7 +426,8 @@ class Digiprove
 		return verify_fingerprint($error_message, $credentials, $certificate_id, $digital_fingerprint, $content, $digiproved_content, $content_files, $user_agent);
 	}
 
-	function verify_fingerprint(&$error_message, $credentials, $certificate_id, $digital_fingerprint, $content, &$digiproved_content = null, $content_files = null, $user_agent = "")
+	// This function is as per verify, but without preparing or modifying the content
+	static public function verify_fingerprint(&$error_message, $credentials, $certificate_id, $digital_fingerprint, $content, &$digiproved_content = null, $content_files = null, $user_agent = "")
 	{
 		$log = new DPLog();
 		$log->lwrite("Digiprove::verify_fingerprint starts");
@@ -437,7 +438,7 @@ class Digiprove
             $return_table["result"] = "Credentials incomplete";
             return $return_table;
 		}
-		$XML_string = self::prepareVerifyXML($error_message, $credentials, $certificate_id, $content, $digital_fingerprint, $content_files, $content_type, $user_agent);
+		$XML_string = self::prepareVerifyXML($error_message, $credentials, $certificate_id, $content, $digital_fingerprint, $content_files, "File", $user_agent);
 		$log->lwrite("request: $XML_string");
 
 		if ($XML_string === false)
@@ -488,7 +489,7 @@ class Digiprove
 	}
 
 
-	static private function prepareVerifyXML(&$error_message, $credentials, $certificate_id, $content, $digital_fingerprint, $content_files = null, $content_type="", $user_agent = "")
+	static private function prepareVerifyXML(&$error_message, $credentials, $certificate_id, $content, $digital_fingerprint, $content_files = null, $content_type="File", $user_agent = "")
 	{
 		$log = new DPLog();  
 		$log->lwrite("prepareVerifyXML starts");
@@ -572,7 +573,7 @@ class Digiprove
 		{
 			$log->lwrite("doing xml for file " . $t . ": " .  $f_name);
 			$postText .= "<content_wrapper>";
-			$postText .= '<content_type>File</content_type>';
+			$postText .= '<content_type>' . $content_type . '</content_type>';
 			//$postText .= '<content_filename>' . $f_name . '</content_filename>';
 			$postText .= '<content_filename>' . self::prepareForXML($f_name) . '</content_filename>';
 			//$postText .= '<content_fingerprint>' . $f_fingerprint . '</content_fingerprint>';
