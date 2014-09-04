@@ -2,8 +2,8 @@
 /*
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
-Description: Digitally certify your posts to prove copyright ownership, generate copyright notice, and copy-protect text and images. 
-Version: 2.20
+Description: Digitally certify your posts to prove copyright ownership, generate copyright and license notice, copy-protect text and images, and monitor/log/alert attempted content theft.  Digiprove certifications are verifiable.
+Version: 2.21
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -40,10 +40,8 @@ License: GPL
 	include_once('copyright_proof_integrity.php');					// Functions for Verification
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.20");
+	define("DPRV_VERSION", "2.21");
 	define("DPRV_WWW", "www.digiprove.com");
-	//error_reporting(-1);						   // uncomment this for test purposes
-
 
 	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id, $dprv_mime_types, $dprv_blog_host, $dprv_wp_host, $dprv_last_error;
 
@@ -72,11 +70,6 @@ License: GPL
 								"Documents"=>array("csv","doc","docx","odt","ods","odp","pdf","ppt","pptx","rtf","txt","xls","xlsx"),
 								"Code"=>array("js","jar"));
 
-
-
-
-
-
 	// Register hooks
 	register_activation_hook(__FILE__, 'dprv_activate');
 	register_deactivation_hook(__FILE__, 'dprv_deactivate');
@@ -87,6 +80,7 @@ License: GPL
 	add_action('admin_menu', 'dprv_settings_menu');
 	add_action('admin_head', 'dprv_admin_head');
 	add_action('admin_footer', 'dprv_admin_footer');
+	add_action('admin_enqueue_scripts', 'dprv_admin_enqueue_scripts');
 
 	add_action('post_submitbox_start', 'dprv_add_digiprove_submit_button');
 	add_filter('wp_insert_post_data', 'dprv_parse_post', 99, 2);
@@ -233,7 +227,7 @@ License: GPL
 		add_option('dprv_license', '0');
 		add_option('dprv_frustrate_copy', '');
 		add_option('dprv_right_click_message', '');
-		add_option('dprv_record_IP', '');                       // Not used (yet)
+		add_option('dprv_record_IP', 'off');                       // Not used (yet)
 		add_option('dprv_notice_border', '');
 		add_option('dprv_notice_background', '');
 		add_option('dprv_notice_color', '');
@@ -250,8 +244,6 @@ License: GPL
 		{
 			foreach ($dprv_html_tags as $key=>$value)
 			{
-				//$log->lwrite("key=$key");
-				//$log->lwrite("value=$value");
 				$dprv_html_tags[$key]["selected"] = "False";
 			}
 		}
@@ -277,6 +269,7 @@ License: GPL
 		create_dprv_license_table();
 		create_dprv_post_table();
 		create_dprv_post_content_files_table();
+		create_dprv_log_table();
 	}
 
 	function dprv_set_default_html_tags()
@@ -425,7 +418,6 @@ License: GPL
 				);";
 
 		//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
-		//require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 		dbDelta($sql);
 
@@ -504,7 +496,6 @@ License: GPL
 			}
 		}
 	}
-
 	function create_dprv_post_content_files_table()
 	{
 		$log = new DPLog();
@@ -538,6 +529,41 @@ License: GPL
 		else
 		{
 			$log->lwrite("Table " . $dprv_post_content_files . " exists already");  
+		}
+	}
+
+
+	function create_dprv_log_table()
+	{
+		$log = new DPLog();
+		global $wpdb;
+		$dprv_prefix = get_option('dprv_prefix');
+		$dprv_log = $dprv_prefix . "dprv_log";
+		// Check to see if the table exists already, if not, then create it
+		if(dprv_wpdb("get_var", "show tables like '$dprv_log'") != $dprv_log)
+		{
+			$log->lwrite("creating table " . $dprv_log);
+			$sql = "CREATE TABLE " . $dprv_log . " (
+					id bigint NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					timestamp int,
+					ip_address varchar(40),
+					url varchar(256),
+					event varchar(200)
+					);";
+			//We need to include this file so we have access to the dbDelta function below (which is used to create the table)
+			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+			dbDelta($sql);
+			$dprv_db_error =$wpdb->last_error;
+			$log->lwrite("just created log table " . $dprv_log . "; error text = " . $dprv_db_error);
+			if(dprv_wpdb("get_var", "show tables like '$dprv_log'") != $dprv_log)
+			{
+				$message = "Failure to create table " . $dprv_log . " with error " .  $dprv_db_error;
+				dprv_record_event($message);
+			}
+		}
+		else
+		{
+			$log->lwrite("Table " . $dprv_log . " exists already");  
 		}
 	}
 
@@ -733,6 +759,31 @@ License: GPL
 			return;
 		}
 	}
+
+	function dprv_log_writeline($severity, $message, $url)
+	{
+		$log = new DPLog();  
+		//$log->lwrite("entered dprv_error with " . $errstr);
+		if (strlen($message) > 200)
+		{
+			$message = substr($message, 0, 200);
+		}
+		if (strlen($url) > 256)
+		{
+			$url = substr($url, 0, 256);
+		}
+		global $dprv_last_error, $wpdb;
+		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_log", array('timestamp'=>time(), 'ip_address'=>$_SERVER['REMOTE_ADDR'],'url'=>$url, 'event'=>$message)))
+		{
+			$dprv_db_error = $wpdb->last_error;
+			$dprv_this_event = $dprv_db_error . ' inserting log entry ' . $message;
+			dprv_record_event($dprv_this_event);
+			return false;
+		}
+		return true;
+	}
+
+
 
 	function dprv_reminder()
 	{

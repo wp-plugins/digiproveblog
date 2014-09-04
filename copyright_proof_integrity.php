@@ -113,7 +113,7 @@
 			$message .= "<tr><td style='width:90px'><b>" . __("Searched on fingerprint", "dprv_cp") . "</b></td><td style='color:blue;font-family:monospace'>" . substr($dprv_digital_fingerprint, 0,32) . "<br/>" . substr($dprv_digital_fingerprint, 32) . "</td></tr>";
 			if ($result_code > 199 && $result_code < 210)
 			{
-				$message .= "<tr><td colspan='2'><b>" . $response["result"] . ".</b><br/>" . __("Digiprove certifies that the content of this revision was verifiably Digiproved", 'dprv_cp');
+				$message .= "<tr><td colspan='2' style='padding-top:3px'><img src='" . plugins_url("DP_tick.png", __FILE__) . "'/>>&nbsp;&nbsp;<span style='vertical-align:6px; font-weight:bold'>" . $response["result"] . ".</span><br/>" . __("Digiprove certifies that the content of this revision was verifiably Digiproved", 'dprv_cp');
 				$instance_count = intval($response["instance_count"]);
 				if ($instance_count > 1)
 				{
@@ -121,19 +121,19 @@
 				}
 				$message .= ".</td></tr>";
 				
-				$message .= "<tr><td><b>" . __("Certified&nbsp;at&nbsp;", 'dprv_cp') . "</b></td><td>" . $response[document_0]["utc_date_and_time"] . "</td></tr>";
-				$message .= "<tr><td><b>" . __("Certificate&nbsp;Id&nbsp;", 'dprv_cp') . "</b></td><td>" . $response[document_0]["certificate_id"] . "</td></tr>";
-				$message .= "<tr><td><b>" . __("Certificate&nbsp;URL&nbsp;", 'dprv_cp') . "</b></td><td style='word-wrap:break-word;'>" . $response[document_0]["certificate_url"] . "</td></tr>";
+				$message .= "<tr><td><b>" . __("Certified&nbsp;at&nbsp;", 'dprv_cp') . "</b></td><td>" . $response["document_0"]["utc_date_and_time"] . "</td></tr>";
+				$message .= "<tr><td><b>" . __("Certificate&nbsp;Id&nbsp;", 'dprv_cp') . "</b></td><td>" . $response["document_0"]["certificate_id"] . "</td></tr>";
+				$message .= "<tr><td><b>" . __("Certificate&nbsp;URL&nbsp;", 'dprv_cp') . "</b></td><td style='word-wrap:break-word;'>" . $response["document_0"]["certificate_url"] . "</td></tr>";
 				$message .= "</table>";
 				$user_stuff = ($credentials["user_id"] . " (" . $response["user_full_name"] . ")");
 				$user_stuff = str_replace(" ()", "", $user_stuff);
 
-				$message .= "<span style='display:none' id='verifyMessage'>Digiprove certifies that Digiprove user " . $user_stuff . " was in possession of digital content with the digital fingerprint " . $dprv_digital_fingerprint . " on " . $response[document_0]["utc_date_and_time"] . ".";
-				if ($response[document_0]["published_url"] && $response[document_0]["published_url"] != "")
+				$message .= "<span style='display:none' id='verifyMessage'>Digiprove certifies that Digiprove user " . $user_stuff . " was in possession of digital content with the digital fingerprint " . $dprv_digital_fingerprint . " on " . $response["document_0"]["utc_date_and_time"] . ".";
+				if ($response["document_0"]["published_url"] && $response["document_0"]["published_url"] != "")
 				{
-					$message .= " This content was published at " . $response[document_0]["published_url"] . ". ";
+					$message .= " This content was published at " . $response["document_0"]["published_url"] . ". ";
 				}
-				$message .= "Digiprove has issued the certificate id " . $response[document_0]["certificate_id"] . ", which can be viewed and verified online at " . $response[document_0]["certificate_url"] . ".</span>";
+				$message .= "Digiprove has issued the certificate id " . $response["document_0"]["certificate_id"] . ", which can be viewed and verified online at " . $response["document_0"]["certificate_url"] . ".</span>";
 			}
 			else
 			{
