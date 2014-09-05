@@ -6,7 +6,7 @@ Requires at least: 2.7
 Tested up to: 4.0
 Stable tag: 2.21
 
-Digitally certify your original content - creates tamper-proof record of authorship to establish and protect copyright. Inserts a combined copyright/licensing notice in your posts. Prevents copy-paste of your content.
+Digitally certify your content - creates tamper-proof record of authorship to prove copyright. Inserts a copyright/licensing notice in your posts. Prevents copy-paste of your content.
 
 == Description ==
 
