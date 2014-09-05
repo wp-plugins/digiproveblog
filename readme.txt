@@ -6,7 +6,7 @@ Requires at least: 2.7
 Tested up to: 4.0
 Stable tag: 2.21
 
-Digitally certify your content to prove copyright. Shows a copyright notice in your posts, with optional licensing/attribution. Also copy-protects content.
+Digitally certify your content to prove copyright. Shows copyright notice in your posts, with optional license/attribution. Copy-protects, and more...
 
 == Description ==
 
