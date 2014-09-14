@@ -1,7 +1,7 @@
 ﻿=== Copyright Proof ===
 Contributors: Digiprove
 Donate link: http://www.digiprove.com/
-Tags: copyright, protect ip, copy protect, plagiarism, splogging, proof of ownership, digital certification
+Tags: copyright, copyright notice, protect ip, copy protect, prove copyright, proof of ownership, record ip address, digital certification
 Requires at least: 2.7
 Tested up to: 4.0
 Stable tag: 2.21

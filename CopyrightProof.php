@@ -2,7 +2,7 @@
 /*
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
-Description: Digitally certify your posts to prove copyright ownership, generate copyright and license notice, copy-protect text and images, and monitor/log/alert attempted content theft.  Digiprove certifications are verifiable.
+Description: Digitally certify your posts to prove copyright ownership, generate copyright notice and license statement, copy-protect text and images, and monitor/log/alert attempted content theft.  Digiprove certifications are verifiable.
 Version: 2.21
 Author: Digiprove
 Author URI: http://www.digiprove.com/
