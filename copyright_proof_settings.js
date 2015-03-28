@@ -12,6 +12,7 @@ function dprv_DisplayAdvanced()
 	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
 	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
 	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
+	document.getElementById("HistoryTab").style.borderBottom="1px solid #666666";
 	document.getElementById("BasicPart1").style.display="none";
 	document.getElementById("BasicPart2").style.display="none";
 	if (document.getElementById("BasicPart3") != null)
@@ -24,6 +25,7 @@ function dprv_DisplayAdvanced()
 	document.getElementById("ContentPart2").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="none";
+	document.getElementById("History").style.display="none";
 	document.getElementById('dprv_submit').style.display='';	
 	dprv_HideHelpText();
 }
@@ -39,6 +41,7 @@ function dprv_DisplayLicenseTab()
 	document.getElementById("LicenseTab").style.borderBottom="0px";
 	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
 	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
+	document.getElementById("HistoryTab").style.borderBottom="1px solid #666666";
 	document.getElementById("BasicPart1").style.display="none";
 	document.getElementById("BasicPart2").style.display="none";
 	if (document.getElementById("BasicPart3") != null)
@@ -51,6 +54,7 @@ function dprv_DisplayLicenseTab()
 	document.getElementById("ContentPart2").style.display="none";
 	document.getElementById("License").style.display="";
 	document.getElementById("CopyProtect").style.display="none";
+	document.getElementById("History").style.display="none";
 	dprv_LicenseActionAbandon();
 	dprv_HideHelpText();
 }
@@ -66,6 +70,7 @@ function dprv_DisplayContentTab()
 	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
 	document.getElementById("ContentTab").style.borderBottom="0px";
 	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
+	document.getElementById("HistoryTab").style.borderBottom="1px solid #666666";
 	document.getElementById("BasicPart1").style.display="none";
 	document.getElementById("BasicPart2").style.display="none";
 	if (document.getElementById("BasicPart3") != null)
@@ -79,6 +84,7 @@ function dprv_DisplayContentTab()
 	// TODO: Restore instruction below when implementing data integrity checking
 	// document.getElementById("ContentPart2").style.display="";
 	document.getElementById("CopyProtect").style.display="none";
+	document.getElementById("History").style.display="none";
 	document.getElementById('dprv_submit').style.display='';	
 	dprv_HideHelpText();
 }
@@ -94,6 +100,7 @@ function dprv_DisplayCopyProtect()
 	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
 	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
 	document.getElementById("CopyProtectTab").style.borderBottom="0px";
+	document.getElementById("HistoryTab").style.borderBottom="1px solid #666666";
 	document.getElementById("BasicPart1").style.display="none";
 	document.getElementById("BasicPart2").style.display="none";
 	if (document.getElementById("BasicPart3") != null)
@@ -106,6 +113,35 @@ function dprv_DisplayCopyProtect()
 	document.getElementById("ContentPart2").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="";
+	document.getElementById("History").style.display="none";
+	document.getElementById('dprv_submit').style.display='';	
+	dprv_HideHelpText();
+}
+function dprv_DisplayHistory()
+{
+	if (dprv_enrolled == "No")
+	{
+		return;
+	}
+	document.getElementById("BasicTab").style.borderBottom="1px solid #666666";
+	document.getElementById("AdvancedTab").style.borderBottom="1px solid #666666";
+	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
+	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
+	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
+	document.getElementById("HistoryTab").style.borderBottom="0px";
+	document.getElementById("BasicPart1").style.display="none";
+	document.getElementById("BasicPart2").style.display="none";
+	if (document.getElementById("BasicPart3") != null)
+	{
+		document.getElementById("BasicPart3").style.display="none";
+	}	
+	document.getElementById("AdvancedPart1").style.display="none";
+	document.getElementById("AdvancedPart2").style.display="none";
+	document.getElementById("Content").style.display="none";
+	document.getElementById("ContentPart2").style.display="none";
+	document.getElementById("License").style.display="none";
+	document.getElementById("CopyProtect").style.display="none";
+	document.getElementById("History").style.display="";
 	document.getElementById('dprv_submit').style.display='';	
 	dprv_HideHelpText();
 }
@@ -120,6 +156,7 @@ function dprv_DisplayBasic()
 	document.getElementById("LicenseTab").style.borderBottom="1px solid #666666";
 	document.getElementById("ContentTab").style.borderBottom="1px solid #666666";
 	document.getElementById("CopyProtectTab").style.borderBottom="1px solid #666666";
+	document.getElementById("HistoryTab").style.borderBottom="1px solid #666666";
 	document.getElementById("BasicPart1").style.display="";
 	document.getElementById("BasicPart2").style.display="";
 	if (document.getElementById("BasicPart3") != null)
@@ -132,6 +169,7 @@ function dprv_DisplayBasic()
 	document.getElementById("ContentPart2").style.display="none";
 	document.getElementById("License").style.display="none";
 	document.getElementById("CopyProtect").style.display="none";
+	document.getElementById("History").style.display="none";
 	document.getElementById('dprv_submit').style.display='';	
 	dprv_HideHelpText();
 }
@@ -1291,6 +1329,108 @@ function dprv_redraw_log_headers()
 			{
 				// This outputs the result of the ajax request
 				document.getElementById('dprv_log_headers').innerHTML = data;
+			},
+			error: function(jqXHR, textStatus, errorThrown)
+			{
+				alert("ajax error: " + textStatus + " " + errorThrown);
+			}
+		});  
+				  
+	});
+}
+// FUNCTIONS FOR HISTORY TAB
+function dprv_ShowBackDigiproveNote()
+{
+    dprv_DisplayHelpText(dprv_literals["Back_digiprove_note"]);
+}
+function digiproveAllClicked()
+{
+    var undigiproved_posts_count = parseInt(document.getElementById("undigiproved_posts_count").innerHTML, 10);
+	if (undigiproved_posts_count > 100)
+	{
+		alert("There are " + undigiproved_posts_count + " posts/pages not yet Digiproved. Only 100 at a time will be processed");
+	}
+	dprv_digiprove_history(0);
+}
+//function dprv_digiprove_history(count, dprv_all_to_be_Digiproved)
+function dprv_digiprove_history(count)
+{	
+    var dprv_all_to_be_Digiproved = JSON.parse(document.getElementById('dprv_all_to_be_Digiproved').innerHTML);
+    var undigiproved_posts_count_old = parseInt(document.getElementById("undigiproved_posts_count").innerHTML, 10);
+    var undigiproved_posts_count = dprv_all_to_be_Digiproved.length;
+    //alert("undigiproved_posts_count=" + undigiproved_posts_count + "/" + undigiproved_posts_count_old);
+    //alert("digiproveAllClicked\ndprv_all_to_be_Digiproved=" + dprv_all_to_be_Digiproved);
+    var dprv_post_id = dprv_all_to_be_Digiproved[count];
+    //alert("about to Digiprove post[" + count + "], id=" + dprv_post_id);
+    document.getElementById("digiproving_now_caption").style.display = "";
+    document.getElementById("digiproving_now").innerHTML = dprv_post_id;
+
+    jQuery(document).ready(function ($)
+	{
+		// This does the ajax request
+		$.ajax({
+			url: ajaxurl,
+			data:
+			{
+				'action':'dprv_history_functions',
+				'function':'Digiprove_Now',
+				'count': count,
+				'dprv_post_id':dprv_post_id
+			},
+			success:function(data)
+			{
+				// This outputs the result of the ajax request
+				//alert("data = " + typeof data + " " + data);
+			    try
+			    {
+			        var dprv_response = JSON.parse(data);
+			        if (typeof dprv_response == "string")
+			        {
+			            document.getElementById("back_digiprove_now_button").style.display = "none";
+			            document.getElementById("dprv_back_digiprove_error").innerHTML = dprv_response;
+			        }
+			        else
+			        {
+			            if (dprv_response["result_code"] == 0)
+			            {
+			                var digiproved_posts_count = parseInt(document.getElementById("digiproved_posts_count").innerHTML, 10);
+			                var undigiproved_posts_count = parseInt(document.getElementById("undigiproved_posts_count").innerHTML, 10);
+
+			                digiproved_posts_count++;
+			                undigiproved_posts_count--;
+			                count++;
+			                document.getElementById("digiproved_posts_count").innerHTML = digiproved_posts_count;
+			                document.getElementById("undigiproved_posts_count").innerHTML = undigiproved_posts_count;
+			                document.getElementById("digiproved_now_count").innerHTML = count;
+			                var remaining_back_digiprove_allowance = document.getElementById("remaining_back_digiprove_allowance").innerHTML;
+			                if (remaining_back_digiprove_allowance != dprv_literals["unlimited"])
+			                {
+			                    remaining_back_digiprove_allowance = parseInt(document.getElementById("remaining_back_digiprove_allowance").innerHTML, 10);
+			                    remaining_back_digiprove_allowance--;
+			                    document.getElementById("remaining_back_digiprove_allowance").innerHTML = remaining_back_digiprove_allowance;
+			                }
+			                if ((remaining_back_digiprove_allowance == dprv_literals["unlimited"] || remaining_back_digiprove_allowance > 0) && count < 2 && undigiproved_posts_count > 0)
+			                {
+			                    // setTimeout?
+			                    setTimeout("dprv_digiprove_history(" + count + ")", 200);
+			                }
+			                else
+			                {
+			                    document.getElementById("back_digiprove_now_button").style.display = "none";
+			                    document.getElementById("digiproving_now_caption").style.display = "none";
+			                    document.getElementById("digiproving_now").style.display = "none";
+			                }
+			            }
+			            else
+			            {
+			                alert("error response from ajax = " + data);
+			            }
+			        }
+			    }
+			    catch (err)
+			    {
+			        alert("bad response from ajax: " + err);
+			    }
 			},
 			error: function(jqXHR, textStatus, errorThrown)
 			{

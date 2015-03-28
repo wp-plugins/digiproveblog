@@ -1,6 +1,6 @@
 <?php
 define("DPRV_SDK_VERSION", '1.02');
-define("DPRV_HOST", "api.digiprove.com");
+define("DPRV_HOST", "api.digiprove.com");           // api.digiprove.com
 define("DPRV_VERIFY_HOST", "verify.digiprove.com");
 define("DPRV_SSL", "No");
 define("DPRV_Log", "No");                                // Set this to "Yes" to generate local log-file for debug purposes (needs write permissions)

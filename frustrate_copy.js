@@ -130,8 +130,17 @@ function dprv_disableRightClick()
 		}
 		return true;
 	}
-	document.onmousedown=clickCheck;		// Works in FF, Chrome, IE, but in Safari, Opera still shows context menu
-	document.oncontextmenu=new Function("dprv_manage_right_click();return false");	// fallback, works in modern versions of Safari, Chrome, Opera, IE, and FF
+	if (typeof document.oncontextmenu != "undefined")
+    {
+        // modern browsers
+        document.oncontextmenu = new Function("dprv_manage_right_click();return false");	// works in modern versions of Safari, Chrome, Opera, IE, and FF
+    }
+    else
+    {
+        // legacy browsers
+        document.onmousedown = clickCheck;		// Works in FF, Chrome, IE, but in Safari, Opera still shows context menu
+    }
+
 }
 
 function dprv_disableDrag(target)
@@ -172,69 +181,53 @@ function dprv_disableDrag(target)
 	}
 }
 
-
 // FUNCTIONS TO DISABLE CERTAIN CTRL KEY COMBINATIONS:
 function dprv_disableCtrlKeys()
 {
-	//alert("disableCtrlKeys starts");
-	// onkeypress is not triggered in safari with a ctrl/key combination
-	// onkeypress is not triggered in IE or Chrome with a function-linked ctrl/key combination (e.g ctrl/a, ctrl/c)
-	// onkeypress in IE gives different keyCode values (seems to be low numbers for ctrl/key and +32 for others) than onkeydown
-	// Set code to suppress ctrl/a and ctrl/u
-	//alert(navigator.userAgent);
-	function trapCtrlKeyCombination(ev)
-	{
-		var key;
-		var isCtrl;
-		//ev=ev||event;
-		// TODO - change this test to checking whether undefined or not to avoid javascript warning message
-		if(window.event)	// This is true in IE and Safari  - Note ev.which also exists in Safari, Opera and Chrome
-		{
-			key = window.event.keyCode;
-			if (key == 17)    // this bit can be removed after testing
-			{
-				return true;
-			}
-			if(window.event.ctrlKey)
-					isCtrl = true;
-			else
-					isCtrl = false;
-
-		}
-		else
-		{
-			key = ev.which;     //firefox
-			if(ev.ctrlKey)
-					isCtrl = true;
-			else
-					isCtrl = false;
-		}
-
-		if(isCtrl)
-		{
-				if (String.fromCharCode(key).toLowerCase() == 'a' || String.fromCharCode(key).toLowerCase() == 'u')
-				{
-					void(0);  // CANCEL LAST EVENT
-					if (dprv_record_IP != "off")
-					{
-						dprv_error_log("Low", "Forbidden CTRL Key combination");
-					}
-			
-					return false;
-				}
-		}
-		return true;
-	}
-
-	if ((navigator.userAgent.indexOf('Safari') != -1) || navigator.userAgent.indexOf('MSIE') != -1)
-	{
-		document.onkeydown=trapCtrlKeyCombination;	// IE or Safari or Chrome
-	}
-	else
-	{
-		document.onkeypress=trapCtrlKeyCombination;
-	}
+    // Set code to suppress ctrl/a and ctrl/u
+    function trapCtrlKeyCombination(ev)
+    {
+        var key;
+        if (typeof window.event != "undefined")	 // This is true in IE and Safari  - Note ev.which also exists in Safari, Opera and Chrome
+        {
+            ev = window.event;
+            key = ev.keyCode;
+        }
+        else
+        {
+            key = ev.which;			// Firefox
+        }
+        if (key == 16 || key == 17 || key == 18)    // pressing shift, ctrl, or alt without (or before) pressing another key	
+        {
+            return true;
+        }
+        if (
+				(navigator.userAgent.indexOf('Macintosh') != -1 && ev.metaKey && ev.altKey && String.fromCharCode(key).toLowerCase() == 'u')	// Show source code on Mac/Safari
+			|| (navigator.userAgent.indexOf('Macintosh') == -1 && ev.ctrlKey && !ev.altKey && String.fromCharCode(key).toLowerCase() == 'u')	// Show source code on Windows
+			|| (navigator.userAgent.indexOf('Firefox') != -1 && ev.altKey && ev.shiftKey)							// Show source code on Firefox
+			|| (navigator.userAgent.indexOf('Macintosh') != -1 && ev.metaKey && !ev.altKey && String.fromCharCode(key).toLowerCase() == 'a')	// Select all on Mac
+			|| (navigator.userAgent.indexOf('Macintosh') == -1 && ev.ctrlKey && !ev.altKey && String.fromCharCode(key).toLowerCase() == 'a')	// Select all on Windows
+			)
+        {
+            void (0);  // CANCEL LAST EVENT
+            if (dprv_record_IP != "off")
+            {
+                dprv_error_log("Low", "Forbidden CTRL Key combination");
+            }
+            return false;
+        }
+        return true;
+    }
+    if (typeof document.onkeypress == 'undefined' || navigator.userAgent.indexOf('Safari') != -1 || navigator.userAgent.indexOf('MSIE') != -1 || navigator.userAgent.indexOf('Trident') != -1)
+    {
+        document.onkeydown = trapCtrlKeyCombination;	// IE or Safari or Chrome or Opera
+    }
+    else
+    {
+        document.onkeypress = trapCtrlKeyCombination;	// Others (just Firefox, only one that fires onkeypress with CTRL key combinations)
+    }
 }
+
 
 function dprv_error_log(severity, message)
 {

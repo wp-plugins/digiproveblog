@@ -3,7 +3,7 @@
 Plugin Name: Copyright Proof
 Plugin URI: http://www.digiprove.com/copyright_proof_wordpress_plugin.aspx
 Description: Digitally certify your posts to prove copyright ownership, generate copyright notice and license statement, copy-protect text and images, and monitor/log/alert attempted content theft.  Digiprove certifications are verifiable.
-Version: 2.21
+Version: 2.22
 Author: Digiprove
 Author URI: http://www.digiprove.com/
 License: GPL
@@ -40,7 +40,7 @@ License: GPL
 	include_once('copyright_proof_integrity.php');					// Functions for Verification
 
 	// Declare and initialise global variables:
-	define("DPRV_VERSION", "2.21");
+	define("DPRV_VERSION", "2.22");
 	define("DPRV_WWW", "www.digiprove.com");
 
 	global $dprv_licenseIds, $dprv_licenseTypes, $dprv_licenseCaptions, $dprv_licenseAbstracts, $dprv_licenseURLs, $dprv_post_id, $dprv_mime_types, $dprv_blog_host, $dprv_wp_host, $dprv_last_error;
@@ -48,7 +48,6 @@ License: GPL
 	$dprv_blog_url = parse_url(get_option('home'));
 	$dprv_blog_host = trim($dprv_blog_url['host']);
 	$dprv_wp_url = parse_url(get_option('siteurl'));
-	//$dprv_wp_host = $dprv_wp_url['host'];
 	$dprv_wp_host = trim($dprv_wp_url['host']);
 	if ($dprv_blog_host == "")
 	{
@@ -71,13 +70,13 @@ License: GPL
 								"Code"=>array("js","jar"));
 
 	// Register hooks
-	register_activation_hook(__FILE__, 'dprv_activate');
-	register_deactivation_hook(__FILE__, 'dprv_deactivate');
-	add_action('activated_plugin','dprv_activation_error');
-	add_action('init', 'dprv_init');
-	add_action('delete_post', 'dprv_post_sync', 10);
+	register_activation_hook(__FILE__, 'dprv_activate');		//  Do on Activation
+	register_deactivation_hook(__FILE__, 'dprv_deactivate');	//  Do on de-activation
+	add_action('activated_plugin','dprv_activation_error');		//  Do on error in activation
+	add_action('init', 'dprv_init');							//  Every start-up
+	add_action('delete_post', 'dprv_post_sync', 10);			//	On delete post
 
-	add_action('admin_menu', 'dprv_settings_menu');
+	add_action('admin_menu', 'dprv_settings_menu');				
 	add_action('admin_head', 'dprv_admin_head');
 	add_action('admin_footer', 'dprv_admin_footer');
 	add_action('admin_enqueue_scripts', 'dprv_admin_enqueue_scripts');
@@ -255,15 +254,16 @@ License: GPL
 		add_option('dprv_enrolled', 'No');
 		add_option('dprv_user_id', '');
 		add_option('dprv_api_key', '');
-		add_option('dprv_last_action', '');         // Is set to "Digiprove id=nnnn" at start of a Digiprove action (parse_post) if this is blank dprv_last_result will not be displayed as an admin message
-		add_option('dprv_last_result', '');			// Contains result of Digiprove action
-		add_option('dprv_pending_message', '');		// A message which has yet to be displayed in message box (usually same as dprv_last_result)
+		add_option('dprv_last_action', '');                 // Is set to "Digiprove id=nnnn" at start of a Digiprove action (parse_post) if this is blank dprv_last_result will not be displayed as an admin message
+		add_option('dprv_last_result', '');			        // Contains result of Digiprove action
+		add_option('dprv_pending_message', '');		        // A message which has yet to be displayed in message box (usually same as dprv_last_result)
 		add_option('dprv_last_date','');
 		add_option('dprv_last_date_count','0');
-		add_option('dprv_event', '');				// Place for error messages to be recorded, may be notified via API eventually
-		add_option('dprv_html_integrity', 'No');	// Whether to check HTML data integrity
-		add_option('dprv_files_integrity', 'No');	// Whether to check data integrity of embedded files
-		delete_option('dprv_activation_event');		// No longer required
+        add_option('dprv_back_digiproved_count', '0');      // How many posts/pages have already been back-digiproved
+		add_option('dprv_event', '');				        // Place for error messages to be recorded, may be notified via API eventually
+		add_option('dprv_html_integrity', 'No');	        // Whether to check HTML data integrity
+		add_option('dprv_files_integrity', 'No');	        // Whether to check data integrity of embedded files
+		delete_option('dprv_activation_event');		        // No longer required
 		add_option('dprv_prefix');
 		add_option('dprv_featured_images', 'No');
 		create_dprv_license_table();
@@ -641,7 +641,8 @@ License: GPL
 
 		for ($i=0; $i<count($licenseTypes); $i++)
 		{
-			$rows_affected = $wpdb->insert($dprv_licenses, array('license_type'=>$licenseTypes[$i], 'license_caption'=>$licenseCaptions[$i], 'license_abstract'=>$licenseAbstracts[$i], 'license_url'=>$licenseURLs[$i]));
+			//$rows_affected = $wpdb->insert($dprv_licenses, array('license_type'=>$licenseTypes[$i], 'license_caption'=>$licenseCaptions[$i], 'license_abstract'=>$licenseAbstracts[$i], 'license_url'=>$licenseURLs[$i]));
+			$rows_affected = $wpdb->insert($dprv_licenses, array('license_type'=>$licenseTypes[$i], 'license_caption'=>$licenseCaptions[$i], 'license_abstract'=>$licenseAbstracts[$i], 'license_url'=>$licenseURLs[$i]), array('%s', '%s', '%s', '%s'));
 		}
 	}
 	// END OF ON-ACTIVATION FUNCTIONS:
@@ -773,7 +774,8 @@ License: GPL
 			$url = substr($url, 0, 256);
 		}
 		global $dprv_last_error, $wpdb;
-		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_log", array('timestamp'=>time(), 'ip_address'=>$_SERVER['REMOTE_ADDR'],'url'=>$url, 'event'=>$message)))
+		//if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_log", array('timestamp'=>time(), 'ip_address'=>$_SERVER['REMOTE_ADDR'],'url'=>$url, 'event'=>$message)))
+		if (false === $wpdb->insert(get_option('dprv_prefix') . "dprv_log", array('timestamp'=>time(), 'ip_address'=>$_SERVER['REMOTE_ADDR'],'url'=>$url, 'event'=>$message), array('%d', '%s', '%s', '%s')))
 		{
 			$dprv_db_error = $wpdb->last_error;
 			$dprv_this_event = $dprv_db_error . ' inserting log entry ' . $message;
@@ -876,8 +878,6 @@ License: GPL
 	function dprv_createUpgradeLink($dprv_User = null)
 	{
 		global $dprv_blog_host;
-		//$dprv_upgrade_link = plugins_url("UpgradeRenew.html", __FILE__) . '?FormAction=https://' . DPRV_WWW . '/secure/upgrade.aspx&amp;UserId='  . trim(get_option('dprv_user_id')) . '&amp;ApiKey=' . get_option('dprv_api_key') . '&amp;Domain=' . $dprv_blog_host . '&amp;UserAgent=Copyright Proof ' . DPRV_VERSION;
-		//return $dprv_upgrade_link;
 
 		if ($dprv_User == null)
 		{
@@ -904,9 +904,7 @@ License: GPL
 
 		$log = new DPLog();
 		$log->lwrite("post " . $pid . " deleted, checking for dprv_post record with same id");
-		//$sql='SELECT id FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = ' . $pid;
 		$sql='SELECT id FROM ' . get_option('dprv_prefix') . 'dprv_posts WHERE id = %d';
-		//if ($wpdb->get_var($wpdb->prepare($sql)))
 		if (dprv_wpdb("get_var", $sql, $pid))
 		{
 			$log->lwrite("found a dprv_post " . $pid . ", will now delete it"); 
@@ -975,11 +973,6 @@ License: GPL
 		if (trim($dprv_db_error) != "")
 		{
 			$bt = debug_backtrace();
-			//$error_status = "";
-			//if ($prev_db_error == $dprv_db_error)
-			//{
-			//	$error_status = "suspected ";
-			//}
 			// Note "SHOW COLUMNS" rather than "show columns" used in this plugin indicates not a critical point (normal everyday check)
 			$dprv_this_event = "wpdb SQL error " . $dprv_db_error . " on " . $sql;
 			if ((stripos($dprv_db_error, "Incorrect key file for table") !== false || stripos($dprv_db_error, "Got error 28 from storage engine") !== false || stripos($dprv_db_error, "Errcode: 28") !== false) && strpos($sql, "SHOW COLUMNS FROM") !== false && is_null($result))
@@ -990,7 +983,6 @@ License: GPL
 				
 				$dprv_this_event .= "; Result of dprv_db_ok()=" . dprv_db_ok();
 				dprv_record_event($dprv_this_event);
-				//dprv_record_event($secondary_result);
 				return false;
 			}
 			if (trim($dprv_sql_error) != "" && $dprv_sql_error != $dprv_db_error)
@@ -1057,7 +1049,6 @@ License: GPL
 					{
 						$dprv_pending_message .= "<br/>";
 					}
-					//$dprv_pending_message .= "MySQL Error occurred: " . $dprv_db_error;
 					$dprv_pending_message .= $dprv_new_message . " on &quot;" . $sql . "&quot;";
 					update_option('dprv_pending_message', $dprv_pending_message);
 				}
@@ -1094,8 +1085,7 @@ License: GPL
 	// ADD NEW COLUMN  
     function dprv_columns_head($defaults)
 	{  
-        
-		$defaults['digiproved'] = '<span title="' . __("Copyright of content secured by Digiprove?", "dprv_cp") . '">Digiproved?</span>';  
+ 		$defaults['digiproved'] = '<span title="' . __("Copyright of content secured by Digiprove?", "dprv_cp") . '">Digiproved?</span>';  
         return $defaults;  
     }  
       
@@ -1160,6 +1150,7 @@ License: GPL
 			}
 			else
 			{
+				// User defined post type
 				add_filter('manage_users_sortable_columns', 'dprv_columns_head');  
 				add_action('manage_users_custom_column', 'dprv_columns_content', 10, 2);
 			}
@@ -1226,6 +1217,90 @@ License: GPL
 
 
 	}
+
+    
+    //function dprv_daily_limit($dprv_subscription_type, &$dprv_max_file_count)  // This function moved out of copyright_proof_edit.php and renamed
+    function dprv_entitlements($dprv_subscription_type, &$dprv_max_file_count, &$dprv_back_digiprove_allowance)
+    {
+   	    // Declare and initialise subscription plan permissions:
+	    $dprv_daily_limits = array (5,20,100,500,-1);               // Maximum Digiproves per day (-1 = unlimited)
+        $dprv_max_file_counts = array (0,10,40,100,999);            // Maximum number of media files in a post
+        $dprv_back_digiprove_allowances = array(20,100,-1,-1,-1);   // Maximum number of back-Digiproves (batch Digiproving of older posts)
+
+        $dprv_today_limit = $dprv_daily_limits[0];
+	    $dprv_max_file_count = $dprv_max_file_counts[0];
+        $dprv_back_digiprove_allowance = $dprv_back_digiprove_allowances[0];
+	    switch ($dprv_subscription_type)
+	    {
+		    case "Personal":
+		    {
+			    //$dprv_today_limit = 20;
+			    //$dprv_max_file_count = 10;
+                //$dprv_back_digiprove_allowance = 100;
+        	    $dprv_today_limit = $dprv_daily_limits[1];
+			    $dprv_max_file_count = $dprv_max_file_counts[1];
+                $dprv_back_digiprove_allowance = $dprv_back_digiprove_allowances[1];
+			    break;
+		    }
+		    case "Professional":
+		    {
+			    //$dprv_today_limit = 100;
+			    //$dprv_max_file_count = 40;
+                //$dprv_back_digiprove_allowance = -1; // Unlimited
+        	    $dprv_today_limit = $dprv_daily_limits[2];
+			    $dprv_max_file_count = $dprv_max_file_counts[2];
+                $dprv_back_digiprove_allowance = $dprv_back_digiprove_allowances[2];
+			    break;
+		    }
+		    case "Corporate Light":
+		    {
+			    //$dprv_today_limit = 500;
+			    //$dprv_max_file_count = 100;
+                //$dprv_back_digiprove_allowance = -1; // Unlimited
+        	    $dprv_today_limit = $dprv_daily_limits[3];
+			    $dprv_max_file_count = $dprv_max_file_counts[3];
+                $dprv_back_digiprove_allowance = $dprv_back_digiprove_allowances[3];
+			    break;
+		    }
+		    case "Corporate":
+		    {
+			    //$dprv_today_limit = -1;
+			    //$dprv_max_file_count = 999;
+                //$dprv_back_digiprove_allowance = -1; // Unlimited
+        	    $dprv_today_limit = $dprv_daily_limits[4];
+			    $dprv_max_file_count = $dprv_max_file_counts[4];
+                $dprv_back_digiprove_allowance = $dprv_back_digiprove_allowances[4];
+			    break;
+		    }
+		    default:
+		    {
+			    break;
+		    }
+	    }
+	    return $dprv_today_limit;
+    }
+
+    function dprv_php2js($dprv_variable_array)
+    {
+        // Move a variable into javascript
+        // substitute for wp_localize_script which must be called early (before enqueue_script instantiates) - too early for variables to be available
+        // Note setting enqueue_script to instantiate on footer works but is dependent on wp_footer being there (some themes omit)
+        if (!is_array($dprv_variable_array))
+        {
+            return false;
+        }
+        print ('<script type="text/javascript">
+                <!--
+                var temp = "";');
+        foreach ($dprv_variable_array as $key=>$value)
+        {
+            print 'temp = \'' . json_encode($value) . '\';';
+            print 'var ' . $key . '= JSON.parse(temp);';
+        }
+        print ('//-->
+               </script>');
+        return true;
+    }
 function dprv_eval($something, $html = false, $tabs = "")
 {
 	if (is_null($something))
