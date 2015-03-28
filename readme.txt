@@ -3,8 +3,8 @@ Contributors: Digiprove
 Donate link: http://www.digiprove.com/
 Tags: copyright, copyright notice, protect ip, copy protect, prove copyright, proof of ownership, record ip address, digital certification
 Requires at least: 2.7
-Tested up to: 4.0
-Stable tag: 2.21
+Tested up to: 4.2
+Stable tag: 2.22
 
 Digitally certify your content to prove copyright. Shows copyright notice in your posts, with optional license/attribution. Copy-protects, and more...
 
@@ -37,10 +37,14 @@ In some countries, you can go a step further by formally registering your copyri
 Digiproving your work is something that is done conveniently and will provide proof of ownership pre-dating any official copyright registration.
 Learn more at http://www.digiprove.com/creative-and-copyright.aspx
 
+
+= Does it work?  How secure is it?
+The Digiprove patent, process, and implementation has been evaluated and validated by Georgia Tech.  More about this at http://www.digiprove.com/georgia-tech-opinion-on-compliance.aspx
+
+
 = Is my content uploaded to Digiprove?
-Unless you (or your hosting provider) are using an old version of PHP (earlier than PHP 5.1.2) or you have specified otherwise, only the digital fingerprint of your content is uploaded, not the 
-content itself.  This allows you to protect private content on a private network using Wordpress.  On the other hand, premium users have the option to upload content, which
-preserves your content independently of Wordpress.
+Normally only the digital fingerprint of your content is uploaded, not the content itself.  Premium users do have the option to upload content, which
+preserves your content independently of Wordpress.  The only exceptions to this is if your Wordress installation uses an old version of PHP (earlier than PHP 5.1.2).
 
 
 = I installed the plug-in and nothing seems to happen when I publish a new or edited post? =
@@ -77,6 +81,7 @@ From Wordpress:
 - You can have a hyperlink from your certificate page on www.digiprove.com back to your Wordpress post (or page)
 - You can save content at digiprove.com
 - You can compose your own license caption and statement rather than selecting from one of the standard ones
+- You can be alerted on attempted theft through right-click and track ip addresses of those users
 
 At www.digiprove.com:
 - You can protect the IP of all types of content
@@ -95,9 +100,25 @@ We actively seek information about problems or criticisms you may have.  So plea
 We actively seek your suggestions at suggestions@digiprove.com.  We will respond to every suggestion and if we like it we'll act on it.
 
 
-= Can I review my history of Digiproving online? =
+= Can I review my history of Digiproving? =
 
-Yes, you can review your history online (and perform other functions) by visiting https://www.digiprove.com/members/my_digiprove.aspx - you will need to log in using your Digiprove user id and password.
+Yes:
+ - From within Wordpress Revisions function, you can see see the Digiprove status of each revision, including the certification link
+ - From the All Posts (or All Pages) function in Wordpress, you can see the latest Digiprove status for each post/page.
+ - There is a dedicated "Copyright/Ownership/Licensing" panel below the Edit Post function which also shows the last Digiprove action
+You can review your history online (and perform other functions) by visiting https://www.digiprove.com/members/my_digiprove.aspx - you will need to log in using your Digiprove user id and password.
+
+
+= Proving it later: How can I prove to a 3rd party (or myself) that a particular post (or other content) has been Digiproved? =
+
+As long as you retain a copy of your original file or content, you will be able to prove absolutely and irrefutably in future that you had possession of it.
+
+The details of each Digiprove certification are available online via a url that you can share with 3rd parties.
+There is also a proving process examines the Digiprove certificate and your content to ensure that the certificate is valid and the content’s fingerprint is identical to what is certified.
+This can be performed online at https://www.digiprove.com/secure/DigiverifyFile.aspx (for files) or https://www.digiprove.com/secure/VerifyText.aspx (text, tweets, blog-posts etc.)
+There is also a downloadable verification utility that works offline
+Note to Wordpress Users: Wordpress's Revision function is a great way to automatically keep copies of all previous versions of your content.  We recommend NOT to disable this function.
+
 
 = How can I style the Digiprove Notice? =
 
@@ -109,6 +130,8 @@ level.  However you can influence some aspects of the appearance using CSS style
 	margin-right:40%;
 	background-color:red;
 }
+You can also obtain pre-styled or self-styled and personalised tags in image form at http://www.digiprove.com/generate_digiprove_tags.aspx
+
 
 = I get an error message: "invalid user id, domain, or api key" =
 
@@ -155,6 +178,16 @@ like to know more. Details of the (Soap) API are found at www.digiprove.com/reso
 
 
 == Changelog ==
+
+= 2.22 =
+* Compatible up to Wordpress 4.2
+* Fixed bug of double-alert on right-click in some IE versions
+* Fixed IE11 bug allowing certain CTRL key combinations
+* Tightened up anti-copy security on Safari/OSX 
+* Minor corrections to eliminate notice-level warnings
+* Removed minor bugs in SQL (DB access)
+* Removed minor bug not initialising total url count (NOTICE-level error)
+* Other minor improvements
 
 = 2.21 =
 * New subscriber function:

@@ -1,4 +1,7 @@
 <?php
+//global $dprv_marker;
+//$dprv_marker="";
+
 function dprv_settings_menu()	// Runs after the basic admin panel menu structure is in place - add Copyright Proof Settings option.
 {	
 	$pagename = add_options_page('DigiproveBlog', 'Copyright Proof', 'manage_options', 'copyright-proof-settings', 'dprv_settings');
@@ -16,7 +19,12 @@ function dprv_admin_enqueue_scripts()
 		$jsfile = plugins_url("jscolor.js", __FILE__ );
 		wp_enqueue_script('dprv_jscolor', $jsfile, null, DPRV_VERSION, false);
 		$jsfile = plugins_url("copyright_proof_settings.js", __FILE__ );
-		wp_enqueue_script('dprv_settings', $jsfile, null, DPRV_VERSION, false);
+
+		wp_register_script('dprv_settings', $jsfile, null, DPRV_VERSION, false);
+		// Too Early
+        //$dprv_variables = array('all_to_be_Digiproved'=>$dprv_all_to_be_Digiproved);
+		//wp_localize_script( 'dprv_settings', 'dprv_vars', $dprv_variables);
+        wp_enqueue_script('dprv_settings', $jsfile, null, DPRV_VERSION, false);
 	}
 }
 function dprv_admin_head()	// runs between <HEAD> tags of admin settings page - include js file
@@ -537,7 +545,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					$license_info["license_caption"] = $dprv_custom_license_caption;
 					$license_info["license_abstract"] = $dprv_custom_license_abstract;
 					$license_info["license_url"] = $dprv_custom_license_url;
-					$wpdb->update(get_option('dprv_prefix') . 'dprv_licenses', $license_info, array('id'=>$_POST['dprv_license']));
+					//$wpdb->update(get_option('dprv_prefix') . 'dprv_licenses', $license_info, array('id'=>$_POST['dprv_license']));
+					$wpdb->update(get_option('dprv_prefix') . 'dprv_licenses', $license_info, array('id'=>$_POST['dprv_license']), array('%s','%s','%s','%s'), '%d');
 					dprv_populate_licenses();			// Rebuild dprv_license table in php
 					dprv_populate_licenses_js();			// and in javascript
 				}
@@ -550,7 +559,8 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 				//$log->lwrite("about to add license " . $dprv_custom_license);
 
 				$dprv_licenses = get_option('dprv_prefix') . "dprv_licenses";
-				$rows_affected = $wpdb->insert($dprv_licenses, array('license_type'=>$dprv_custom_license, 'license_caption'=>$dprv_custom_license_caption, 'license_abstract'=>$dprv_custom_license_abstract, 'license_url'=>$dprv_custom_license_url));
+				//$rows_affected = $wpdb->insert($dprv_licenses, array('license_type'=>$dprv_custom_license, 'license_caption'=>$dprv_custom_license_caption, 'license_abstract'=>$dprv_custom_license_abstract, 'license_url'=>$dprv_custom_license_url));
+				$rows_affected = $wpdb->insert($dprv_licenses, array('license_type'=>$dprv_custom_license, 'license_caption'=>$dprv_custom_license_caption, 'license_abstract'=>$dprv_custom_license_abstract, 'license_url'=>$dprv_custom_license_url), array('%s', '%s', '%s', '%s'));
 				dprv_populate_licenses();			// Rebuild dprv_license table in php
 				dprv_populate_licenses_js();			// and in javascript
 				$result_message =  __('License added', 'dprv_cp');
@@ -1017,7 +1027,13 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 								}
 
 								$result_message = __('Server data has also been synchronised', 'dprv_cp');
-								$dprv_new_api_key = $dprv_update_response["api_key"];
+								//$dprv_new_api_key = $dprv_update_response["api_key"];
+								$dprv_new_api_key = "";
+								if (isset($dprv_update_response["api_key"]))
+								{
+									$dprv_new_api_key = $dprv_update_response["api_key"];
+								}
+
 								if ($dprv_new_api_key != null && $dprv_new_api_key != false && $dprv_new_api_key != "")
 								{
 									update_option('dprv_api_key',$dprv_new_api_key);
@@ -1028,7 +1044,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 								if ($dprv_subscription_type != null && $dprv_subscription_type != false && $dprv_subscription_type != "")
 								{
 									update_option('dprv_subscription_type', $dprv_subscription_type);
-									$dprv_subscription_expiry = $dprv_update_response["subscription_expiry"];
+									//$dprv_subscription_expiry = $dprv_update_response["subscription_expiry"];
+									$dprv_subscription_expiry = "";
+									if (isset($dprv_update_response["subscription_expiry"]))
+									{
+										$dprv_subscription_expiry = $dprv_update_response["subscription_expiry"];
+									}
 									if ($dprv_subscription_expiry != null && $dprv_subscription_expiry != false && $dprv_subscription_expiry != "")
 									{
 										update_option('dprv_subscription_expiry', $dprv_subscription_expiry);
@@ -1722,6 +1743,24 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 		$dprv_tab_title = ' title="You need to register before using this tab"';
 	}
 
+    // $sql="SELECT COUNT(*) FROM " . get_option('dprv_prefix') . "dprv_posts";
+	//$digiprove_count = dprv_wpdb('get_var', $sql);
+	$undigiproved_post_count = 0;
+    $digiproved_post_count = 0;
+    $eligible_post_count = 0;
+    $dprv_back_digiproved_count = intval(get_option('dprv_back_digiproved_count'));
+    $dprv_max_file_count = 0;
+    $dprv_back_digiprove_allowance = 0;
+	$dprv_today_limit = dprv_entitlements($dprv_subscription_type, $dprv_max_file_count, $dprv_back_digiprove_allowance);
+    $dprv_remaining_back_digiprove_allowance = __("unlimited", "dprv_cp");
+    $dprv_back_digiprove_allowance_caption = "";
+    if ($dprv_back_digiprove_allowance != -1)
+    {
+        $dprv_remaining_back_digiprove_allowance = intval( $dprv_back_digiprove_allowance) - $dprv_back_digiproved_count;
+        $dprv_back_digiprove_allowance_caption =  "/" . $dprv_back_digiprove_allowance;
+    }
+   // global $dprv_marker;
+    $dprv_all_to_be_Digiproved = dprv_get_all_to_be_Digiproved($dprv_eligible_post_types, $eligible_post_count, $digiproved_post_count, $undigiproved_post_count);
 	print('
 			<div class="wrap">
 				<h2 style="width:800px;vertical-align:8px;"><a href="http://www.digiprove.com"><img src="' . plugins_url("Digiprove_logo_2013_298x81.png", __FILE__ ) .'" alt="Digiprove"/></a><span style="vertical-align:47px; padding-left:30px">'.__('Copyright Proof Settings', 'dprv_cp').'</span><span style="padding-left:20px;vertical-align:20px; width:180px;font-size:12px"><a href="http://protect.digiprove.com/index.php/someone-stole-my-content/">If someone steals your content...</a></span></h2>
@@ -1735,11 +1774,12 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 											<td>
 												<table style="font-size:14px;border-collapse:separate;width:796px">
 													<tr>
-														<td id="BasicTab" style="height:30px; width:120px; border:1px solid #666666;border-top-right-radius: 5px; border-bottom:0px; background-color:#EEFFEE; cursor:pointer;text-align:center" onclick="dprv_DisplayBasic()"><em>' . __('Basic', 'dprv_cp') . '</em></td>
-														<td id="AdvancedTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#EEEEFF; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '"  onclick="dprv_DisplayAdvanced()"' . $dprv_tab_title . '><em>' . __('Advanced', 'dprv_cp') . '</em></td>
-														<td id="ContentTab" style="height:30px; width:160px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#CCEEDD; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '" onclick="dprv_DisplayContentTab()"' . $dprv_tab_title . '><em>' . __('Certifying Content', 'dprv_cp') . '</em></td>
-														<td id="LicenseTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#FFFFDD; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '" onclick="dprv_DisplayLicenseTab()"' . $dprv_tab_title . '><em>' . __('License', 'dprv_cp') . '</em></td>
-														<td id="CopyProtectTab" style="height:30px; width:120px; border:1px solid #666666; border-top-right-radius:5px; background-color:#FFEEEE; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '" onclick="dprv_DisplayCopyProtect()"' . $dprv_tab_title . '><em>' . __('Copy Protect', 'dprv_cp') . '</em></td>
+														<td id="BasicTab" style="height:30px; width:100px; border:1px solid #666666;border-top-right-radius: 5px; border-bottom:0px; background-color:#EEFFEE; cursor:pointer;text-align:center" onclick="dprv_DisplayBasic()"><em>' . __('Basic', 'dprv_cp') . '</em></td>
+														<td id="AdvancedTab" style="height:30px; width:100px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#EEEEFF; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '"  onclick="dprv_DisplayAdvanced()"' . $dprv_tab_title . '><em>' . __('Advanced', 'dprv_cp') . '</em></td>
+														<td id="ContentTab" style="height:30px; width:140px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#CCEEDD; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '" onclick="dprv_DisplayContentTab()"' . $dprv_tab_title . '><em>' . __('Certifying Content', 'dprv_cp') . '</em></td>
+														<td id="LicenseTab" style="height:30px; width:100px; border:1px solid #666666; border-top-right-radius: 5px; background-color:#FFFFDD; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '" onclick="dprv_DisplayLicenseTab()"' . $dprv_tab_title . '><em>' . __('License', 'dprv_cp') . '</em></td>
+														<td id="CopyProtectTab" style="height:30px; width:100px; border:1px solid #666666; border-top-right-radius:5px; background-color:#FFEEEE; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '" onclick="dprv_DisplayCopyProtect()"' . $dprv_tab_title . '><em>' . __('Copy Protect', 'dprv_cp') . '</em></td>
+														<td id="HistoryTab" style="display:none;height:30px; width:100px; border:1px solid #666666; border-top-right-radius:5px; background-color:#AAAAEE; text-align:center; cursor:pointer' . $dprv_tabs_enabled . '" onclick="dprv_DisplayHistory()"' . $dprv_tab_title . '><em>' . __('History', 'dprv_cp') . '</em></td>
 														<td style="border:0px; border-bottom:1px solid #666666;"></td>
 													</tr>
 												</table>
@@ -1881,7 +1921,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 											<td>
 												<table class="dprv" style="padding-right:5px; background-color:#EEEEFF; border:1px solid #666666; border-top:0px; border-bottom:0px; width:796px">
 													<tr><td style="height:12px; width:270px"></td><td></td></tr>
-													<tr><td colspan="2"><b>' . __('The Digiprove notice', 'dprv_cp') . '</b> ' . __('(at foot of each post)', 'dprv_cp') . '</td>
+													<tr><td colspan="2"><span style="float:left"><b>' . __('The Digiprove notice', 'dprv_cp') . '</b> ' . __('(at foot of each post)', 'dprv_cp') . '</span><span style="padding-right:20px;float:right"><a href="http://www.digiprove.com/generate_digiprove_tags.aspx" target="_blank">' . __('Generate Personalised Icons', 'dprv_cp') . '</a></span></td>
 													</tr>
 													<tr><td colspan="2" style="height:6px"></td></tr>
 													<tr>
@@ -2309,6 +2349,88 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 											</td>
 										</tr>
+										<tr id="History" style="display:none">
+											<td>
+												<table class="dprv" style="padding-right:5px; background-color:#AAAAEE; border:1px solid #666666; border-top:0px; width:796px">
+													<tr><td style="height:12px; width:270px"></td><td colspan="2"></td></tr>
+                                                    <tr>
+                                                        <td>
+                                                            <table>
+													            <tr>
+														            <td style="vertical-align:top; font-weight:bold">' . __('Total Published:', 'dprv_cp') . '</td>
+														            <td colspan="2"></td>
+													            </tr>');
+													            $all_post_count = 0;
+													            $type_count = 0;
+													            foreach ($dprv_eligible_post_types as $key => $value)
+													            {
+														            if ($value != "Yes")
+														            {
+															            continue;
+														            }
+														            $count_posts = wp_count_posts($key);
+														            $published_posts = $count_posts->publish;
+														            $all_post_count = $all_post_count + $published_posts;
+														            if ($published_posts > 0)
+														            {
+															            $type_count = $type_count + 1;
+														            }
+														            print(
+														            '<tr><td style="padding-left:25px">' . __('of type ', 'dprv_cp') . $key . '</td><td style="text-align:right">' . $published_posts . '</td><td></td></tr>');
+													            }
+													            if ($type_count > 1)
+													            {
+														            print ('<tr><td><b>' . __('Total: ', 'dprv_cp') . '</b></td><td style="text-align:right"><b>' . $all_post_count . '</b></td><td></td></tr>');
+													            }
+													            print ('
+													            <tr><td colspan="3" style="height:6px"></td></tr>
+													            <tr>
+														            <td>' . __('Digiproved Posts and Pages', 'dprv_cp') . '</td>
+														            <td style="text-align:right" id="digiproved_posts_count">' . $digiproved_post_count . '</td><td></td>
+													            </tr>
+													            <tr><td colspan="3" style="height:6px"></td></tr>
+                                                            </table>
+                                                        </td>
+                                                        <td colspan="2">');
+                                                    //$undigiproved_post_count = $all_post_count - $digiproved_post_count; 
+													if ($undigiproved_post_count > 0)
+													{
+														print ('<table>
+                                                                    <tr>
+                                                                        <td>' . __('Not yet Digiproved: ', 'dprv_cp') . '</td> 
+                                                                        <td style="padding-left:10px" id="undigiproved_posts_count">' . $undigiproved_post_count . '</td>
+                                                                        <td></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td>' . __('Remaining back-digiprove allowance: ', 'dprv_cp') . '</td> 
+                                                                        <td style="padding-left:10px"><span id="remaining_back_digiprove_allowance">' . $dprv_remaining_back_digiprove_allowance . '</span>' .  $dprv_back_digiprove_allowance_caption . '</td>
+                                                                        <td style="padding-left:5px" class="description" ><a href="javascript:dprv_ShowBackDigiproveNote()">' .__('Note on back-Digiproving', 'dprv_cp') . '</a></td>                                                                        
+                                                                    </tr>');
+                                                        if ($dprv_remaining_back_digiprove_allowance == __("unlimited", "dprv_cp") || $dprv_remaining_back_digiprove_allowance > 0)
+                                                        {   
+                                                            print ('<tr><td style="height:24px"></td></tr>
+                                                                    <tr>
+                                                                        <td>
+                                                                            <button class="button" type="button" id="back_digiprove_now_button" onclick="digiproveAllClicked(' . $undigiproved_post_count . ')">' . __('Back-Digiprove Now', 'dprv_cp') . '</button>
+                                                                        </td>
+                                                                        <td colspan="2">
+                                                                            <span id="digiproving_now_caption" style="display:none">' . __("Now processing post id ", "dprv_cp") . '</span><span id="digiproving_now"></span>
+                                                                            <span style="display:none" id="dprv_all_to_be_Digiproved">' . json_encode($dprv_all_to_be_Digiproved) . '</span>
+                                                                            <span style="padding-left:10px; display:none" id="digiproved_now_count"></span>
+                                                                        </td>
+                                                                   </tr>
+                                                                   <tr>
+                                                                        <td colspan ="3" style="color:red" id="dprv_back_digiprove_error"></td>
+                                                                   </tr>');
+                                                          }
+                                                          print ('</table>');
+													}
+													print ('</td>
+                                                      </tr>
+												</table>
+											</td>
+										</tr>
+
 										');
 	//if ($dprv_last_result != '' && strpos($dprv_last_result, "Configure Copyright Proof") === false)
 	if ($dprv_last_result != '')
@@ -2357,9 +2479,18 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 	$upgrade_hyperlink = "<a href=\"" . $dprv_upgrade_link . "&Action=Upgrade\" target=\"_blank\">";
 	$renew_hyperlink = "<a href=\"" . $dprv_upgrade_link . "&Action=Renew\" target=\"_blank\">";
 	$close_link = "</a>";
-	print('<script type="text/javascript">');
+/*
+    $dprv_eligible_post_types_js = "";
+	$dprv_separator = "";
+	foreach ($dprv_eligible_post_types as $key => $value)
+	{
+		$dprv_eligible_post_types_js .= $dprv_separator . "\"" . $key . "\":\"" . $value . "\"";
+		$dprv_separator = ",";
+	}
+*/
+    print('<script type="text/javascript">');
 	print ('
-			var dprv_literals = new Array();
+            var dprv_literals = new Array();
 			dprv_literals["Update_settings"] = \'' . __("Update Settings", "dprv_cp") . '\';
 			dprv_literals["Update_&_register"] = \'' . __("Update & Register", "dprv_cp") . '\';
 			dprv_literals["No_touch_warning0"] = \'' . __("Once you have registered successfully and the plugin is working it should not be necessary to modify any of these values, and entering an incorrect value may cause the plugin to stop working.  If you are sure you wish to proceed, press OK.", "dprv_cp") . '\';
@@ -2431,6 +2562,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 
 			dprv_literals["Default_right_click_alert"] = \'' . __("Sorry, right-clicking is disabled; please respect copyrights", "dprv_cp") . '\';
 			dprv_literals["Frustrate_copy_help"] = \'' . __("Selecting this option will prevent a user from right-clicking on your web-page (in order to view the source), selecting content (in order to copy to clipboard), or pressing CTRL/U (to view the source) in most browsers.  This may prevent the unauthorised use of your content by unsophisticated users, but will be a small nuisance to a determined content thief. This is as good as it gets on the web - DO NOT BELIEVE the claims of some other plugin authors that your content cannot be stolen...", "dprv_cp") . '\';
+			dprv_literals["Back_digiprove_note"] = \'' . sprintf(__("Your allowance depends on your subscription level. Basic (free) users can back-digiprove up to 20 posts/pages; for Personal users the limit is 100; above that there is no limit.&nbsp;&nbsp;%sSelect a subscription plan%s.", "dprv_cp"), "<a href=\"" . $dprv_upgrade_link . "&Action=Upgrade\" target=\"_blank\">", "</a>") . '\';
 
 			dprv_literals["Digiprove certificate id"] = \'' . __("Digiprove certificate id", "dprv_cp") . '\';
 
@@ -2446,6 +2578,7 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 			dprv_literals["Premium_only_personal"] = \'' . sprintf(__("The %s function is not available under your current plan (%s).  %sUpgrade your subscription plan%s.", "dprv_cp"), "%1\$s", $dprv_subscription_type, "<a href=\"" . $dprv_upgrade_link . "&Action=Upgrade\" target=\"_blank\">", "</a>") . '\';
 			dprv_literals["Premium_only_none"] = \'' . __("The %s function is available only to Digiprove subscribers at Professional level or above. Please complete registration first.", "dprv_cp") . '\';
 			dprv_literals["Premium_only_else"] = \'' . sprintf(__("The %s function is available to subscribers at Professional level and above - your current plan is &quot;%s&quot;.  %sUpgrade your subscription plan%s.", "dprv_cp"), "%1\$s", $dprv_subscription_type, "<a href=\"" . $dprv_upgrade_link . "&Action=Renew\" target=\"_blank\">", "</a>") . '\';
+			dprv_literals["unlimited"] = \'' . __("unlimited", "dprv_cp") . '\';
 
 			var dprv_enrolled = "' . $dprv_enrolled . '";
 			var dprv_subscription_type = "' . $dprv_subscription_type . '";
@@ -2537,7 +2670,6 @@ function dprv_settings()		// Run when Digiprove selected from Settings menu
 					dprv_addLoadEvent(dprv_settings_loaded)						// Do it the old way (should never get here)
 				}
 			}
-
 			</script>
 		</div>
 		');
@@ -2851,19 +2983,19 @@ function dprv_get_log_info()
 	$output .= '<td colspan="2" style="font-size:10px"><a href="#" onclick="return dprv_delete_clicked()">Remove entries before ';
 	$output .= '</a><input type="text" style="height:20px;width:75px;font-size:10px" id="dprv_log_removal_date"/></td></tr>';
 	$output .= '<tr><td rowspan="2" style="width:17%">';
-	$output .= '<button type="button" class="button" id="dprv_first_page_button" onclick="dprv_first_page_clicked()"><< First page</button>&nbsp;&nbsp;&nbsp;';
+	$output .= '<button type="button" class="button" id="dprv_first_page_button" onclick="dprv_first_page_clicked()">&lt;&lt; First page</button>&nbsp;&nbsp;&nbsp;';
 	$output .= '</td>';
 	$output .= '<td rowspan="2" style="width:17%">';
-	$output .= '<button type="button" class="button" id="dprv_previous_page_button" onclick="dprv_previous_page_clicked()">< Previous page >></button>';
+	$output .= '<button type="button" class="button" id="dprv_previous_page_button" onclick="dprv_previous_page_clicked()">&lt; Previous page >></button>';
 	$output .= '</td>';
 	$output .= '<td style="font-size:11px">';
 	$output .= __("Entries ", "dprv_cp") . "<span id='dprv_from_log_entry'>1</span>-<span id='dprv_to_log_entry'>" . $dprv_to_log_entry . "</span>" . __(" of ", "dprv_cp") . "<span id='dprv_number_of_log_entries'>" . $total_entries . "</span>";
 	$output .= '</td>';
 	$output .= '<td rowspan="2" style="width:17%">';
-	$output .= '<button type="button" class="button" id="dprv_next_page_button" onclick="dprv_next_page_clicked()">Next  page ></button>';
+	$output .= '<button type="button" class="button" id="dprv_next_page_button" onclick="dprv_next_page_clicked()">Next page &gt;</button>';
 	$output .= '</td>';
 	$output .= '<td rowspan="2" style="width:17%">';
-	$output .= '<button type="button" class="button" id="dprv_last_page_button" onclick="dprv_last_page_clicked()">Last page >></button>';
+	$output .= '<button type="button" class="button" id="dprv_last_page_button" onclick="dprv_last_page_clicked()">Last page &gt;&gt;</button>';
 	$output .= '</td>';
 	$output .= '<tr><td style="font-size:11px">';
 	$output .= 'Page <span id="dprv_this_page">1</span>/<span id="dprv_total_pages">' . $total_pages . '</span> (<span id="dprv_log_entries_per_page">' . $dprv_log_entries_per_page . '</span> entries per page)';
@@ -2951,5 +3083,211 @@ function dprv_log_functions()
 if (get_option('dprv_record_IP') != "off")
 {
 	add_action('wp_ajax_dprv_log_functions', 'dprv_log_functions');
+}
+function dprv_history_functions()
+{
+    // The $_REQUEST contains all the data sent via ajax
+    if ( isset($_REQUEST) )
+	{
+		$function = $_REQUEST['function'];
+		if ($function == 'Digiprove_Now')
+		{
+			//$count = $_REQUEST['count'];
+			// Now we'll return it to the javascript function
+			// Anything outputted will be returned in the response
+            $dprv_post_id = $_REQUEST['dprv_post_id'];
+			//$dprv_response = dprv_certify_one($dprv_post_id);
+            $dprv_response = dprv_certify_post(get_post($dprv_post_id));
+			echo json_encode($dprv_response);
+		}
+    }
+    // Always die in functions echoing ajax content
+   die();
+}
+add_action('wp_ajax_dprv_history_functions', 'dprv_history_functions');
+
+function dprv_get_all_to_be_Digiproved($dprv_eligible_post_types, &$dprv_total_eligible_items, &$dprv_digiproved_items, &$dprv_undigiproved_items)
+{
+    //global $dprv_marker;
+	$dprv_all = array();
+    $dprv_total_eligible_items = 0;
+    $dprv_digiproved_items = 0;
+    $dprv_undigiproved_items = 0;
+
+	foreach ($dprv_eligible_post_types as $key => $value)
+	{
+        $dprv_type_total_eligible_items = 0;
+        $dprv_type_digiproved_items = 0;
+        $dprv_type_undigiproved_items = 0;
+        //$dprv_marker .="dprv_eligible_post_type[" . $key . "]=" . $value . "<br/>";
+		if ($value != "Yes")
+		{
+			continue;
+		}
+        $args = array(
+            'numberposts'       => -1,
+            'offset'            => 0,
+            'orderby'           => 'post_date',
+            'order'             => 'DESC',
+            'post_type'         => $key,
+            'post_status'       => 'publish',
+            'suppress_filters'  => true
+        );
+        $dprv_posts = get_posts($args);
+
+        //$dprv_marker .="published count:" . count($dprv_posts) . "<br/>";
+        for ($p=0; $p<count($dprv_posts); $p++)
+		{
+            $dprv_total_eligible_items++;
+            $dprv_type_total_eligible_items++;
+			$dprv_post = $dprv_posts[$p];
+			$sql = "SELECT COUNT(*) FROM " . get_option('dprv_prefix') . "dprv_posts WHERE id = %d";
+			$dprv_count = dprv_wpdb("get_var", $sql, $dprv_post->ID);
+            //$dprv_marker .= "dprv_count for " . $dprv_post->ID . "=" . $dprv_count . "<br/>";
+			if ($dprv_count < 1)
+			{
+                if (!array_search ($dprv_post->ID, $dprv_all))
+                {
+				    array_push($dprv_all, $dprv_post->ID);
+                    $dprv_undigiproved_items++;
+                    $dprv_type_undigiproved_items++;
+                }
+                else
+                {
+                    //$dprv_marker .= "key already exists<br/>";
+                }
+			}
+            else
+            {
+                $dprv_digiproved_items++;
+                $dprv_type_digiproved_items++;
+                // $dprv_marker .= "Already Digiproved<br/>";
+            }
+		}
+        //$dprv_marker .= $key . ": Total/Digiproved/Not = " . $dprv_type_total_eligible_items . "/" . $dprv_type_digiproved_items . "/" . $dprv_type_undigiproved_items . "<br/>";
+	}
+    //$dprv_marker .= "All types: Total/Digiproved/Not = " . $dprv_total_eligible_items . "/" . $dprv_digiproved_items . "/" . $dprv_undigiproved_items . "<br/>";
+    //dprv_marker .= "returning " . count($dprv_all) . " undigiproved posts<br/>";
+    /*
+    global $wpdb;    
+    $sql = "SELECT * FROM " . get_option('dprv_prefix') . "dprv_posts";
+    $dprv_dp_posts =  $wpdb->get_results($sql, ARRAY_A);
+    //$dprv_marker .= "total Digiproved posts: " . count($dprv_dp_posts) . "<br/>";
+    $total_matched_posts = 0;
+    if (!empty($dprv_dp_posts))
+    {
+        for ($i=0; $i<count($dprv_dp_posts); $i++)
+        {
+            $sql = "SELECT COUNT(*) FROM " . get_option('dprv_prefix') . "posts WHERE ID = %d";
+			$dprv_matched_count = dprv_wpdb("get_var", $sql, $dprv_dp_posts[$i]['id']);
+            //$dprv_marker .= $dprv_matched_count . " matches on dprv_dp_posts[" . $i . "]: " . $dprv_dp_posts[$i]['id'] . "<br/>";
+            $total_matched_posts = $total_matched_posts + 1;
+        }
+    }
+    //$dprv_marker .= $total_matched_posts . " matched in post table / " . count($dprv_dp_posts). "<br/>";
+    */
+	return $dprv_all;
+}
+
+function dprv_certify_post($dprv_post)
+{
+	$log = new DPLog();
+    //$log->lwrite("dprv_post is " . dprv_eval($dprv_post));
+	$digital_fingerprint = "";
+	$content_file_names = null;
+	// Determine limits
+	$dprv_subscription_expiry = get_option('dprv_subscription_expiry');
+	$dprv_subscription_type = get_option('dprv_subscription_type');
+	$dprv_max_file_count = 0;
+
+    $dprv_back_digiprove_allowance = 0;
+	$dprv_today_limit = dprv_entitlements($dprv_subscription_type, $dprv_max_file_count, $dprv_back_digiprove_allowance);
+    
+	$dprv_last_time = "";
+	$notice = "";
+	$certifyResponse = dprv_certify($dprv_post->ID, $dprv_post->post_title, $dprv_post->post_content, $digital_fingerprint, $content_file_names, $dprv_max_file_count, $dprv_subscription_type, $dprv_subscription_expiry, $dprv_last_time, $notice);
+	if (!is_array($certifyResponse))
+	{
+		// Could be "Content unchanged since last edit", "Content is empty", or
+		// One of these error messages from Digiprove:
+		// User xxxxxxxx@xxxxxxxxx invalid user id -  contact support@digiprove.com for help
+		// Digiprove user xxxxxx@xxxxxxxx not activated yet - please click on link in activation email
+        // User xxxxxx@xxxxxxxx Your Digiprove daily limit is already reached, you can upgrade to increase this limit.
+		$log->lwrite("response (is not an array): $certifyResponse");
+		update_option('dprv_last_result', $certifyResponse);
+		update_option('dprv_pending_message', $certifyResponse);
+		if (strpos($certifyResponse, __("Content unchanged since last edit", "dprv_cp")) === false 
+			&& strpos($certifyResponse, __("Content is empty", "dprv_cp")) === false)
+		{
+			// Arguably don't bother user with this error condition, just pass to server in due course?
+			update_option('dprv_last_result', $certifyResponse);
+			update_option('dprv_pending_message', $certifyResponse);		// Ensure administrator sees
+
+			// If it was not a communications error, no need to record event as server is already aware of it AND we can clear any previous events
+			if (strpos($certifyResponse, "Error:") !== false)
+			{
+				$dprv_this_event = $certifyResponse;
+				dprv_record_event($dprv_this_event);
+			}
+			else
+			{
+				update_option('dprv_event','');
+			}
+		}
+	}
+    else
+    {
+	    if (isset($certifyResponse['result_code']))	// if there is an intelligible response we can assume that any dprv_event has been reported, it can be cleared
+	    {
+		    update_option('dprv_event','');
+	    }
+	    if (!isset($certifyResponse['result_code']))
+	    {
+		    $admin_message = 'Error: ' . $certifyResponse;
+		    $log->lwrite("Digiproving failed, response: " . $certifyResponse);
+		    update_option('dprv_last_result', $admin_message);
+            return $certifyResponse;
+        }
+	    if ($certifyResponse['result_code'] != '0')
+	    {
+		    $admin_message = 'Note: ' . $certifyResponse['result'];
+		    $log->lwrite("Digiproving failed, response: " . $certifyResponse['result']);
+		    update_option('dprv_last_result', $admin_message);
+	    }
+	    else
+	    {
+		    if (isset($certifyResponse['subscription_type']) && $certifyResponse['subscription_type'] != "")
+		    {
+			    $dprv_subscription_type = $certifyResponse['subscription_type'];
+			    update_option('dprv_subscription_type', $dprv_subscription_type);
+			    if (isset($certifyResponse['subscription_expiry']) && $certifyResponse['subscription_expiry'] != "")
+			    {
+				    $dprv_subscription_expiry = $certifyResponse['subscription_expiry'];
+				    update_option('dprv_subscription_expiry', $dprv_subscription_expiry);
+			    }
+			    else
+			    {
+				    update_option('dprv_subscription_expiry', '');
+			    }
+		    }
+
+            dprv_record_dp_action($dprv_post->ID, $certifyResponse, $digital_fingerprint);
+
+		    // If this is first Digiprove action after enrollment record this fact
+		    // TODO - insert this code in user synchronisation stuff - Need to test?
+		    if (get_option('dprv_enrolled') != "Yes")
+		    {
+			    update_option('dprv_enrolled', 'Yes');
+		    }
+		    //update_option('dprv_last_date_count', $today_count);
+            update_option('dprv_back_digiproved_count', intval(get_option('dprv_back_digiproved_count'))+1);                    // update back-Digiproved count
+		    $log->lwrite("Digiproving completed successfully");
+
+		    $admin_message = __('Digiprove certificate id', 'dprv_cp') . ': ' . $certifyResponse['certificate_id'] . ' ' . $notice;
+		    update_option('dprv_last_result', $admin_message);
+		    update_option('dprv_registration_status', 'OK');
+	    }
+    }
+	return $certifyResponse;
 }
 ?>
